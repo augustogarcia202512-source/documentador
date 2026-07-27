@@ -5,11 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Documentador de Casos de Prueba</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
   :root {
-    --bg: #12151a;
-    --panel: #1b2027;
-    --panel-2: #232a33;
-    --panel-3: #2b3340;
+    --bg: #11151b;
+    --bg-soft: #161c24;
+    --panel: rgba(28, 34, 43, 0.88);
+    --panel-2: #242d38;
+    --panel-3: #303b48;
     --line: #333c47;
     --line-soft: #262d37;
     --text: #e7ebf0;
@@ -21,21 +24,35 @@
     --teal: #4fb5a8;
     --red: #e0524a;
     --red-dim: rgba(224, 82, 74, 0.14);
-    --mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, Menlo, monospace;
-    --sans: -apple-system, "Segoe UI", system-ui, Roboto, Arial, sans-serif;
+    --shadow-soft: 0 16px 38px rgba(7, 10, 14, 0.28);
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, Menlo, monospace;
+    --sans: "Manrope", "Segoe UI", system-ui, Roboto, Arial, sans-serif;
   }
+
   * { box-sizing: border-box; }
   body {
     font-family: var(--sans);
-    margin: 0; padding: 22px 18px 60px;
-    background: var(--bg); color: var(--text);
-    max-width: 700px; margin: 0 auto;
+    margin: 0;
+    padding: 26px 18px 64px;
+    background:
+      radial-gradient(1200px 500px at 8% -10%, rgba(79, 181, 168, 0.14), transparent 62%),
+      radial-gradient(900px 420px at 100% 0%, rgba(232, 163, 61, 0.12), transparent 62%),
+      linear-gradient(180deg, var(--bg-soft), var(--bg));
+    color: var(--text);
+    max-width: 760px;
+    margin: 0 auto;
     -webkit-font-smoothing: antialiased;
+    line-height: 1.45;
   }
 
-  .app-header { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+  ::selection { background: rgba(126, 200, 255, 0.22); color: #fff; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb { background: #3b4656; border-radius: 999px; }
+  *::-webkit-scrollbar-track { background: #1a212b; }
+
+  .app-header { display: flex; align-items: center; gap: 12px; margin-bottom: 2px; }
   .live-dot {
-    width: 9px; height: 9px; border-radius: 50%; background: var(--text-faint);
+    width: 10px; height: 10px; border-radius: 50%; background: var(--text-faint);
     box-shadow: none; flex-shrink: 0; transition: all .25s ease;
   }
   .live-dot.on { background: var(--amber); box-shadow: 0 0 0 3px var(--amber-dim); animation: pulse 1.8s ease-in-out infinite; }
@@ -44,19 +61,85 @@
     50% { box-shadow: 0 0 0 6px rgba(232,163,61,0.06); }
   }
   .eyebrow {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
     color: var(--text-faint); margin: 0 0 6px 0;
   }
   h1 {
-    color: var(--text); font-size: 19px; font-weight: 650; margin: 0 0 3px 0; letter-spacing: -0.01em;
+    color: var(--text); font-size: clamp(22px, 3.3vw, 30px); font-weight: 800;
+    margin: 0 0 3px 0; letter-spacing: -0.02em;
   }
-  .subtitle { color: var(--text-muted); font-size: 12.5px; margin-bottom: 4px; }
-  #autosaveStatus { font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin: 6px 0 18px 0; min-height: 14px; }
+  .subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 4px; max-width: 72ch; }
+  #autosaveStatus { font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin: 8px 0 18px 0; min-height: 14px; }
+
+  .theme-switch {
+    margin: 10px 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(20,25,32,0.72);
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+  }
+  .theme-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: 0 6px 0 4px;
+  }
+  .theme-btn {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .theme-btn.active {
+    color: var(--text);
+    background: var(--panel-3);
+    border-color: rgba(255,255,255,0.15);
+  }
+  .theme-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(255,255,255,0.16);
+    margin: 0 2px;
+  }
+  .theme-btn.presentation-btn.active {
+    background: linear-gradient(180deg, #7dc8ff, #4fa7e8);
+    color: #0d1a24;
+    border-color: rgba(171, 225, 255, 0.6);
+  }
+  .theme-btn.compact-btn.active {
+    background: linear-gradient(180deg, #8fe3c9, #5fbe9d);
+    color: #082016;
+    border-color: rgba(178, 241, 217, 0.55);
+  }
+  .theme-btn.compact-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    filter: none;
+  }
 
   .card {
-    background: var(--panel); border: 1px solid var(--line-soft); border-radius: 8px;
-    padding: 16px; margin-bottom: 14px; position: relative;
+    background: var(--panel);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    position: relative;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(8px);
+    transition: border-color .2s ease, transform .2s ease;
   }
+  .card:hover { border-color: rgba(126, 200, 255, 0.35); transform: translateY(-1px); }
   .card::before {
     content: ""; position: absolute; top: 0; left: 12px; right: 12px; height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
@@ -69,8 +152,9 @@
   }
   label:first-child { margin-top: 0; }
   input[type="text"] {
-    width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 5px;
+    width: 100%; padding: 10px 11px; border: 1px solid var(--line); border-radius: 7px;
     font-size: 13px; background: var(--panel-2); color: var(--text); font-family: var(--sans);
+    transition: border-color .16s ease, background .16s ease;
   }
   input[type="text"]::placeholder { color: var(--text-faint); }
   input[type="text"]:focus { outline: none; border-color: var(--amber); background: var(--panel-3); }
@@ -79,15 +163,20 @@
   button {
     cursor: pointer; border: 1px solid transparent; border-radius: 5px; padding: 9px 14px;
     font-size: 12.5px; font-weight: 600; font-family: var(--sans);
-    letter-spacing: 0.01em; transition: filter .12s ease, background .12s ease;
+    letter-spacing: 0.01em;
+    transition: filter .12s ease, background .12s ease, transform .12s ease, border-color .12s ease;
   }
-  button:hover { filter: brightness(1.12); }
+  button:hover { filter: brightness(1.08); transform: translateY(-1px); }
   button:active { filter: brightness(0.95); }
   button:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
-  .btn-primary { background: var(--amber); color: #1a1406; }
+  .btn-primary {
+    background: linear-gradient(180deg, #f2b34f, #de9526);
+    color: #1a1406;
+    border-color: rgba(255, 224, 178, 0.35);
+  }
   .btn-secondary { background: var(--panel-2); color: var(--text); border-color: var(--line); }
   .btn-danger { background: transparent; color: var(--red); border-color: var(--red); }
   .btn-danger:hover { background: var(--red-dim); }
@@ -95,8 +184,11 @@
   .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 
   #preview {
-    width: 100%; max-height: 220px; background: #000; border-radius: 6px;
-    display: block; object-fit: contain; border: 1px solid var(--line-soft);
+    width: 100%; max-height: 220px;
+    background: radial-gradient(circle at 50% 20%, #1d232d 0%, #0c0f14 70%);
+    border-radius: 8px;
+    display: block; object-fit: contain;
+    border: 1px solid #2e3846;
   }
   #previewPlaceholder {
     display: none; text-align: center; padding: 30px; color: var(--text-faint);
@@ -106,7 +198,8 @@
 
   .step-card {
     border: 1px solid var(--line-soft); border-left: 3px solid var(--amber);
-    background: var(--panel); border-radius: 6px; padding: 12px 12px 12px 14px; margin-bottom: 10px;
+    background: linear-gradient(180deg, rgba(36,44,55,0.75), rgba(29,36,45,0.75));
+    border-radius: 8px; padding: 12px 12px 12px 14px; margin-bottom: 10px;
   }
   .step-card.sev-alta { background: var(--red-dim); border-left-color: var(--red); border-color: rgba(224,82,74,0.25); }
   .step-card.sev-media { background: var(--amber-dim); border-left-color: var(--amber); border-color: rgba(232,163,61,0.25); }
@@ -181,8 +274,9 @@
   .sev-btn-baja.selected { background: var(--teal); color: #06211d; border-color: var(--teal); }
   .case-chip {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 10px; border: 1px solid var(--line-soft); border-radius: 5px;
-    background: var(--panel-2); margin-bottom: 6px; font-size: 12.5px;
+    padding: 8px 10px; border: 1px solid var(--line-soft); border-radius: 7px;
+    background: linear-gradient(180deg, #293241, #232c39);
+    margin-bottom: 6px; font-size: 12.5px;
   }
   .case-chip .remove-case {
     background: none; border: none; color: var(--red); cursor: pointer; font-size: 13px; padding: 0 4px;
@@ -192,6 +286,35 @@
     border: 1px dashed var(--line); border-radius: 8px; font-family: var(--mono);
   }
   .help { font-size: 11px; color: var(--text-faint); margin-top: 8px; line-height: 1.5; }
+
+  .card,
+  .step-card,
+  .case-chip {
+    animation: riseIn .35s ease both;
+  }
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 18px 12px 48px; }
+    .row2 { grid-template-columns: 1fr; }
+    .card { padding: 14px; border-radius: 10px; }
+    .btn-row { gap: 7px; }
+    .step-header { gap: 6px; }
+    .theme-switch { width: 100%; justify-content: space-between; flex-wrap: wrap; border-radius: 14px; }
+    .theme-label { width: 100%; }
+    .theme-divider { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
 
   .app-dialog {
     display: none; position: fixed; inset: 0; background: rgba(8,10,13,0.74);
@@ -216,6 +339,160 @@
     white-space: nowrap;
     border: 0;
   }
+
+  body.theme-corporate {
+    --bg: #0f1822;
+    --bg-soft: #162332;
+    --panel: rgba(24, 35, 49, 0.9);
+    --panel-2: #213042;
+    --panel-3: #2a3c52;
+    --line: #3a4f67;
+    --line-soft: #2a3c50;
+    --amber: #d79f50;
+    --amber-dim: rgba(215, 159, 80, 0.18);
+    --teal: #5cb9c3;
+    --focus-ring: #9dd7ff;
+  }
+  body.theme-corporate {
+    background:
+      linear-gradient(180deg, #162332, #0f1822);
+  }
+
+  body.theme-minimal {
+    --bg: #121317;
+    --bg-soft: #171a20;
+    --panel: rgba(31, 34, 40, 0.9);
+    --panel-2: #262a31;
+    --panel-3: #2f343d;
+    --line: #3a3f49;
+    --line-soft: #2a2f37;
+    --amber: #c7d2de;
+    --amber-dim: rgba(199, 210, 222, 0.18);
+    --teal: #8cb5c0;
+    --red: #dd7a7a;
+    --red-dim: rgba(221, 122, 122, 0.14);
+    --focus-ring: #b8d5e4;
+    --shadow-soft: 0 10px 24px rgba(8, 10, 13, 0.2);
+  }
+  body.theme-minimal {
+    background: linear-gradient(180deg, #171a20, #121317);
+  }
+  body.theme-minimal .btn-primary {
+    background: linear-gradient(180deg, #d7dee6, #b8c2ce);
+    color: #11151a;
+    border-color: rgba(255,255,255,0.25);
+  }
+  body.theme-minimal .card::before,
+  body.theme-corporate .card::before {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  }
+
+  body.presentation-mode {
+    max-width: 1040px;
+    line-height: 1.6;
+    --panel: rgba(24, 30, 39, 0.94);
+    --shadow-soft: 0 20px 46px rgba(7, 10, 14, 0.34);
+  }
+  body.presentation-mode h1 {
+    font-size: clamp(28px, 4vw, 38px);
+  }
+  body.presentation-mode .subtitle {
+    font-size: 15px;
+    max-width: 96ch;
+  }
+  body.presentation-mode .card {
+    border-radius: 14px;
+    padding: 20px;
+  }
+  body.presentation-mode input[type="text"],
+  body.presentation-mode textarea {
+    font-size: 14px;
+  }
+  body.presentation-mode button {
+    font-size: 13.5px;
+    padding: 10px 16px;
+  }
+  body.presentation-mode .help {
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  body.presentation-mode #preview {
+    max-height: 320px;
+  }
+  body.presentation-mode .step-card {
+    padding: 14px 14px 14px 16px;
+  }
+  body.presentation-mode.presentation-compact .subtitle,
+  body.presentation-mode.presentation-compact .eyebrow,
+  body.presentation-mode.presentation-compact #casesBatchCard,
+  body.presentation-mode.presentation-compact #exportCard {
+    display: none;
+  }
+  body.presentation-mode.presentation-compact .app-header {
+    margin-bottom: 8px;
+  }
+  body.presentation-mode.presentation-compact #autosaveStatus {
+    margin: 6px 0 12px 0;
+  }
+  body.presentation-mode.presentation-compact .theme-switch {
+    margin-bottom: 10px;
+  }
+  .compact-quickbar {
+    display: none;
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1100;
+    background: rgba(18, 23, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+    padding: 8px;
+    gap: 6px;
+    box-shadow: 0 14px 30px rgba(5, 7, 11, 0.45);
+    backdrop-filter: blur(6px);
+  }
+  body.presentation-mode.presentation-compact .compact-quickbar {
+    display: flex;
+  }
+  .compact-quickbar .quick-btn {
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: var(--panel-2);
+    color: var(--text);
+  }
+  .compact-quickbar .quick-btn.quick-capture {
+    background: linear-gradient(180deg, #f2b34f, #de9526);
+    color: #1a1406;
+    border-color: rgba(255, 224, 178, 0.45);
+  }
+  .compact-quickbar .quick-btn.quick-pause.active {
+    background: linear-gradient(180deg, #ffd9b1, #f3a24f);
+    color: #2f1700;
+    border-color: rgba(255, 209, 160, 0.55);
+  }
+  .compact-quickbar .quick-btn.quick-exit {
+    color: #ffd9d7;
+    border-color: rgba(255, 138, 128, 0.5);
+  }
+
+  @media (max-width: 720px) {
+    .compact-quickbar {
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      justify-content: space-between;
+    }
+    .compact-quickbar .quick-btn {
+      flex: 1;
+      text-align: center;
+      padding: 10px 8px;
+      font-size: 11.5px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -226,9 +503,24 @@
     <h1>Documentador de Casos de Prueba</h1>
   </div>
   <div class="subtitle">No requiere instalación. Funciona compartiendo pantalla, igual que en Meet.</div>
+  <div class="theme-switch" role="group" aria-label="Estilo visual">
+    <span class="theme-label">Estilo</span>
+    <button class="theme-btn active" data-theme="aurora" aria-pressed="true">Aurora</button>
+    <button class="theme-btn" data-theme="corporate" aria-pressed="false">Corporativo</button>
+    <button class="theme-btn" data-theme="minimal" aria-pressed="false">Minimal</button>
+    <span class="theme-divider" aria-hidden="true"></span>
+    <button class="theme-btn presentation-btn" id="presentationModeBtn" aria-pressed="false" title="Alternar modo presentación (Alt+Shift+P)">Presentación: Off</button>
+    <button class="theme-btn compact-btn" id="presentationCompactBtn" aria-pressed="false" title="Alternar vista compacta (Alt+Shift+C)" disabled>Compacta: Off</button>
+  </div>
+  <div class="compact-quickbar" id="compactQuickbar" role="group" aria-label="Acciones rápidas de presentación compacta">
+    <button class="quick-btn" id="quickShareBtn" type="button">Compartir</button>
+    <button class="quick-btn quick-capture" id="quickCaptureBtn" type="button">Capturar</button>
+    <button class="quick-btn quick-pause" id="quickPauseBtn" type="button" aria-pressed="false">Pausar</button>
+    <button class="quick-btn quick-exit" id="quickExitCompactBtn" type="button">Salir</button>
+  </div>
   <div id="autosaveStatus" role="status" aria-live="polite"></div>
 
-  <div class="card">
+  <div class="card" id="exportCard">
     <label for="caseId">ID / Tema</label>
     <input type="text" id="caseId" name="caseId" autocomplete="off" placeholder="Ej: CP-001 o Soporte contabilidad" />
     <label for="description">Descripción</label>
@@ -23395,6 +23687,7 @@ var __async = (__this, __arguments, generator) => {
   let mediaStream = null;
   let steps = [];
   let savedCases = [];
+  let isCapturePaused = false;
 
   // ================== GUARDADO AUTOMÁTICO (IndexedDB) ==================
   const DB_NAME = "documentadorCasosDB";
@@ -23577,7 +23870,33 @@ var __async = (__this, __arguments, generator) => {
     saveStateToDB();
   }
 
+  function setCapturePaused(paused, options) {
+    options = options || {};
+    isCapturePaused = !!paused;
+
+    const quickPauseBtn = document.getElementById("quickPauseBtn");
+    if (quickPauseBtn) {
+      quickPauseBtn.classList.toggle("active", isCapturePaused);
+      quickPauseBtn.setAttribute("aria-pressed", isCapturePaused ? "true" : "false");
+      quickPauseBtn.textContent = isCapturePaused ? "Reanudar" : "Pausar";
+      quickPauseBtn.title = isCapturePaused ? "Reanudar captura" : "Pausar captura";
+    }
+
+    const captureBtn = document.getElementById("captureBtn");
+    if (captureBtn) {
+      captureBtn.textContent = isCapturePaused ? "⏸️ Captura pausada" : "📸 Capturar ahora (Ctrl+Shift+Y)";
+    }
+
+    if (options.announce) {
+      announceA11y(isCapturePaused ? "Captura pausada." : "Captura reanudada.");
+    }
+  }
+
   async function captureFrame() {
+    if (isCapturePaused) {
+      shareStatus.textContent = "⏸️ Captura pausada. Reanuda para guardar nuevos pasos.";
+      return;
+    }
     if (!mediaStream) {
       await showAppAlert("Primero comparte una pantalla o pestaña.", document.getElementById("captureBtn"));
       return;
@@ -23796,6 +24115,166 @@ var __async = (__this, __arguments, generator) => {
 
   function sortedNovedades(list) {
     return [...list].sort((a, b) => (SEVERITY_RANK[a.severity] ?? 9) - (SEVERITY_RANK[b.severity] ?? 9));
+  }
+
+  const VISUAL_THEME_KEY = "visualTheme";
+  const PRESENTATION_MODE_KEY = "presentationMode";
+  const PRESENTATION_COMPACT_KEY = "presentationCompact";
+  const CAPTURE_PAUSED_KEY = "capturePaused";
+  const THEMES = ["aurora", "corporate", "minimal"];
+
+  function applyVisualTheme(theme) {
+    const body = document.body;
+    const nextTheme = THEMES.includes(theme) ? theme : "aurora";
+    body.classList.remove("theme-corporate", "theme-minimal");
+    if (nextTheme === "corporate") body.classList.add("theme-corporate");
+    if (nextTheme === "minimal") body.classList.add("theme-minimal");
+
+    document.querySelectorAll(".theme-btn[data-theme]").forEach((btn) => {
+      const selected = btn.dataset.theme === nextTheme;
+      btn.classList.toggle("active", selected);
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+  }
+
+  function initVisualThemeSwitcher() {
+    const stored = localStorage.getItem(VISUAL_THEME_KEY) || "aurora";
+    applyVisualTheme(stored);
+
+    document.querySelectorAll(".theme-btn[data-theme]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const theme = btn.dataset.theme || "aurora";
+        applyVisualTheme(theme);
+        localStorage.setItem(VISUAL_THEME_KEY, theme);
+      });
+    });
+  }
+
+  function setPresentationCompact(enabled, options) {
+    options = options || {};
+    const compact = !!enabled;
+    const presentationActive = document.body.classList.contains("presentation-mode");
+    const effectiveCompact = compact && presentationActive;
+    document.body.classList.toggle("presentation-compact", effectiveCompact);
+
+    const btn = document.getElementById("presentationCompactBtn");
+    if (btn) {
+      btn.disabled = !presentationActive;
+      btn.classList.toggle("active", effectiveCompact);
+      btn.setAttribute("aria-pressed", effectiveCompact ? "true" : "false");
+      btn.textContent = effectiveCompact ? "Compacta: On" : "Compacta: Off";
+    }
+
+    if (options.announce) {
+      announceA11y(effectiveCompact ? "Vista compacta activada." : "Vista compacta desactivada.");
+    }
+  }
+
+  function setPresentationMode(enabled, options) {
+    options = options || {};
+    const active = !!enabled;
+    document.body.classList.toggle("presentation-mode", active);
+
+    const btn = document.getElementById("presentationModeBtn");
+    if (btn) {
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+      btn.textContent = active ? "Presentación: On" : "Presentación: Off";
+    }
+
+    const compactStored = localStorage.getItem(PRESENTATION_COMPACT_KEY) === "1";
+    setPresentationCompact(compactStored);
+
+    if (options.announce) {
+      announceA11y(active ? "Modo presentación activado." : "Modo presentación desactivado.");
+    }
+  }
+
+  function initPresentationModeToggle() {
+    setPresentationMode(localStorage.getItem(PRESENTATION_MODE_KEY) === "1");
+
+    const btn = document.getElementById("presentationModeBtn");
+    const compactBtn = document.getElementById("presentationCompactBtn");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const next = !document.body.classList.contains("presentation-mode");
+        setPresentationMode(next, { announce: true });
+        localStorage.setItem(PRESENTATION_MODE_KEY, next ? "1" : "0");
+      });
+    }
+    if (compactBtn) {
+      compactBtn.addEventListener("click", () => {
+        if (!document.body.classList.contains("presentation-mode")) return;
+        const next = !document.body.classList.contains("presentation-compact");
+        setPresentationCompact(next, { announce: true });
+        localStorage.setItem(PRESENTATION_COMPACT_KEY, next ? "1" : "0");
+      });
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (!(e.altKey && e.shiftKey && e.key.toLowerCase() === "p")) return;
+
+      const active = document.activeElement;
+      const tag = active && active.tagName ? active.tagName.toLowerCase() : "";
+      const typingContext = tag === "input" || tag === "textarea" || (active && active.isContentEditable);
+      if (typingContext) return;
+
+      e.preventDefault();
+      const next = !document.body.classList.contains("presentation-mode");
+      setPresentationMode(next, { announce: true });
+      localStorage.setItem(PRESENTATION_MODE_KEY, next ? "1" : "0");
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (!(e.altKey && e.shiftKey && e.key.toLowerCase() === "c")) return;
+
+      const active = document.activeElement;
+      const tag = active && active.tagName ? active.tagName.toLowerCase() : "";
+      const typingContext = tag === "input" || tag === "textarea" || (active && active.isContentEditable);
+      if (typingContext) return;
+      if (!document.body.classList.contains("presentation-mode")) return;
+
+      e.preventDefault();
+      const next = !document.body.classList.contains("presentation-compact");
+      setPresentationCompact(next, { announce: true });
+      localStorage.setItem(PRESENTATION_COMPACT_KEY, next ? "1" : "0");
+    });
+  }
+
+  function initCompactQuickbar() {
+    const quickShareBtn = document.getElementById("quickShareBtn");
+    const quickCaptureBtn = document.getElementById("quickCaptureBtn");
+    const quickPauseBtn = document.getElementById("quickPauseBtn");
+    const quickExitCompactBtn = document.getElementById("quickExitCompactBtn");
+    const shareBtn = document.getElementById("shareBtn");
+    const captureBtn = document.getElementById("captureBtn");
+
+    if (quickShareBtn && shareBtn) {
+      quickShareBtn.addEventListener("click", () => {
+        shareBtn.click();
+      });
+    }
+    if (quickCaptureBtn && captureBtn) {
+      quickCaptureBtn.addEventListener("click", () => {
+        captureBtn.click();
+      });
+    }
+    if (quickPauseBtn) {
+      quickPauseBtn.addEventListener("click", () => {
+        const next = !isCapturePaused;
+        setCapturePaused(next, { announce: true });
+        localStorage.setItem(CAPTURE_PAUSED_KEY, next ? "1" : "0");
+      });
+    }
+    if (quickExitCompactBtn) {
+      quickExitCompactBtn.addEventListener("click", () => {
+        if (!document.body.classList.contains("presentation-compact")) return;
+        setPresentationCompact(false, { announce: true });
+        localStorage.setItem(PRESENTATION_COMPACT_KEY, "0");
+      });
+    }
+
+    setCapturePaused(localStorage.getItem(CAPTURE_PAUSED_KEY) === "1");
   }
 
   function announceA11y(message) {
@@ -24933,6 +25412,10 @@ var __async = (__this, __arguments, generator) => {
     savedCases = await loadCasesFromDB();
     renderCasesList();
   })();
+
+  initVisualThemeSwitcher();
+  initPresentationModeToggle();
+  initCompactQuickbar();
 
   document.getElementById("resetBtn").addEventListener("click", async () => {
     const proceed = await showAppConfirm("¿Reiniciar? Se perderán los pasos capturados.", document.getElementById("resetBtn"));
