@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Documentador de Casos de Prueba</title>
 <style>
   :root {
@@ -12,8 +13,9 @@
     --line: #333c47;
     --line-soft: #262d37;
     --text: #e7ebf0;
-    --text-muted: #8b95a3;
-    --text-faint: #5d6674;
+    --text-muted: #aab4c3;
+    --text-faint: #8792a2;
+    --focus-ring: #7ec8ff;
     --amber: #e8a33d;
     --amber-dim: rgba(232, 163, 61, 0.14);
     --teal: #4fb5a8;
@@ -81,6 +83,10 @@
   }
   button:hover { filter: brightness(1.12); }
   button:active { filter: brightness(0.95); }
+  button:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
   .btn-primary { background: var(--amber); color: #1a1406; }
   .btn-secondary { background: var(--panel-2); color: var(--text); border-color: var(--line); }
   .btn-danger { background: transparent; color: var(--red); border-color: var(--red); }
@@ -96,7 +102,7 @@
     display: none; text-align: center; padding: 30px; color: var(--text-faint);
     background: var(--panel-2); border-radius: 6px; font-size: 12.5px; border: 1px dashed var(--line);
   }
-  #shareStatus { font-family: var(--mono); font-size: 11.5px; color: var(--teal); margin-top: 8px; min-height: 16px; }
+  #shareStatus { font-family: var(--mono); font-size: 11.5px; color: #7fd9cc; margin-top: 8px; min-height: 16px; }
 
   .step-card {
     border: 1px solid var(--line-soft); border-left: 3px solid var(--amber);
@@ -118,6 +124,10 @@
   .color-swatch {
     width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid var(--line); padding: 0;
   }
+  .color-swatch:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
   .color-swatch.selected { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--text); }
   .mark-tools { display: flex; gap: 6px; margin-left: auto; }
   .mark-tools button { padding: 5px 9px; font-size: 11px; }
@@ -127,8 +137,12 @@
     display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11.5px;
     color: var(--text-faint); margin-bottom: 8px; letter-spacing: 0.02em;
   }
+  .step-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  .reorder-btn {
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+    border-radius: 4px; font-size: 11px; padding: 2px 6px; line-height: 1.1;
+  }
   .step-num { color: var(--text-muted); font-weight: 600; }
-  .step-header .delete-link { margin-left: auto; }
   .drag-handle { cursor: grab; font-size: 15px; color: var(--text-faint); user-select: none; padding: 0 2px; }
   .drag-handle:hover { color: var(--text-muted); }
   .drag-handle:active { cursor: grabbing; }
@@ -144,6 +158,17 @@
   }
   textarea::placeholder { color: var(--text-faint); }
   textarea:focus { outline: none; border-color: var(--amber); }
+
+  input[type="text"]:focus-visible,
+  textarea:focus-visible,
+  .mode-btn:focus-visible,
+  .sev-btn:focus-visible,
+  .delete-link:focus-visible,
+  .case-chip .remove-case:focus-visible,
+  .drag-handle:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
 
   .severity-row { display: flex; align-items: center; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
   .sev-btn {
@@ -167,30 +192,55 @@
     border: 1px dashed var(--line); border-radius: 8px; font-family: var(--mono);
   }
   .help { font-size: 11px; color: var(--text-faint); margin-top: 8px; line-height: 1.5; }
+
+  .app-dialog {
+    display: none; position: fixed; inset: 0; background: rgba(8,10,13,0.74);
+    z-index: 1200; align-items: center; justify-content: center; padding: 20px;
+  }
+  .app-dialog-panel {
+    width: min(460px, 100%); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 16px;
+  }
+  .app-dialog-title { margin: 0 0 8px 0; font-size: 14px; color: var(--text); }
+  .app-dialog-message { margin: 0 0 12px 0; color: var(--text-muted); font-size: 12.5px; line-height: 1.5; white-space: pre-line; }
+  .app-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 </style>
 </head>
 <body>
+  <div id="a11yLive" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   <p class="eyebrow">Registro de evidencia · sesión local</p>
   <div class="app-header">
     <span class="live-dot" id="liveDot"></span>
     <h1>Documentador de Casos de Prueba</h1>
   </div>
   <div class="subtitle">No requiere instalación. Funciona compartiendo pantalla, igual que en Meet.</div>
-  <div id="autosaveStatus"></div>
+  <div id="autosaveStatus" role="status" aria-live="polite"></div>
 
   <div class="card">
-    <label>ID / Tema</label>
-    <input type="text" id="caseId" placeholder="Ej: CP-001 o Soporte contabilidad" />
-    <label>Descripción</label>
-    <input type="text" id="description" placeholder="Descripción" />
+    <label for="caseId">ID / Tema</label>
+    <input type="text" id="caseId" name="caseId" autocomplete="off" placeholder="Ej: CP-001 o Soporte contabilidad" />
+    <label for="description">Descripción</label>
+    <input type="text" id="description" name="description" autocomplete="off" placeholder="Descripción" />
     <div class="row2">
       <div>
-        <label>Área / equipo</label>
-        <input type="text" id="team" placeholder="Ej: Contabilidad" />
+        <label for="team">Área / equipo</label>
+        <input type="text" id="team" name="team" autocomplete="organization" placeholder="Ej: Contabilidad" />
       </div>
       <div>
-        <label>Documentado por</label>
-        <input type="text" id="tester" placeholder="Tu nombre" />
+        <label for="tester">Documentado por</label>
+        <input type="text" id="tester" name="tester" autocomplete="name" placeholder="Tu nombre" />
       </div>
     </div>
   </div>
@@ -198,7 +248,7 @@
   <div class="card">
     <video id="preview" muted playsinline></video>
     <div id="previewPlaceholder">La vista previa está activa en la ventana flotante</div>
-    <div id="shareStatus"></div>
+    <div id="shareStatus" role="status" aria-live="polite"></div>
     <div class="btn-row">
       <button class="btn-primary" id="shareBtn">🖥️ Compartir pantalla o pestaña</button>
       <button class="btn-secondary" id="pipBtn">📌 Activar botón flotante</button>
@@ -210,10 +260,10 @@
   <div id="steps"></div>
 
   <!-- Vista previa usada para copiar de forma confiable, sin importar cuántas imágenes tenga -->
-  <div id="copyOverlay" style="display:none; position:fixed; inset:0; background:rgba(10,12,15,0.82); z-index:999; padding:20px; overflow:auto;">
+  <div id="copyOverlay" role="dialog" aria-modal="true" aria-labelledby="copyOverlayTitle" tabindex="-1" style="display:none; position:fixed; inset:0; background:rgba(10,12,15,0.82); z-index:999; padding:20px; overflow:auto;">
     <div style="background:var(--panel); border:1px solid var(--line); max-width:700px; margin:0 auto; padding:20px; border-radius:8px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <strong style="font-family:var(--mono); font-size:12.5px; letter-spacing:0.04em; color:var(--text);">Selecciona todo y copia</strong>
+        <strong id="copyOverlayTitle" style="font-family:var(--mono); font-size:12.5px; letter-spacing:0.04em; color:var(--text);">Selecciona todo y copia</strong>
         <button class="btn-secondary" id="closeOverlayBtn">Cerrar</button>
       </div>
       <p style="font-size:12px;color:var(--text-muted);">
@@ -225,9 +275,20 @@
   </div>
 
   <!-- Vista ampliada de la imagen -->
-  <div id="zoomOverlay" style="display:none; position:fixed; inset:0; background:rgba(8,10,13,0.92); z-index:1000; cursor:zoom-out; align-items:center; justify-content:center; flex-direction:column;">
+  <div id="zoomOverlay" role="dialog" aria-modal="true" aria-label="Vista ampliada" tabindex="-1" style="display:none; position:fixed; inset:0; background:rgba(8,10,13,0.92); z-index:1000; cursor:zoom-out; align-items:center; justify-content:center; flex-direction:column;">
     <button id="closeZoomBtn" style="position:absolute; top:16px; right:16px; background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:5px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;">✕ Cerrar</button>
     <img id="zoomImg" style="max-width:92vw; max-height:88vh; border-radius:4px; box-shadow:0 8px 32px rgba(0,0,0,0.6); border:1px solid var(--line);" />
+  </div>
+
+  <div id="appDialog" class="app-dialog" role="alertdialog" aria-modal="true" aria-labelledby="appDialogTitle" aria-describedby="appDialogMessage" tabindex="-1">
+    <div class="app-dialog-panel">
+      <h2 id="appDialogTitle" class="app-dialog-title">Aviso</h2>
+      <p id="appDialogMessage" class="app-dialog-message"></p>
+      <div class="app-dialog-actions">
+        <button id="appDialogCancel" class="btn-secondary" style="display:none;">Cancelar</button>
+        <button id="appDialogOk" class="btn-primary">Aceptar</button>
+      </div>
+    </div>
   </div>
 
   <div class="card" id="casesBatchCard">
@@ -244,7 +305,7 @@
   <div class="card">
     <button class="btn-primary btn-full" id="downloadDocxBtn">📥 Descargar como Word (.docx)</button>
     <button class="btn-secondary btn-full" id="downloadNovedadesBtn" style="margin-top:8px;">🚩 Descargar solo novedades (.docx)</button>
-    <div id="docxStatus" style="font-size:12px;color:#2b7a2b;margin-top:6px;min-height:16px;"></div>
+    <div id="docxStatus" role="status" aria-live="polite" style="font-size:12px;color:#7fd58f;margin-top:6px;min-height:16px;"></div>
     <div class="btn-row" style="margin-top:8px;">
       <button class="btn-secondary" id="copyWordBtn" style="flex:1;">📄 Copiar y pegar</button>
       <button class="btn-secondary" id="downloadBtn" style="flex:1;">⬇️ Descargar HTML</button>
@@ -23516,14 +23577,16 @@ var __async = (__this, __arguments, generator) => {
     saveStateToDB();
   }
 
-  function captureFrame() {
+  async function captureFrame() {
     if (!mediaStream) {
-      alert("Primero comparte una pantalla o pestaña.");
+      await showAppAlert("Primero comparte una pantalla o pestaña.", document.getElementById("captureBtn"));
       return;
     }
     addCapturedStep(preview, preview.videoWidth, preview.videoHeight);
   }
-  document.getElementById("captureBtn").addEventListener("click", captureFrame);
+  document.getElementById("captureBtn").addEventListener("click", () => {
+    captureFrame();
+  });
 
   // Atajo de teclado global: Ctrl+Shift+Y (o Cmd+Shift+Y en Mac) captura sin soltar el mouse
   function isTypingTarget(el) {
@@ -23568,7 +23631,7 @@ var __async = (__this, __arguments, generator) => {
 
   document.getElementById("pipBtn").addEventListener("click", async () => {
     if (!("documentPictureInPicture" in window)) {
-      alert("Tu navegador no soporta ventana flotante (usa Chrome/Edge actualizado). Mientras tanto, deja esta pestaña visible en una ventana aparte junto a Meet.");
+      await showAppAlert("Tu navegador no soporta ventana flotante (usa Chrome/Edge actualizado). Mientras tanto, deja esta pestaña visible en una ventana aparte junto a Meet.", document.getElementById("pipBtn"));
       return;
     }
     const pipWindow = await documentPictureInPicture.requestWindow({ width: 260, height: 240 });
@@ -23590,7 +23653,9 @@ var __async = (__this, __arguments, generator) => {
     btn.textContent = "📸 Capturar paso";
     btn.className = "btn-primary btn-full";
     btn.style.marginTop = "8px";
-    btn.addEventListener("click", captureFrame);
+    btn.addEventListener("click", () => {
+      captureFrame();
+    });
     pipWindow.document.body.appendChild(btn);
     pipWindow.document.addEventListener("keydown", handleCaptureShortcut);
     pipWindow.document.addEventListener("paste", handlePasteEvent);
@@ -23616,9 +23681,210 @@ var __async = (__this, __arguments, generator) => {
   const SEVERITY_LABEL = { alta: "ALTA", media: "MEDIA", baja: "BAJA" };
   const SEVERITY_DOCX_COLOR = { alta: "C00000", media: "B36B00", baja: "1F7A6C" };
   const SEVERITY_HTML_COLOR = { alta: "#c00000", media: "#b36b00", baja: "#1f7a6c" };
+  const COLOR_NAMES = {
+    "#e02424": "Rojo",
+    "#e6c200": "Amarillo",
+    "#2b9e2b": "Verde",
+    "#2b6fe0": "Azul",
+    "#000000": "Negro",
+    "#ffffff": "Blanco",
+  };
+
+  function sanitizeFilenamePart(value, fallback) {
+    const clean = String(value || "")
+      .trim()
+      .replace(/[\\/:*?"<>|]+/g, "_")
+      .replace(/\s+/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+    return (clean || fallback).slice(0, 80);
+  }
+
+  async function copyHtmlWithFallback(previewEl) {
+    const html = previewEl.innerHTML;
+    const text = previewEl.innerText || "";
+
+    if (navigator.clipboard && window.ClipboardItem) {
+      try {
+        const item = new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([text], { type: "text/plain" }),
+        });
+        await navigator.clipboard.write([item]);
+        return true;
+      } catch (err) {
+        // fallback abajo
+      }
+    }
+
+    try {
+      const ok = document.execCommand("copy");
+      return !!ok;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  const OVERLAY_FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  let activeOverlay = null;
+  let lastFocusedElement = null;
+  const overlayEscapeHandlers = new Map();
+
+  function getFocusableElements(container) {
+    return [...container.querySelectorAll(OVERLAY_FOCUSABLE)].filter((el) => el.offsetParent !== null || el === document.activeElement);
+  }
+
+  function openOverlay(overlayEl, options) {
+    options = options || {};
+    lastFocusedElement = options.opener || document.activeElement;
+    overlayEl.style.display = options.display || "block";
+    activeOverlay = overlayEl;
+    if (typeof options.onEscape === "function") {
+      overlayEscapeHandlers.set(overlayEl, options.onEscape);
+    } else {
+      overlayEscapeHandlers.delete(overlayEl);
+    }
+
+    const focusables = getFocusableElements(overlayEl);
+    const focusTarget = options.initialFocus || focusables[0] || overlayEl;
+    focusTarget.focus();
+  }
+
+  function closeOverlay(overlayEl) {
+    overlayEl.style.display = "none";
+    overlayEscapeHandlers.delete(overlayEl);
+    if (activeOverlay === overlayEl) activeOverlay = null;
+    if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+      lastFocusedElement.focus();
+    }
+    lastFocusedElement = null;
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (!activeOverlay) return;
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      const onEscape = overlayEscapeHandlers.get(activeOverlay);
+      if (onEscape) onEscape();
+      return;
+    }
+
+    if (e.key !== "Tab") return;
+
+    const focusables = getFocusableElements(activeOverlay);
+    if (focusables.length === 0) {
+      e.preventDefault();
+      activeOverlay.focus();
+      return;
+    }
+
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const current = document.activeElement;
+
+    if (e.shiftKey && current === first) {
+      e.preventDefault();
+      last.focus();
+      return;
+    }
+    if (!e.shiftKey && current === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
+
   function sortedNovedades(list) {
     return [...list].sort((a, b) => (SEVERITY_RANK[a.severity] ?? 9) - (SEVERITY_RANK[b.severity] ?? 9));
   }
+
+  function announceA11y(message) {
+    const live = document.getElementById("a11yLive");
+    if (!live) return;
+    live.textContent = "";
+    setTimeout(() => {
+      live.textContent = message;
+    }, 10);
+  }
+
+  function showAppDialog(opts) {
+    opts = opts || {};
+    const overlay = document.getElementById("appDialog");
+    const titleEl = document.getElementById("appDialogTitle");
+    const messageEl = document.getElementById("appDialogMessage");
+    const okBtn = document.getElementById("appDialogOk");
+    const cancelBtn = document.getElementById("appDialogCancel");
+
+    titleEl.textContent = opts.title || "Aviso";
+    messageEl.textContent = opts.message || "";
+    okBtn.textContent = opts.okText || "Aceptar";
+    cancelBtn.textContent = opts.cancelText || "Cancelar";
+    cancelBtn.style.display = opts.confirm ? "inline-flex" : "none";
+
+    return new Promise((resolve) => {
+      function cleanup() {
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+      }
+      function closeWith(result) {
+        cleanup();
+        closeOverlay(overlay);
+        resolve(result);
+      }
+      function onOk() { closeWith(true); }
+      function onCancel() { closeWith(false); }
+
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+      openOverlay(overlay, {
+        opener: opts.opener || document.activeElement,
+        display: "flex",
+        initialFocus: opts.confirm ? cancelBtn : okBtn,
+        onEscape: () => closeWith(false),
+      });
+    });
+  }
+
+  function showAppAlert(message, opener) {
+    return showAppDialog({ message, opener, confirm: false, okText: "Aceptar" });
+  }
+
+  function showAppConfirm(message, opener, title) {
+    return showAppDialog({
+      title: title || "Confirmación",
+      message,
+      opener,
+      confirm: true,
+      okText: "Aceptar",
+      cancelText: "Cancelar",
+    });
+  }
+
+  function moveStepByDelta(stepId, delta) {
+    const idx = steps.findIndex((s) => s.id === stepId);
+    if (idx < 0) return false;
+    const nextIdx = idx + delta;
+    if (nextIdx < 0 || nextIdx >= steps.length) return false;
+    const moved = steps[idx];
+    steps.splice(idx, 1);
+    steps.splice(nextIdx, 0, moved);
+
+    const card = stepsContainer.querySelector(`.step-card[data-id="${stepId}"]`);
+    const siblings = [...stepsContainer.querySelectorAll(".step-card")];
+    if (card && siblings[nextIdx]) {
+      if (delta < 0) {
+        stepsContainer.insertBefore(card, siblings[nextIdx]);
+      } else {
+        stepsContainer.insertBefore(card, siblings[nextIdx].nextSibling);
+      }
+    }
+
+    renumberSteps();
+    saveStateToDB();
+    announceA11y("Paso movido a la posición " + (nextIdx + 1) + ".");
+    return true;
+  }
+
   let editingId = null; // solo un paso puede estar "en edición" (con canvas activo) a la vez
 
   // Construye UNA tarjeta nueva y la agrega al final, sin tocar las demás (evita
@@ -23631,18 +23897,22 @@ var __async = (__this, __arguments, generator) => {
     card.dataset.id = step.id;
     card.innerHTML = `
       <div class="step-header">
-        <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
+        <span class="drag-handle" title="Arrastrar para reordenar" tabindex="0" aria-label="Mover paso con arrastre o con Alt más flechas">⠿</span>
         <span class="step-num">Paso ${idx}</span>
-        <button class="delete-link">Eliminar</button>
+        <div class="step-actions">
+          <button class="reorder-btn move-up" aria-label="Subir paso" title="Subir paso">↑</button>
+          <button class="reorder-btn move-down" aria-label="Bajar paso" title="Bajar paso">↓</button>
+          <button class="delete-link">Eliminar</button>
+        </div>
       </div>
       <div class="color-row edit-only" style="display:none;">
         <div class="mode-toggle">
-          <button class="mode-btn selected" data-mode="highlight">🔲 Resaltar</button>
-          <button class="mode-btn" data-mode="redact">⬛ Ocultar</button>
-          <button class="mode-btn" data-mode="crop">✂️ Recortar</button>
+          <button class="mode-btn selected" data-mode="highlight" aria-pressed="true">🔲 Resaltar</button>
+          <button class="mode-btn" data-mode="redact" aria-pressed="false">⬛ Ocultar</button>
+          <button class="mode-btn" data-mode="crop" aria-pressed="false">✂️ Recortar</button>
         </div>
         <div class="mark-controls" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-          ${COLORS.map((c) => `<button class="color-swatch${step.color === c ? " selected" : ""}" style="background:${c}" data-color="${c}"></button>`).join("")}
+          ${COLORS.map((c) => `<button class="color-swatch${step.color === c ? " selected" : ""}" style="background:${c}" data-color="${c}" aria-pressed="${step.color === c ? "true" : "false"}" aria-label="Color ${COLOR_NAMES[c] || c}" title="Color ${COLOR_NAMES[c] || c}"></button>`).join("")}
           <div class="mark-tools">
             <button class="btn-secondary undo-box">↩️ Deshacer</button>
             <button class="btn-secondary clear-box">Limpiar</button>
@@ -23653,15 +23923,15 @@ var __async = (__this, __arguments, generator) => {
           <button class="btn-secondary cancel-crop">✖️ Cancelar</button>
         </div>
       </div>
-      <p class="edit-only mode-help" style="display:none;font-size:11px;color:#888;margin:0 0 4px 0;">"Ocultar" tapa por completo la zona (útil para datos sensibles); "Resaltar" solo dibuja un recuadro.</p>
-      <img class="step-img" src="${step.renderedDataUrl || step.dataUrl}" />
+      <p class="edit-only mode-help" style="display:none;font-size:11px;color:var(--text-muted);margin:0 0 4px 0;">"Ocultar" tapa por completo la zona (útil para datos sensibles); "Resaltar" solo dibuja un recuadro.</p>
+      <img class="step-img" src="${step.renderedDataUrl || step.dataUrl}" role="button" tabindex="0" aria-label="Abrir imagen ampliada del paso ${idx}" />
       <button class="btn-secondary btn-full mark-btn">✏️ Marcar zona</button>
       <textarea placeholder="Comentario del paso...">${step.comment}</textarea>
       <div class="severity-row">
-        <button class="sev-btn sev-btn-none${!step.severity ? " selected" : ""}" data-sev="">Sin novedad</button>
-        <button class="sev-btn sev-btn-alta${step.severity === "alta" ? " selected" : ""}" data-sev="alta">🔴 Alta</button>
-        <button class="sev-btn sev-btn-media${step.severity === "media" ? " selected" : ""}" data-sev="media">🟠 Media</button>
-        <button class="sev-btn sev-btn-baja${step.severity === "baja" ? " selected" : ""}" data-sev="baja">🟡 Baja</button>
+        <button class="sev-btn sev-btn-none${!step.severity ? " selected" : ""}" data-sev="" aria-pressed="${!step.severity ? "true" : "false"}">Sin novedad</button>
+        <button class="sev-btn sev-btn-alta${step.severity === "alta" ? " selected" : ""}" data-sev="alta" aria-pressed="${step.severity === "alta" ? "true" : "false"}">🔴 Alta</button>
+        <button class="sev-btn sev-btn-media${step.severity === "media" ? " selected" : ""}" data-sev="media" aria-pressed="${step.severity === "media" ? "true" : "false"}">🟠 Media</button>
+        <button class="sev-btn sev-btn-baja${step.severity === "baja" ? " selected" : ""}" data-sev="baja" aria-pressed="${step.severity === "baja" ? "true" : "false"}">🟡 Baja</button>
       </div>`;
     stepsContainer.appendChild(card);
 
@@ -23669,6 +23939,18 @@ var __async = (__this, __arguments, generator) => {
     const handle = card.querySelector(".drag-handle");
     handle.addEventListener("mousedown", () => {
       card.draggable = true;
+    });
+    handle.addEventListener("keydown", (e) => {
+      if (e.altKey && e.key === "ArrowUp") {
+        e.preventDefault();
+        const moved = moveStepByDelta(step.id, -1);
+        if (moved) handle.focus();
+      }
+      if (e.altKey && e.key === "ArrowDown") {
+        e.preventDefault();
+        const moved = moveStepByDelta(step.id, 1);
+        if (moved) handle.focus();
+      }
     });
     card.addEventListener("dragstart", (e) => {
       card.classList.add("dragging");
@@ -23681,8 +23963,22 @@ var __async = (__this, __arguments, generator) => {
       finalizeReorder();
     });
 
-    card.querySelector(".step-img").addEventListener("click", () => {
-      openZoom(step.renderedDataUrl || step.dataUrl);
+    card.querySelector(".step-img").addEventListener("click", (e) => {
+      openZoom(step.renderedDataUrl || step.dataUrl, e.currentTarget);
+    });
+    card.querySelector(".step-img").addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      openZoom(step.renderedDataUrl || step.dataUrl, e.currentTarget);
+    });
+
+    card.querySelector(".move-up").addEventListener("click", () => {
+      const moved = moveStepByDelta(step.id, -1);
+      if (moved) card.querySelector(".move-up").focus();
+    });
+    card.querySelector(".move-down").addEventListener("click", () => {
+      const moved = moveStepByDelta(step.id, 1);
+      if (moved) card.querySelector(".move-down").focus();
     });
 
     card.querySelector(".delete-link").addEventListener("click", () => {
@@ -23700,7 +23996,11 @@ var __async = (__this, __arguments, generator) => {
       sb.addEventListener("click", () => {
         step.severity = sb.dataset.sev || null;
         step.novedad = !!step.severity; // se mantiene sincronizado para el resto de la app
-        card.querySelectorAll(".sev-btn").forEach((b) => b.classList.toggle("selected", b === sb));
+        card.querySelectorAll(".sev-btn").forEach((b) => {
+          const selected = b === sb;
+          b.classList.toggle("selected", selected);
+          b.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
         card.classList.remove("sev-alta", "sev-media", "sev-baja");
         if (step.severity) card.classList.add("sev-" + step.severity);
         saveStateToDB();
@@ -23709,7 +24009,11 @@ var __async = (__this, __arguments, generator) => {
     card.querySelectorAll(".color-swatch").forEach((sw) => {
       sw.addEventListener("click", () => {
         step.color = sw.dataset.color;
-        card.querySelectorAll(".color-swatch").forEach((s2) => s2.classList.toggle("selected", s2 === sw));
+        card.querySelectorAll(".color-swatch").forEach((s2) => {
+          const selected = s2 === sw;
+          s2.classList.toggle("selected", selected);
+          s2.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
         autosave();
       });
     });
@@ -23728,7 +24032,11 @@ var __async = (__this, __arguments, generator) => {
     card.querySelectorAll(".mode-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         step.currentMode = btn.dataset.mode;
-        card.querySelectorAll(".mode-btn").forEach((b) => b.classList.toggle("selected", b === btn));
+        card.querySelectorAll(".mode-btn").forEach((b) => {
+          const selected = b === btn;
+          b.classList.toggle("selected", selected);
+          b.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
         const isCrop = step.currentMode === "crop";
         card.querySelector(".mark-controls").style.display = isCrop ? "none" : "flex";
         card.querySelector(".crop-controls").style.display = isCrop ? "flex" : "none";
@@ -23775,6 +24083,10 @@ var __async = (__this, __arguments, generator) => {
     img.style.display = "none";
     card.querySelectorAll(".edit-only").forEach((el) => (el.style.display = el.classList.contains("color-row") ? "flex" : "block"));
     card.querySelectorAll(".mode-btn").forEach((b) => b.classList.toggle("selected", b.dataset.mode === "highlight"));
+    card.querySelectorAll(".mode-btn").forEach((b) => {
+      const selected = b.dataset.mode === "highlight";
+      b.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
     card.querySelector(".mark-controls").style.display = "flex";
     card.querySelector(".crop-controls").style.display = "none";
     card.querySelector(".mode-help").textContent = "\"Ocultar\" tapa por completo la zona (útil para datos sensibles); \"Resaltar\" solo dibuja un recuadro.";
@@ -23901,6 +24213,10 @@ var __async = (__this, __arguments, generator) => {
     // vuelve al modo resaltar tras recortar, listo para seguir marcando sobre el nuevo encuadre
     step.currentMode = "highlight";
     card.querySelectorAll(".mode-btn").forEach((b) => b.classList.toggle("selected", b.dataset.mode === "highlight"));
+    card.querySelectorAll(".mode-btn").forEach((b) => {
+      const selected = b.dataset.mode === "highlight";
+      b.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
     card.querySelector(".mark-controls").style.display = "flex";
     card.querySelector(".crop-controls").style.display = "none";
     card.querySelector(".mode-help").textContent = "\"Ocultar\" tapa por completo la zona (útil para datos sensibles); \"Resaltar\" solo dibuja un recuadro.";
@@ -23981,7 +24297,7 @@ var __async = (__this, __arguments, generator) => {
   function maybeWarnLargeSession() {
     if (steps.length > 0 && steps.length % 60 === 0) {
       setTimeout(() => {
-        alert("Llevas " + steps.length + " pasos. El documento se mantiene íntegro (no hace falta dividirlo), pero si quieres ir liberando espacio en el navegador puedes exportar y seguir en un documento nuevo — es opcional.");
+        showAppAlert("Llevas " + steps.length + " pasos. El documento se mantiene íntegro (no hace falta dividirlo), pero si quieres ir liberando espacio en el navegador puedes exportar y seguir en un documento nuevo; es opcional.");
       }, 200);
     }
   }
@@ -24345,7 +24661,7 @@ var __async = (__this, __arguments, generator) => {
     const statusEl = document.getElementById("docxStatus");
     const btn = document.getElementById("downloadDocxBtn");
     if (steps.length === 0) {
-      alert("Aún no hay pasos capturados.");
+      await showAppAlert("Aún no hay pasos capturados.", btn);
       return;
     }
     btn.disabled = true;
@@ -24356,8 +24672,9 @@ var __async = (__this, __arguments, generator) => {
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
+      const safeCaseId = sanitizeFilenamePart(document.getElementById("caseId").value, "sin_id");
       a.href = url;
-      a.download = `Caso_${document.getElementById("caseId").value || "sin_id"}.docx`;
+      a.download = `Caso_${safeCaseId}.docx`;
       a.click();
       URL.revokeObjectURL(url);
       statusEl.textContent = "✅ Documento Word descargado.";
@@ -24374,7 +24691,7 @@ var __async = (__this, __arguments, generator) => {
     const btn = document.getElementById("downloadNovedadesBtn");
     const novedadesCount = steps.filter((s) => s.novedad).length;
     if (novedadesCount === 0) {
-      alert("No hay pasos marcados como novedad todavía.");
+      await showAppAlert("No hay pasos marcados como novedad todavía.", btn);
       return;
     }
     btn.disabled = true;
@@ -24386,8 +24703,9 @@ var __async = (__this, __arguments, generator) => {
       );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
+      const safeCaseId = sanitizeFilenamePart(document.getElementById("caseId").value, "sin_id");
       a.href = url;
-      a.download = `Caso_${document.getElementById("caseId").value || "sin_id"}_Novedades.docx`;
+      a.download = `Caso_${safeCaseId}_Novedades.docx`;
       a.click();
       URL.revokeObjectURL(url);
       statusEl.textContent = "✅ Documento de novedades descargado.";
@@ -24403,7 +24721,12 @@ var __async = (__this, __arguments, generator) => {
     const overlay = document.getElementById("copyOverlay");
     const preview = document.getElementById("exportPreview");
     preview.innerHTML = buildHtmlDocument();
-    overlay.style.display = "block";
+    openOverlay(overlay, {
+      opener: document.getElementById("copyWordBtn"),
+      display: "block",
+      initialFocus: document.getElementById("closeOverlayBtn"),
+      onEscape: () => closeCopyOverlay(),
+    });
 
     // selecciona todo el contenido automáticamente
     const range = document.createRange();
@@ -24412,26 +24735,29 @@ var __async = (__this, __arguments, generator) => {
     selection.removeAllRanges();
     selection.addRange(range);
 
-    try {
-      const ok = document.execCommand("copy");
-      if (!ok) throw new Error("copy command failed");
-    } catch (err) {
-      // si falla el copiado automático, el usuario puede copiar manualmente (Ctrl+A, Ctrl+C)
-      // ya que el contenido queda visible y seleccionado en el overlay
-    }
+    await copyHtmlWithFallback(preview);
   });
 
+  function closeCopyOverlay() {
+    closeOverlay(document.getElementById("copyOverlay"));
+  }
+
   document.getElementById("closeOverlayBtn").addEventListener("click", () => {
-    document.getElementById("copyOverlay").style.display = "none";
+    closeCopyOverlay();
   });
 
   // ---- Vista ampliada de imagen ----
-  function openZoom(src) {
+  function openZoom(src, openerEl) {
     document.getElementById("zoomImg").src = src;
-    document.getElementById("zoomOverlay").style.display = "flex";
+    openOverlay(document.getElementById("zoomOverlay"), {
+      opener: openerEl,
+      display: "flex",
+      initialFocus: document.getElementById("closeZoomBtn"),
+      onEscape: () => closeZoom(),
+    });
   }
   function closeZoom() {
-    document.getElementById("zoomOverlay").style.display = "none";
+    closeOverlay(document.getElementById("zoomOverlay"));
   }
   document.getElementById("zoomOverlay").addEventListener("click", (e) => {
     closeZoom(); // clic en cualquier parte del fondo oscuro cierra
@@ -24443,17 +24769,15 @@ var __async = (__this, __arguments, generator) => {
     e.stopPropagation();
     closeZoom();
   });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeZoom();
-  });
 
   document.getElementById("downloadBtn").addEventListener("click", () => {
     const html = `<html><head><meta charset="UTF-8"></head><body>${buildHtmlDocument()}</body></html>`;
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+    const safeCaseId = sanitizeFilenamePart(document.getElementById("caseId").value, "sin_id");
     a.href = url;
-    a.download = `Caso_${document.getElementById("caseId").value || "sin_id"}.html`;
+    a.download = `Caso_${safeCaseId}.html`;
     a.click();
     URL.revokeObjectURL(url);
   });
@@ -24501,7 +24825,7 @@ var __async = (__this, __arguments, generator) => {
         return `
         <div class="case-chip">
           <span>${escapeHtml(c.caseId || "Sin ID")} <span style="color:var(--text-faint);">(${n} paso${n === 1 ? "" : "s"})</span></span>
-          <button class="remove-case" data-idx="${i}" title="Quitar del lote">✕</button>
+          <button class="remove-case" data-idx="${i}" title="Quitar del lote" aria-label="Quitar del lote el caso ${escapeHtml(c.caseId || "Sin ID")}">✕</button>
         </div>`;
       })
       .join("");
@@ -24516,20 +24840,31 @@ var __async = (__this, __arguments, generator) => {
     saveCasesToDB();
   }
 
-  function resetCurrentCaseUI() {
+  function resetCurrentCaseUI(options) {
+    options = options || {};
     steps = [];
     editingId = null;
+    if (options.clearFields) {
+      document.getElementById("caseId").value = "";
+      document.getElementById("description").value = "";
+      document.getElementById("team").value = "";
+      document.getElementById("tester").value = "";
+    }
     renumberSteps();
   }
 
-  document.getElementById("addToBatchBtn").addEventListener("click", () => {
+  document.getElementById("addToBatchBtn").addEventListener("click", async () => {
     const caseId = document.getElementById("caseId").value.trim();
     if (!caseId) {
-      alert("Ponle un ID al caso antes de guardarlo en el lote.");
+      await showAppAlert("Ponle un ID al caso antes de guardarlo en el lote.", document.getElementById("addToBatchBtn"));
       return;
     }
     if (steps.length === 0) {
-      if (!confirm("Este caso no tiene pasos capturados todavía. ¿Guardarlo igual en el lote?")) return;
+      const proceed = await showAppConfirm(
+        "Este caso no tiene pasos capturados todavía. ¿Guardarlo igual en el lote?",
+        document.getElementById("addToBatchBtn")
+      );
+      if (!proceed) return;
     }
     savedCases.push({
       caseId,
@@ -24539,18 +24874,20 @@ var __async = (__this, __arguments, generator) => {
       fecha: new Date().toLocaleDateString("es-CO"),
       steps: steps.slice(),
     });
-    resetCurrentCaseUI();
-    document.getElementById("caseId").value = "";
-    document.getElementById("description").value = "";
+    resetCurrentCaseUI({ clearFields: true });
     renderCasesList();
     saveCasesToDB();
     saveStateToDB();
     autosaveStatus.textContent = "✅ Caso agregado al lote. Listo para el siguiente.";
   });
 
-  document.getElementById("clearBatchBtn").addEventListener("click", () => {
+  document.getElementById("clearBatchBtn").addEventListener("click", async () => {
     if (savedCases.length === 0) return;
-    if (confirm("¿Vaciar todos los casos guardados en el lote? Esta acción no se puede deshacer.")) {
+    const proceed = await showAppConfirm(
+      "¿Vaciar todos los casos guardados en el lote? Esta acción no se puede deshacer.",
+      document.getElementById("clearBatchBtn")
+    );
+    if (proceed) {
       savedCases = [];
       renderCasesList();
       saveCasesToDB();
@@ -24568,7 +24905,7 @@ var __async = (__this, __arguments, generator) => {
       casesToExport = casesToExport.concat([cur]);
     }
     if (casesToExport.length === 0) {
-      alert("No hay casos guardados en el lote ni un caso actual con datos.");
+      await showAppAlert("No hay casos guardados en el lote ni un caso actual con datos.", btn);
       return;
     }
     btn.disabled = true;
@@ -24597,11 +24934,10 @@ var __async = (__this, __arguments, generator) => {
     renderCasesList();
   })();
 
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    if (confirm("¿Reiniciar? Se perderán los pasos capturados.")) {
-      steps = [];
-      editingId = null;
-      renumberSteps();
+  document.getElementById("resetBtn").addEventListener("click", async () => {
+    const proceed = await showAppConfirm("¿Reiniciar? Se perderán los pasos capturados.", document.getElementById("resetBtn"));
+    if (proceed) {
+      resetCurrentCaseUI({ clearFields: true });
       clearStateInDB();
       autosaveStatus.textContent = "";
     }
@@ -24613,7 +24949,7 @@ var __async = (__this, __arguments, generator) => {
     if (!saved || (!saved.steps || saved.steps.length === 0) && !saved.caseId && !saved.description) return;
 
     const fechaGuardado = new Date(saved.savedAt).toLocaleString("es-CO");
-    const recuperar = confirm(
+    const recuperar = await showAppConfirm(
       `Se encontró un caso sin terminar (guardado el ${fechaGuardado}) con ${saved.steps.length} paso(s).\n\n¿Quieres recuperarlo?\n\nAceptar = Recuperar\nCancelar = Descartar y empezar de cero`
     );
 
