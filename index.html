@@ -268,6 +268,7 @@
   .drag-handle:active { cursor: grabbing; }
   .step-card.dragging { opacity: 0.35; }
   .step-card.drag-over-top { border-top: 2px solid var(--amber); }
+  .step-card.preview-highlight { box-shadow: 0 0 0 2px var(--amber), 0 0 0 6px rgba(232, 163, 61, 0.18); transform: translateY(-1px); }
   .delete-link { color: var(--red); background: none; border: none; font-size: 11px; cursor: pointer; font-family: var(--sans); font-weight: 600; }
   .delete-link:hover { text-decoration: underline; }
 
@@ -25597,12 +25598,16 @@ var __async = (__this, __arguments, generator) => {
     const summaryListHtml = summary.stepSummaries
       .map((item) => `<li><b>Paso ${item.index}:</b> ${getStepStatusLabel(item.status)} • ${item.severityLabel} • ${escapeHtml(item.comment)}</li>`)
       .join("");
+    const emptyStateHtml = steps.length === 0
+      ? `<div style="margin:12px 0;padding:12px 14px;border:1px dashed #9bb7d6;background:#eef5fb;border-radius:8px;color:#35506b;"><b>Vista previa vacía:</b> todavía no hay pasos capturados. Cuando agregues evidencia, aquí verás el documento completo.</div>`
+      : "";
 
     const stepsHtml = steps
       .map((s, i) => {
         const commentPosition = s.commentPosition || "bottom";
         const commentHtml = `<p><b>Comentario:</b> ${escapeHtml(s.comment || "")}</p>`;
         const imageHtml = `<div style="text-align:center;margin:8px 0;"><img src="${s.renderedDataUrl || s.dataUrl}" style="max-width:600px;border:1px solid #ccc;display:inline-block;" /></div>`;
+        const editHtml = `<div style="margin-top:8px;"><button type="button" data-preview-edit-step="${s.id}" style="border:1px solid #c7d3e0;background:#eef5fb;color:#274b6d;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;">Editar este paso</button></div>`;
         const content = commentPosition === "top"
           ? `${commentHtml}${imageHtml}`
           : `${imageHtml}${commentHtml}`;
@@ -25610,6 +25615,7 @@ var __async = (__this, __arguments, generator) => {
         <div style="margin-bottom:20px;">
           <p style="font-weight:bold;">Paso ${i + 1}</p>
           ${content}
+          ${editHtml}
         </div>`;
       })
       .join("");
@@ -25624,6 +25630,7 @@ var __async = (__this, __arguments, generator) => {
             const commentPosition = n.commentPosition || "bottom";
             const commentHtml = `<p>${escapeHtml(n.comment || "")}</p>`;
             const imageHtml = `<div style="text-align:center;margin:8px 0;"><img src="${n.renderedDataUrl || n.dataUrl}" style="max-width:600px;border:1px solid #ccc;display:inline-block;" /></div>`;
+            const editHtml = `<div style="margin-top:8px;"><button type="button" data-preview-edit-step="${n.id}" style="border:1px solid #c7d3e0;background:#eef5fb;color:#274b6d;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;">Editar esta novedad</button></div>`;
             const content = commentPosition === "top"
               ? `${commentHtml}${imageHtml}`
               : `${imageHtml}${commentHtml}`;
@@ -25631,6 +25638,7 @@ var __async = (__this, __arguments, generator) => {
           <div style="background:#fff6cc;border:1px solid ${sevColor};padding:10px;margin-bottom:14px;">
             <p style="font-weight:bold;color:${sevColor};">Novedad ${i + 1}${sevLabel ? " — " + sevLabel : ""}</p>
             ${content}
+            ${editHtml}
           </div>`;
           })
           .join("");
@@ -25651,6 +25659,7 @@ var __async = (__this, __arguments, generator) => {
           <ul style="margin:8px 0 0 18px;padding:0;">${summaryListHtml}</ul>
         </div>
         ${documentNotesHtml}
+        ${emptyStateHtml}
         <hr/>
         ${stepsHtml}
         ${resumenHtml}
@@ -26112,6 +26121,8 @@ var __async = (__this, __arguments, generator) => {
       onEscape: () => closeCopyOverlay(),
     });
 
+    attachPreviewEditHandlers();
+
     if (!options || options.selectPreviewText !== false) {
       const range = document.createRange();
       range.selectNodeContents(preview);
@@ -26142,6 +26153,28 @@ var __async = (__this, __arguments, generator) => {
 
   function closeCopyOverlay() {
     closeOverlay(document.getElementById("copyOverlay"));
+  }
+
+  function scrollToStepCard(stepId) {
+    const card = stepsContainer.querySelector(`.step-card[data-id="${stepId}"]`);
+    if (!card) return false;
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.classList.add("preview-highlight");
+    setTimeout(() => card.classList.remove("preview-highlight"), 1800);
+    return true;
+  }
+
+  function attachPreviewEditHandlers() {
+    const preview = document.getElementById("exportPreview");
+    if (!preview) return;
+    preview.querySelectorAll("[data-preview-edit-step]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const stepId = btn.getAttribute("data-preview-edit-step");
+        closeCopyOverlay();
+        setTimeout(() => scrollToStepCard(stepId), 50);
+      });
+    });
   }
 
   document.getElementById("closeOverlayBtn").addEventListener("click", () => {
