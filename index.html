@@ -811,6 +811,12 @@
         Ya está todo seleccionado. Presiona <b style="color:var(--text);">Ctrl+C</b> y luego pega en Word con <b style="color:var(--text);">Ctrl+V</b>.
         Si no se seleccionó automáticamente, haz clic dentro del recuadro y presiona Ctrl+A.
       </p>
+      <label style="display:block;margin-top:10px;font-size:12px;color:var(--text-muted);">📝 Notas pendientes para el documento</label>
+      <textarea id="documentNotesInput" rows="4" placeholder="Escribe aquí lo que te quede pendiente y se añadirá al documento..." style="width:100%; box-sizing:border-box; margin-top:6px; border:1px solid var(--line); border-radius:6px; padding:8px; background:var(--panel-2); color:var(--text); resize:vertical;"></textarea>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn-secondary" id="applyDocumentNotesBtn" style="flex:1;">✍️ Aplicar</button>
+        <button class="btn-secondary" id="clearDocumentNotesBtn" style="flex:1;">🧹 Limpiar</button>
+      </div>
       <div id="exportPreview" style="border:1px solid var(--line); border-radius:5px; padding:12px; max-height:400px; overflow:auto; background:#fff; color:#222;"></div>
     </div>
   </div>
@@ -852,12 +858,6 @@
     <button class="btn-primary btn-full" id="downloadDocxBtn">📥 Descargar como Word (.docx)</button>
     <button class="btn-secondary btn-full" id="downloadNovedadesBtn" style="margin-top:8px;">🚩 Descargar solo novedades (.docx)</button>
     <button class="btn-secondary btn-full" id="previewExportBtn" style="margin-top:8px;">👁️ Vista previa del documento</button>
-    <label style="display:block;margin-top:10px;font-size:12px;color:var(--text-muted);">📝 Notas pendientes para el documento</label>
-    <textarea id="documentNotesInput" rows="4" placeholder="Escribe aquí lo que te quede pendiente y se añadirá al documento..." style="width:100%; box-sizing:border-box; margin-top:6px; border:1px solid var(--line); border-radius:6px; padding:8px; background:var(--panel-2); color:var(--text); resize:vertical;"></textarea>
-    <div class="btn-row" style="margin-top:6px;">
-      <button class="btn-secondary" id="applyDocumentNotesBtn" style="flex:1;">✍️ Aplicar</button>
-      <button class="btn-secondary" id="clearDocumentNotesBtn" style="flex:1;">🧹 Limpiar</button>
-    </div>
     <div id="docxStatus" role="status" aria-live="polite" style="font-size:12px;color:#7fd58f;margin-top:6px;min-height:16px;"></div>
     <div class="btn-row" style="margin-top:8px;">
       <button class="btn-secondary" id="copyWordBtn" style="flex:1;">📄 Copiar y pegar</button>
@@ -23975,6 +23975,7 @@ var __async = (__this, __arguments, generator) => {
       if (!normalized) return [];
       return normalized.split("\n").map((line) => line.trim()).filter(Boolean);
     });
+    const DOCUMENT_NOTES_INPUT_ID = "documentNotesInput";
 
   // ================== GUARDADO AUTOMÁTICO (IndexedDB) ==================
   const DB_NAME = "documentadorCasosDB";
@@ -25982,12 +25983,12 @@ var __async = (__this, __arguments, generator) => {
   }
 
   function getDocumentNotesValue() {
-    const el = document.getElementById("documentNotesInput");
+    const el = document.getElementById(DOCUMENT_NOTES_INPUT_ID);
     return el ? el.value : "";
   }
 
   function setDocumentNotesValue(value) {
-    const el = document.getElementById("documentNotesInput");
+    const el = document.getElementById(DOCUMENT_NOTES_INPUT_ID);
     if (el) el.value = value || "";
   }
 
@@ -25996,22 +25997,31 @@ var __async = (__this, __arguments, generator) => {
     if (preview) preview.innerHTML = buildHtmlDocument();
   }
 
-  document.getElementById("documentNotesInput").addEventListener("input", () => {
-    if (document.getElementById("copyOverlay").style.display === "block") {
+  const documentNotesInput = document.getElementById(DOCUMENT_NOTES_INPUT_ID);
+  if (documentNotesInput) {
+    documentNotesInput.addEventListener("input", () => {
+      if (document.getElementById("copyOverlay").style.display === "block") {
+        applyDocumentNotesToPreview();
+      }
+    });
+  }
+
+  const applyDocumentNotesBtn = document.getElementById("applyDocumentNotesBtn");
+  if (applyDocumentNotesBtn) {
+    applyDocumentNotesBtn.addEventListener("click", () => {
       applyDocumentNotesToPreview();
-    }
-  });
+      showTransientStatus("✍️ Notas aplicadas al documento.", 2200);
+    });
+  }
 
-  document.getElementById("applyDocumentNotesBtn").addEventListener("click", () => {
-    applyDocumentNotesToPreview();
-    showTransientStatus("✍️ Notas aplicadas al documento.", 2200);
-  });
-
-  document.getElementById("clearDocumentNotesBtn").addEventListener("click", () => {
-    setDocumentNotesValue("");
-    applyDocumentNotesToPreview();
-    showTransientStatus("🧹 Notas limpiadas.", 2200);
-  });
+  const clearDocumentNotesBtn = document.getElementById("clearDocumentNotesBtn");
+  if (clearDocumentNotesBtn) {
+    clearDocumentNotesBtn.addEventListener("click", () => {
+      setDocumentNotesValue("");
+      applyDocumentNotesToPreview();
+      showTransientStatus("🧹 Notas limpiadas.", 2200);
+    });
+  }
 
   document.getElementById("downloadDocxBtn").addEventListener("click", async () => {
     const statusEl = document.getElementById("docxStatus");
@@ -26078,6 +26088,7 @@ var __async = (__this, __arguments, generator) => {
     const preview = document.getElementById("exportPreview");
     const titleEl = document.getElementById("copyOverlayTitle");
     const descriptionEl = document.getElementById("copyOverlayDescription");
+    const notesEl = document.getElementById(DOCUMENT_NOTES_INPUT_ID);
 
     preview.innerHTML = buildHtmlDocument();
     titleEl.textContent = options && options.title ? options.title : "Vista previa del documento";
@@ -26086,19 +26097,24 @@ var __async = (__this, __arguments, generator) => {
         ? options.description
         : "Revisa el contenido antes de descargarlo o pegarlo en Word.";
     }
+    if (notesEl && options && options.notesText) {
+      notesEl.value = options.notesText;
+    }
 
     openOverlay(overlay, {
       opener: options && options.opener ? options.opener : document.getElementById("previewExportBtn"),
       display: "block",
-      initialFocus: document.getElementById("closeOverlayBtn"),
+      initialFocus: notesEl || document.getElementById("closeOverlayBtn"),
       onEscape: () => closeCopyOverlay(),
     });
 
-    const range = document.createRange();
-    range.selectNodeContents(preview);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
+    if (!options || options.selectPreviewText !== false) {
+      const range = document.createRange();
+      range.selectNodeContents(preview);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
   }
 
   document.getElementById("copyWordBtn").addEventListener("click", async () => {
@@ -26106,6 +26122,7 @@ var __async = (__this, __arguments, generator) => {
       opener: document.getElementById("copyWordBtn"),
       title: "Vista previa y copiar",
       description: "Revisa el contenido y luego pega en Word con Ctrl+V.",
+      selectPreviewText: true,
     });
     await copyHtmlWithFallback(document.getElementById("exportPreview"));
   });
@@ -26115,6 +26132,7 @@ var __async = (__this, __arguments, generator) => {
       opener: document.getElementById("previewExportBtn"),
       title: "Vista previa del documento",
       description: "Revisa el contenido generado antes de descargarlo o compartirlo.",
+      selectPreviewText: false,
     });
   });
 
