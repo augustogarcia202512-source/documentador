@@ -251,6 +251,54 @@
   }
   textarea::placeholder { color: var(--text-faint); }
   textarea:focus { outline: none; border-color: var(--amber); }
+  .comment-controls { display: flex; justify-content: flex-end; margin-top: 8px; }
+  .comment-controls .comment-pos-btn { font-size: 11px; padding: 4px 8px; }
+  .comment-block { margin-top: 6px; }
+  .comment-block-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .comment-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+  .comment-drag-handle {
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text-muted);
+    border-radius: 4px;
+    font-size: 10px;
+    line-height: 1;
+    padding: 3px 6px;
+    cursor: grab;
+    user-select: none;
+  }
+  .comment-drag-handle:active { cursor: grabbing; }
+  .comment-pos-btn { margin-left: auto; }
+  .comment-anchor {
+    display: none;
+    border: 1px dashed var(--line);
+    border-radius: 6px;
+    color: var(--text-faint);
+    font-size: 11px;
+    text-align: center;
+    padding: 8px;
+    margin-top: 6px;
+    background: rgba(255,255,255,0.02);
+  }
+  .step-card.comment-dragging .comment-anchor {
+    display: block;
+  }
+  .comment-anchor.active {
+    border-color: var(--focus-ring);
+    color: var(--text);
+    background: rgba(126, 200, 255, 0.12);
+  }
 
   input[type="text"]:focus-visible,
   textarea:focus-visible,
@@ -258,7 +306,8 @@
   .sev-btn:focus-visible,
   .delete-link:focus-visible,
   .case-chip .remove-case:focus-visible,
-  .drag-handle:focus-visible {
+  .drag-handle:focus-visible,
+  .comment-drag-handle:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
@@ -23724,6 +23773,7 @@ var __async = (__this, __arguments, generator) => {
         dataUrl: s.dataUrl,
         renderedDataUrl: s.renderedDataUrl,
         comment: s.comment,
+        commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "bottom",
         novedad: s.novedad,
         severity: s.severity,
         boxes: s.boxes,
@@ -23863,7 +23913,7 @@ var __async = (__this, __arguments, generator) => {
     canvas.height = naturalH * scale;
     canvas.getContext("2d").drawImage(sourceEl, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.95); // buena nitidez, el copiado ya no depende del tamaño
-    const step = { id: Date.now(), dataUrl, comment: "", novedad: false, severity: null, boxes: [], color: "#e02424" };
+    const step = { id: Date.now(), dataUrl, comment: "", commentPosition: "bottom", novedad: false, severity: null, boxes: [], color: "#e02424" };
     steps.push(step);
     addStepCard(step);
     maybeWarnLargeSession();
@@ -24369,6 +24419,8 @@ var __async = (__this, __arguments, generator) => {
   // Construye UNA tarjeta nueva y la agrega al final, sin tocar las demás (evita
   // volver a decodificar 60 imágenes cada vez que se agrega un paso)
   function addStepCard(step) {
+    step.commentPosition = ["top", "middle", "bottom"].includes(step.commentPosition) ? step.commentPosition : "bottom";
+
     if (stepsContainer.querySelector(".empty-msg")) stepsContainer.innerHTML = "";
     const idx = steps.length; // número de paso al momento de crearlo
     const card = document.createElement("div");
@@ -24384,6 +24436,7 @@ var __async = (__this, __arguments, generator) => {
           <button class="delete-link">Eliminar</button>
         </div>
       </div>
+      <div class="comment-anchor comment-top-anchor" data-comment-anchor="top">Soltar comentario arriba</div>
       <div class="color-row edit-only" style="display:none;">
         <div class="mode-toggle">
           <button class="mode-btn selected" data-mode="highlight" aria-pressed="true">🔲 Resaltar</button>
@@ -24405,7 +24458,18 @@ var __async = (__this, __arguments, generator) => {
       <p class="edit-only mode-help" style="display:none;font-size:11px;color:var(--text-muted);margin:0 0 4px 0;">"Ocultar" tapa por completo la zona (útil para datos sensibles); "Resaltar" solo dibuja un recuadro.</p>
       <img class="step-img" src="${step.renderedDataUrl || step.dataUrl}" role="button" tabindex="0" aria-label="Abrir imagen ampliada del paso ${idx}" />
       <button class="btn-secondary btn-full mark-btn">✏️ Marcar zona</button>
-      <textarea placeholder="Comentario del paso...">${step.comment}</textarea>
+      <div class="comment-anchor comment-middle-anchor" data-comment-anchor="middle">Soltar comentario al centro</div>
+      <div class="comment-controls">
+        <button class="reorder-btn comment-pos-btn" aria-pressed="${step.commentPosition === "top" ? "true" : "false"}">Mover comentario</button>
+      </div>
+      <div class="comment-block">
+        <div class="comment-block-head">
+          <span class="comment-drag-handle" tabindex="0" title="Arrastra para mover el comentario" aria-label="Arrastrar comentario">↕</span>
+          <span class="comment-label">Comentario</span>
+        </div>
+        <textarea placeholder="Comentario del paso...">${step.comment}</textarea>
+      </div>
+      <div class="comment-anchor comment-bottom-anchor" data-comment-anchor="bottom">Soltar comentario abajo</div>
       <div class="severity-row">
         <button class="sev-btn sev-btn-none${!step.severity ? " selected" : ""}" data-sev="" aria-pressed="${!step.severity ? "true" : "false"}">Sin novedad</button>
         <button class="sev-btn sev-btn-alta${step.severity === "alta" ? " selected" : ""}" data-sev="alta" aria-pressed="${step.severity === "alta" ? "true" : "false"}">🔴 Alta</button>
@@ -24413,6 +24477,36 @@ var __async = (__this, __arguments, generator) => {
         <button class="sev-btn sev-btn-baja${step.severity === "baja" ? " selected" : ""}" data-sev="baja" aria-pressed="${step.severity === "baja" ? "true" : "false"}">🟡 Baja</button>
       </div>`;
     stepsContainer.appendChild(card);
+
+    function positionLabel(pos) {
+      if (pos === "top") return "arriba";
+      if (pos === "middle") return "centro";
+      return "abajo";
+    }
+
+    function applyCommentPosition() {
+      const block = card.querySelector(".comment-block");
+      const topAnchor = card.querySelector(".comment-top-anchor");
+      const middleAnchor = card.querySelector(".comment-middle-anchor");
+      const bottomAnchor = card.querySelector(".comment-bottom-anchor");
+      const posBtn = card.querySelector(".comment-pos-btn");
+      const nextByPos = { top: "centro", middle: "abajo", bottom: "arriba" };
+
+      if (step.commentPosition === "top") {
+        topAnchor.insertAdjacentElement("afterend", block);
+      } else if (step.commentPosition === "middle") {
+        middleAnchor.insertAdjacentElement("afterend", block);
+      } else {
+        bottomAnchor.insertAdjacentElement("afterend", block);
+      }
+
+      posBtn.setAttribute("aria-pressed", step.commentPosition === "top" ? "true" : "false");
+      posBtn.textContent = "Mover comentario: " + nextByPos[step.commentPosition];
+      posBtn.setAttribute("aria-label", "Mover comentario hacia " + nextByPos[step.commentPosition]);
+      posBtn.title = "Mover comentario hacia " + nextByPos[step.commentPosition];
+    }
+
+    applyCommentPosition();
 
     // ---- Arrastrar para reordenar (solo se activa desde el agarradero ⠿) ----
     const handle = card.querySelector(".drag-handle");
@@ -24465,6 +24559,67 @@ var __async = (__this, __arguments, generator) => {
       steps = steps.filter((s) => s.id !== step.id);
       card.remove();
       renumberSteps();
+      saveStateToDB();
+    });
+
+    const commentBlock = card.querySelector(".comment-block");
+    const commentHandle = card.querySelector(".comment-drag-handle");
+
+    commentHandle.addEventListener("mousedown", () => {
+      commentBlock.draggable = true;
+    });
+    commentHandle.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      const order = ["top", "middle", "bottom"];
+      const idxPos = order.indexOf(step.commentPosition);
+      step.commentPosition = order[(idxPos + 1) % order.length];
+      applyCommentPosition();
+      announceA11y("Comentario movido al " + positionLabel(step.commentPosition) + ".");
+      saveStateToDB();
+    });
+    commentBlock.addEventListener("dragstart", (e) => {
+      e.stopPropagation();
+      card.classList.add("comment-dragging");
+      commentBlock.classList.add("dragging-comment");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", "comment-block");
+    });
+    commentBlock.addEventListener("dragend", (e) => {
+      e.stopPropagation();
+      commentBlock.draggable = false;
+      card.classList.remove("comment-dragging");
+      commentBlock.classList.remove("dragging-comment");
+      card.querySelectorAll(".comment-anchor").forEach((anchor) => anchor.classList.remove("active"));
+    });
+
+    card.querySelectorAll(".comment-anchor").forEach((anchor) => {
+      anchor.addEventListener("dragover", (e) => {
+        if (!card.classList.contains("comment-dragging")) return;
+        e.preventDefault();
+        anchor.classList.add("active");
+      });
+      anchor.addEventListener("dragleave", () => {
+        anchor.classList.remove("active");
+      });
+      anchor.addEventListener("drop", (e) => {
+        if (!card.classList.contains("comment-dragging")) return;
+        e.preventDefault();
+        const nextPos = anchor.dataset.commentAnchor;
+        if (!["top", "middle", "bottom"].includes(nextPos)) return;
+        step.commentPosition = nextPos;
+        applyCommentPosition();
+        announceA11y("Comentario movido al " + positionLabel(step.commentPosition) + ".");
+        saveStateToDB();
+      });
+    });
+
+    card.querySelector(".comment-pos-btn").addEventListener("click", () => {
+      const order = ["top", "middle", "bottom"];
+      const idxPos = order.indexOf(step.commentPosition);
+      step.commentPosition = order[(idxPos + 1) % order.length];
+      applyCommentPosition();
+      announceA11y("Comentario movido al " + positionLabel(step.commentPosition) + ".");
       saveStateToDB();
     });
     card.querySelector("textarea").addEventListener("input", (e) => {
@@ -25451,6 +25606,7 @@ var __async = (__this, __arguments, generator) => {
       dataUrl: s.dataUrl,
       renderedDataUrl: s.renderedDataUrl,
       comment: s.comment || "",
+      commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "bottom",
       novedad: !!s.novedad,
       // compatibilidad: sesiones guardadas antes de tener severidad solo tenían
       // "novedad: true/false" — esas se recuperan como severidad "alta" por defecto
