@@ -811,12 +811,12 @@
 
   <!-- Vista ampliada de la imagen -->
   <div id="zoomOverlay" role="dialog" aria-modal="true" aria-label="Vista ampliada" tabindex="-1" style="display:none; position:fixed; inset:0; background:rgba(8,10,13,0.92); z-index:1000; cursor:zoom-out; align-items:center; justify-content:center; flex-direction:column; overflow:auto; padding:24px 20px 28px;">
-    <div style="position:absolute; top:16px; left:16px; display:flex; gap:8px; z-index:1001;">
+    <div id="zoomControlsBar" style="position:fixed; top:16px; left:16px; display:flex; gap:8px; z-index:1002; background:rgba(10,12,15,0.88); padding:6px; border-radius:999px; border:1px solid rgba(255,255,255,0.16); box-shadow:0 8px 20px rgba(0,0,0,0.3);">
       <button id="zoomOutBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">−</button>
       <button id="zoomResetBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">100%</button>
       <button id="zoomInBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">+</button>
+      <button id="closeZoomBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">✕</button>
     </div>
-    <button id="closeZoomBtn" style="position:absolute; top:16px; right:16px; background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:5px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;">✕ Cerrar</button>
     <img id="zoomImg" style="max-width:92vw; max-height:88vh; border-radius:4px; box-shadow:0 8px 32px rgba(0,0,0,0.6); border:1px solid var(--line); transform-origin:center center; transition:transform .12s ease;" />
   </div>
 
@@ -26013,10 +26013,13 @@ var __async = (__this, __arguments, generator) => {
     closeOverlay(document.getElementById("zoomOverlay"));
   }
   document.getElementById("zoomOverlay").addEventListener("click", (e) => {
-    closeZoom(); // clic en cualquier parte del fondo oscuro cierra
+    if (e.target === e.currentTarget) closeZoom();
   });
   document.getElementById("zoomImg").addEventListener("click", (e) => {
-    e.stopPropagation(); // clic en la imagen misma no debe cerrar
+    e.stopPropagation();
+  });
+  document.getElementById("zoomControlsBar").addEventListener("click", (e) => {
+    e.stopPropagation();
   });
   document.getElementById("closeZoomBtn").addEventListener("click", (e) => {
     e.stopPropagation();
