@@ -807,7 +807,7 @@
         <strong id="copyOverlayTitle" style="font-family:var(--mono); font-size:12.5px; letter-spacing:0.04em; color:var(--text);">Selecciona todo y copia</strong>
         <button class="btn-secondary" id="closeOverlayBtn">Cerrar</button>
       </div>
-      <p style="font-size:12px;color:var(--text-muted);">
+      <p id="copyOverlayDescription" style="font-size:12px;color:var(--text-muted);">
         Ya está todo seleccionado. Presiona <b style="color:var(--text);">Ctrl+C</b> y luego pega en Word con <b style="color:var(--text);">Ctrl+V</b>.
         Si no se seleccionó automáticamente, haz clic dentro del recuadro y presiona Ctrl+A.
       </p>
@@ -851,6 +851,7 @@
   <div class="card">
     <button class="btn-primary btn-full" id="downloadDocxBtn">📥 Descargar como Word (.docx)</button>
     <button class="btn-secondary btn-full" id="downloadNovedadesBtn" style="margin-top:8px;">🚩 Descargar solo novedades (.docx)</button>
+    <button class="btn-secondary btn-full" id="previewExportBtn" style="margin-top:8px;">👁️ Vista previa del documento</button>
     <div id="docxStatus" role="status" aria-live="polite" style="font-size:12px;color:#7fd58f;margin-top:6px;min-height:16px;"></div>
     <div class="btn-row" style="margin-top:8px;">
       <button class="btn-secondary" id="copyWordBtn" style="flex:1;">📄 Copiar y pegar</button>
@@ -26014,25 +26015,49 @@ var __async = (__this, __arguments, generator) => {
     }
   });
 
-  document.getElementById("copyWordBtn").addEventListener("click", async () => {
+  function openExportPreview(options) {
     const overlay = document.getElementById("copyOverlay");
     const preview = document.getElementById("exportPreview");
+    const titleEl = document.getElementById("copyOverlayTitle");
+    const descriptionEl = document.getElementById("copyOverlayDescription");
+
     preview.innerHTML = buildHtmlDocument();
+    titleEl.textContent = options && options.title ? options.title : "Vista previa del documento";
+    if (descriptionEl) {
+      descriptionEl.textContent = options && options.description
+        ? options.description
+        : "Revisa el contenido antes de descargarlo o pegarlo en Word.";
+    }
+
     openOverlay(overlay, {
-      opener: document.getElementById("copyWordBtn"),
+      opener: options && options.opener ? options.opener : document.getElementById("previewExportBtn"),
       display: "block",
       initialFocus: document.getElementById("closeOverlayBtn"),
       onEscape: () => closeCopyOverlay(),
     });
 
-    // selecciona todo el contenido automáticamente
     const range = document.createRange();
     range.selectNodeContents(preview);
     const selection = window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
+  }
 
-    await copyHtmlWithFallback(preview);
+  document.getElementById("copyWordBtn").addEventListener("click", async () => {
+    openExportPreview({
+      opener: document.getElementById("copyWordBtn"),
+      title: "Vista previa y copiar",
+      description: "Revisa el contenido y luego pega en Word con Ctrl+V.",
+    });
+    await copyHtmlWithFallback(document.getElementById("exportPreview"));
+  });
+
+  document.getElementById("previewExportBtn").addEventListener("click", () => {
+    openExportPreview({
+      opener: document.getElementById("previewExportBtn"),
+      title: "Vista previa del documento",
+      description: "Revisa el contenido generado antes de descargarlo o compartirlo.",
+    });
   });
 
   function closeCopyOverlay() {
