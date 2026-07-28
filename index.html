@@ -811,11 +811,13 @@
         Ya está todo seleccionado. Presiona <b style="color:var(--text);">Ctrl+C</b> y luego pega en Word con <b style="color:var(--text);">Ctrl+V</b>.
         Si no se seleccionó automáticamente, haz clic dentro del recuadro y presiona Ctrl+A.
       </p>
-      <label style="display:block;margin-top:10px;font-size:12px;color:var(--text-muted);">📝 Notas pendientes para el documento</label>
-      <textarea id="documentNotesInput" rows="4" placeholder="Escribe aquí lo que te quede pendiente y se añadirá al documento..." style="width:100%; box-sizing:border-box; margin-top:6px; border:1px solid var(--line); border-radius:6px; padding:8px; background:var(--panel-2); color:var(--text); resize:vertical;"></textarea>
-      <div class="btn-row" style="margin-top:6px;">
+      <div style="position:sticky; top:0; z-index:2; padding:8px 0 10px; background:linear-gradient(180deg, rgba(35, 42, 54, 0.98), rgba(35, 42, 54, 0.92)); border-bottom:1px solid var(--line); margin-bottom:10px;">
+        <label style="display:block;font-size:12px;color:var(--text-muted);">📝 Notas pendientes para el documento</label>
+        <textarea id="documentNotesInput" rows="4" placeholder="Escribe aquí lo que te quede pendiente y se añadirá al documento..." style="width:100%; box-sizing:border-box; margin-top:6px; border:1px solid var(--line); border-radius:6px; padding:8px; background:var(--panel-2); color:var(--text); resize:vertical;"></textarea>
+        <div class="btn-row" style="margin-top:6px;">
         <button class="btn-secondary" id="applyDocumentNotesBtn" style="flex:1;">✍️ Aplicar</button>
         <button class="btn-secondary" id="clearDocumentNotesBtn" style="flex:1;">🧹 Limpiar</button>
+        </div>
       </div>
       <div id="exportPreview" style="border:1px solid var(--line); border-radius:5px; padding:12px; max-height:400px; overflow:auto; background:#fff; color:#222;"></div>
     </div>
@@ -26100,6 +26102,8 @@ var __async = (__this, __arguments, generator) => {
     if (notesEl && options && options.notesText) {
       notesEl.value = options.notesText;
     }
+    overlay.scrollTop = 0;
+    preview.scrollTop = 0;
 
     openOverlay(overlay, {
       opener: options && options.opener ? options.opener : document.getElementById("previewExportBtn"),
