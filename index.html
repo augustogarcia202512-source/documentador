@@ -25529,14 +25529,19 @@ var __async = (__this, __arguments, generator) => {
     const novedades = sortedNovedades(steps.filter((s) => s.novedad));
 
     const stepsHtml = steps
-      .map(
-        (s, i) => `
+      .map((s, i) => {
+        const commentPosition = s.commentPosition || "bottom";
+        const commentHtml = `<p><b>Comentario:</b> ${escapeHtml(s.comment || "")}</p>`;
+        const imageHtml = `<div style="text-align:center;margin:8px 0;"><img src="${s.renderedDataUrl || s.dataUrl}" style="max-width:600px;border:1px solid #ccc;display:inline-block;" /></div>`;
+        const content = commentPosition === "top"
+          ? `${commentHtml}${imageHtml}`
+          : `${imageHtml}${commentHtml}`;
+        return `
         <div style="margin-bottom:20px;">
           <p style="font-weight:bold;">Paso ${i + 1}</p>
-          <img src="${s.renderedDataUrl || s.dataUrl}" style="max-width:600px;border:1px solid #ccc;" />
-          <p><b>Comentario:</b> ${escapeHtml(s.comment)}</p>
-        </div>`
-      )
+          ${content}
+        </div>`;
+      })
       .join("");
 
     let resumenHtml = "";
@@ -25546,11 +25551,16 @@ var __async = (__this, __arguments, generator) => {
           .map((n, i) => {
             const sevColor = SEVERITY_HTML_COLOR[n.severity] || "#e6c200";
             const sevLabel = SEVERITY_LABEL[n.severity] || "";
+            const commentPosition = n.commentPosition || "bottom";
+            const commentHtml = `<p>${escapeHtml(n.comment || "")}</p>`;
+            const imageHtml = `<div style="text-align:center;margin:8px 0;"><img src="${n.renderedDataUrl || n.dataUrl}" style="max-width:600px;border:1px solid #ccc;display:inline-block;" /></div>`;
+            const content = commentPosition === "top"
+              ? `${commentHtml}${imageHtml}`
+              : `${imageHtml}${commentHtml}`;
             return `
           <div style="background:#fff6cc;border:1px solid ${sevColor};padding:10px;margin-bottom:14px;">
             <p style="font-weight:bold;color:${sevColor};">Novedad ${i + 1}${sevLabel ? " — " + sevLabel : ""}</p>
-            <img src="${n.renderedDataUrl || n.dataUrl}" style="max-width:600px;border:1px solid #ccc;" />
-            <p>${escapeHtml(n.comment)}</p>
+            ${content}
           </div>`;
           })
           .join("");
@@ -25772,9 +25782,11 @@ var __async = (__this, __arguments, generator) => {
         const src = s.renderedDataUrl || s.dataUrl;
         const dims = await loadImageDims(src);
         const fitted = fitToPage(dims.width, dims.height, MAX_W);
+        const commentParagraph = new Paragraph({ children: [panamLabelRun("Comentario: "), panamValueRun(s.comment || "")] });
         evidenceParas.push(new Paragraph({ children: [panamLabelRun("Paso " + (i + 1))] }));
-        evidenceParas.push(new Paragraph({ children: [new ImageRun({ data: dataUrlToUint8Array(src), transformation: fitted, type: "jpg" })] }));
-        evidenceParas.push(new Paragraph({ children: [panamLabelRun("Comentario: "), panamValueRun(s.comment || "")] }));
+        if ((s.commentPosition || "bottom") === "top") evidenceParas.push(commentParagraph);
+        evidenceParas.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new ImageRun({ data: dataUrlToUint8Array(src), transformation: fitted, type: "jpg" })] }));
+        if ((s.commentPosition || "bottom") !== "top") evidenceParas.push(commentParagraph);
         evidenceParas.push(new Paragraph(""));
       }
     }
@@ -25790,9 +25802,11 @@ var __async = (__this, __arguments, generator) => {
         const fitted = fitToPage(dims.width, dims.height, MAX_W);
         const sevColor = SEVERITY_DOCX_COLOR[n.severity] || "C00000";
         const sevLabel = SEVERITY_LABEL[n.severity] || "";
+        const commentParagraph = new Paragraph({ children: [panamValueRun(n.comment || "")] });
         evidenceParas.push(new Paragraph({ children: [new TextRun({ text: "Novedad " + (i + 1) + (sevLabel ? " — " + sevLabel : ""), bold: true, color: sevColor, font: "Arial", size: 20 })] }));
-        evidenceParas.push(new Paragraph({ children: [new ImageRun({ data: dataUrlToUint8Array(src), transformation: fitted, type: "jpg" })] }));
-        evidenceParas.push(new Paragraph({ children: [panamValueRun(n.comment || "")] }));
+        if ((n.commentPosition || "bottom") === "top") evidenceParas.push(commentParagraph);
+        evidenceParas.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new ImageRun({ data: dataUrlToUint8Array(src), transformation: fitted, type: "jpg" })] }));
+        if ((n.commentPosition || "bottom") !== "top") evidenceParas.push(commentParagraph);
         evidenceParas.push(new Paragraph(""));
       }
     }
