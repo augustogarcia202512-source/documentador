@@ -554,6 +554,80 @@
     color: #ffd9d7;
     border-color: rgba(255, 138, 128, 0.5);
   }
+  .quick-comment-fab {
+    position: fixed;
+    right: 18px;
+    bottom: 88px;
+    z-index: 1080;
+    border-radius: 999px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 224, 178, 0.45);
+    background: linear-gradient(180deg, #f2b34f, #de9526);
+    color: #1a1406;
+    font-weight: 700;
+    box-shadow: 0 12px 24px rgba(9, 12, 18, 0.42);
+  }
+  .quick-comment-panel {
+    position: fixed;
+    right: 18px;
+    bottom: 138px;
+    width: min(320px, calc(100vw - 24px));
+    z-index: 1085;
+    display: none;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(22, 28, 36, 0.96);
+    box-shadow: 0 18px 34px rgba(6, 8, 12, 0.52);
+    padding: 10px;
+    backdrop-filter: blur(6px);
+  }
+  .quick-comment-panel.open {
+    display: block;
+  }
+  .quick-comment-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .quick-comment-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+  .quick-comment-panel select,
+  .quick-comment-panel textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    padding: 8px;
+  }
+  .quick-comment-panel textarea {
+    min-height: 78px;
+    margin-top: 8px;
+    resize: vertical;
+  }
+  .quick-comment-actions {
+    display: flex;
+    gap: 7px;
+    margin-top: 8px;
+  }
+  .quick-comment-actions button {
+    flex: 1;
+  }
+  body.presentation-mode.presentation-compact .quick-comment-fab {
+    bottom: 70px;
+  }
+  body.presentation-mode.presentation-compact .quick-comment-panel {
+    bottom: 124px;
+  }
 
   @media (max-width: 720px) {
     .compact-quickbar {
@@ -567,6 +641,18 @@
       text-align: center;
       padding: 10px 8px;
       font-size: 11.5px;
+    }
+    .quick-comment-fab {
+      right: 10px;
+      bottom: 78px;
+      padding: 9px 12px;
+      font-size: 12px;
+    }
+    .quick-comment-panel {
+      right: 10px;
+      left: 10px;
+      width: auto;
+      bottom: 126px;
     }
   }
 </style>
@@ -593,6 +679,19 @@
     <button class="quick-btn quick-capture" id="quickCaptureBtn" type="button">Capturar</button>
     <button class="quick-btn quick-pause" id="quickPauseBtn" type="button" aria-pressed="false">Pausar</button>
     <button class="quick-btn quick-exit" id="quickExitCompactBtn" type="button">Salir</button>
+  </div>
+  <button class="quick-comment-fab" id="quickCommentFab" type="button" title="Comentario rápido (Alt+M)">💬 Comentar</button>
+  <div class="quick-comment-panel" id="quickCommentPanel" role="dialog" aria-modal="false" aria-label="Comentario rápido">
+    <div class="quick-comment-head">
+      <span class="quick-comment-title">Comentario rápido</span>
+      <button class="btn-secondary" id="quickCommentCloseBtn" type="button" title="Cerrar">Cerrar</button>
+    </div>
+    <select id="quickCommentStepSelect" aria-label="Seleccionar paso"></select>
+    <textarea id="quickCommentInput" placeholder="Escribe comentario para el paso seleccionado..."></textarea>
+    <div class="quick-comment-actions">
+      <button class="btn-secondary" id="quickCommentLoadBtn" type="button">Cargar actual</button>
+      <button class="btn-primary" id="quickCommentSaveBtn" type="button">Guardar</button>
+    </div>
   </div>
   <div id="autosaveStatus" role="status" aria-live="polite"></div>
 
@@ -24526,6 +24625,151 @@ var __async = (__this, __arguments, generator) => {
     }, 10);
   }
 
+  function refreshQuickCommentTargets(preferredStepId) {
+    const stepSelect = document.getElementById("quickCommentStepSelect");
+    const quickInput = document.getElementById("quickCommentInput");
+    const saveBtn = document.getElementById("quickCommentSaveBtn");
+    const loadBtn = document.getElementById("quickCommentLoadBtn");
+    if (!stepSelect || !quickInput || !saveBtn || !loadBtn) return;
+
+    const previous = preferredStepId !== undefined ? String(preferredStepId) : stepSelect.value;
+    stepSelect.innerHTML = "";
+    const cards = [...stepsContainer.querySelectorAll(".step-card")];
+
+    if (steps.length === 0 || cards.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No hay pasos disponibles";
+      stepSelect.appendChild(opt);
+      stepSelect.disabled = true;
+      quickInput.disabled = true;
+      quickInput.value = "";
+      saveBtn.disabled = true;
+      loadBtn.disabled = true;
+      return;
+    }
+
+    cards.forEach((card, i) => {
+      const stepId = String(card.dataset.id || "");
+      const option = document.createElement("option");
+      option.value = stepId;
+      option.textContent = "Paso " + (i + 1);
+      stepSelect.appendChild(option);
+    });
+
+    const hasPrevious = previous && [...stepSelect.options].some((o) => o.value === previous);
+    stepSelect.value = hasPrevious ? previous : String(steps[steps.length - 1].id);
+    stepSelect.disabled = false;
+    quickInput.disabled = false;
+    saveBtn.disabled = false;
+    loadBtn.disabled = false;
+  }
+
+  function getSelectedQuickCommentStep() {
+    const stepSelect = document.getElementById("quickCommentStepSelect");
+    if (!stepSelect || !stepSelect.value) return null;
+    return steps.find((s) => String(s.id) === stepSelect.value) || null;
+  }
+
+  function loadQuickCommentFromStep() {
+    const quickInput = document.getElementById("quickCommentInput");
+    const step = getSelectedQuickCommentStep();
+    if (!quickInput || !step) return;
+    quickInput.value = step.comment || "";
+  }
+
+  function closeQuickCommentPanel() {
+    const panel = document.getElementById("quickCommentPanel");
+    if (!panel) return;
+    panel.classList.remove("open");
+  }
+
+  function openQuickCommentPanel() {
+    const panel = document.getElementById("quickCommentPanel");
+    const quickInput = document.getElementById("quickCommentInput");
+    if (!panel) return;
+    refreshQuickCommentTargets();
+    loadQuickCommentFromStep();
+    panel.classList.add("open");
+    if (quickInput && !quickInput.disabled) quickInput.focus();
+  }
+
+  function toggleQuickCommentPanel() {
+    const panel = document.getElementById("quickCommentPanel");
+    if (!panel) return;
+    if (panel.classList.contains("open")) {
+      closeQuickCommentPanel();
+    } else {
+      openQuickCommentPanel();
+    }
+  }
+
+  function saveQuickComment() {
+    const quickInput = document.getElementById("quickCommentInput");
+    const step = getSelectedQuickCommentStep();
+    if (!quickInput || !step) {
+      showTransientStatus("⚠️ No hay pasos para comentar.", 2200);
+      return;
+    }
+
+    pushUndoCheckpoint();
+    step.comment = quickInput.value;
+
+    const card = stepsContainer.querySelector(`.step-card[data-id="${step.id}"]`);
+    const textarea = card ? card.querySelector("textarea") : null;
+    if (textarea) textarea.value = step.comment;
+
+    saveStateToDB();
+    showTransientStatus("💬 Comentario guardado.", 2000);
+    announceA11y("Comentario guardado.");
+  }
+
+  function initQuickCommentFab() {
+    const fab = document.getElementById("quickCommentFab");
+    const panel = document.getElementById("quickCommentPanel");
+    const closeBtn = document.getElementById("quickCommentCloseBtn");
+    const saveBtn = document.getElementById("quickCommentSaveBtn");
+    const loadBtn = document.getElementById("quickCommentLoadBtn");
+    const stepSelect = document.getElementById("quickCommentStepSelect");
+    const quickInput = document.getElementById("quickCommentInput");
+    if (!fab || !panel || !closeBtn || !saveBtn || !loadBtn || !stepSelect || !quickInput) return;
+
+    fab.addEventListener("click", () => toggleQuickCommentPanel());
+    closeBtn.addEventListener("click", () => closeQuickCommentPanel());
+    saveBtn.addEventListener("click", () => saveQuickComment());
+    loadBtn.addEventListener("click", () => loadQuickCommentFromStep());
+    stepSelect.addEventListener("change", () => loadQuickCommentFromStep());
+
+    quickInput.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        saveQuickComment();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && panel.classList.contains("open")) {
+        closeQuickCommentPanel();
+        return;
+      }
+      if (!(e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "m")) return;
+      const active = document.activeElement;
+      const tag = active && active.tagName ? active.tagName.toLowerCase() : "";
+      const typingContext = tag === "input" || tag === "textarea" || (active && active.isContentEditable);
+      if (typingContext && !(panel.classList.contains("open") && active === quickInput)) return;
+      e.preventDefault();
+      toggleQuickCommentPanel();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!panel.classList.contains("open")) return;
+      if (panel.contains(e.target) || fab.contains(e.target)) return;
+      closeQuickCommentPanel();
+    });
+
+    refreshQuickCommentTargets();
+  }
+
   function showAppDialog(opts) {
     opts = opts || {};
     const overlay = document.getElementById("appDialog");
@@ -24891,16 +25135,19 @@ var __async = (__this, __arguments, generator) => {
     });
     card.querySelector(".apply-crop").addEventListener("click", () => applyCrop(step, card));
     card.querySelector(".cancel-crop").addEventListener("click", () => cancelCrop(step, card));
+    refreshQuickCommentTargets(step.id);
   }
 
   function renumberSteps() {
     if (steps.length === 0) {
       stepsContainer.innerHTML = '<div class="empty-msg">Aún no hay pasos capturados.</div>';
+      refreshQuickCommentTargets();
       return;
     }
     stepsContainer.querySelectorAll(".step-card").forEach((card, i) => {
       card.querySelector(".step-num").textContent = "Paso " + (i + 1);
     });
+    refreshQuickCommentTargets();
   }
 
   // Activa el lienzo editable SOLO para este paso (y cierra el de cualquier otro,
@@ -25776,6 +26023,7 @@ var __async = (__this, __arguments, generator) => {
   initVisualThemeSwitcher();
   initPresentationModeToggle();
   initCompactQuickbar();
+  initQuickCommentFab();
   updateHistoryButtons();
 
   document.getElementById("resetBtn").addEventListener("click", async () => {
