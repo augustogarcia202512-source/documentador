@@ -810,9 +810,14 @@
   </div>
 
   <!-- Vista ampliada de la imagen -->
-  <div id="zoomOverlay" role="dialog" aria-modal="true" aria-label="Vista ampliada" tabindex="-1" style="display:none; position:fixed; inset:0; background:rgba(8,10,13,0.92); z-index:1000; cursor:zoom-out; align-items:center; justify-content:center; flex-direction:column;">
+  <div id="zoomOverlay" role="dialog" aria-modal="true" aria-label="Vista ampliada" tabindex="-1" style="display:none; position:fixed; inset:0; background:rgba(8,10,13,0.92); z-index:1000; cursor:zoom-out; align-items:center; justify-content:center; flex-direction:column; overflow:auto; padding:24px 20px 28px;">
+    <div style="position:absolute; top:16px; left:16px; display:flex; gap:8px; z-index:1001;">
+      <button id="zoomOutBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">−</button>
+      <button id="zoomResetBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">100%</button>
+      <button id="zoomInBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">+</button>
+    </div>
     <button id="closeZoomBtn" style="position:absolute; top:16px; right:16px; background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:5px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;">✕ Cerrar</button>
-    <img id="zoomImg" style="max-width:92vw; max-height:88vh; border-radius:4px; box-shadow:0 8px 32px rgba(0,0,0,0.6); border:1px solid var(--line);" />
+    <img id="zoomImg" style="max-width:92vw; max-height:88vh; border-radius:4px; box-shadow:0 8px 32px rgba(0,0,0,0.6); border:1px solid var(--line); transform-origin:center center; transition:transform .12s ease;" />
   </div>
 
   <div id="appDialog" class="app-dialog" role="alertdialog" aria-modal="true" aria-labelledby="appDialogTitle" aria-describedby="appDialogMessage" tabindex="-1">
@@ -25960,8 +25965,34 @@ var __async = (__this, __arguments, generator) => {
   });
 
   // ---- Vista ampliada de imagen ----
+  let zoomLevel = 1;
+
+  function setZoomLevel(level) {
+    const img = document.getElementById("zoomImg");
+    const zoomValue = document.getElementById("zoomResetBtn");
+    if (!img || !zoomValue) return;
+
+    const nextLevel = Math.max(0.8, Math.min(4, level));
+    zoomLevel = nextLevel;
+    img.style.transform = `scale(${nextLevel})`;
+    zoomValue.textContent = `${Math.round(nextLevel * 100)}%`;
+
+    if (nextLevel === 1) {
+      img.style.maxWidth = "92vw";
+      img.style.maxHeight = "88vh";
+      img.style.width = "auto";
+      img.style.height = "auto";
+    } else {
+      img.style.maxWidth = "none";
+      img.style.maxHeight = "none";
+    }
+  }
+
   function openZoom(src, openerEl) {
-    document.getElementById("zoomImg").src = src;
+    const zoomImg = document.getElementById("zoomImg");
+    zoomImg.src = src;
+    zoomLevel = 1;
+    setZoomLevel(1);
     openOverlay(document.getElementById("zoomOverlay"), {
       opener: openerEl,
       display: "flex",
@@ -25970,6 +26001,15 @@ var __async = (__this, __arguments, generator) => {
     });
   }
   function closeZoom() {
+    zoomLevel = 1;
+    const zoomImg = document.getElementById("zoomImg");
+    if (zoomImg) {
+      zoomImg.style.transform = "scale(1)";
+      zoomImg.style.maxWidth = "92vw";
+      zoomImg.style.maxHeight = "88vh";
+      zoomImg.style.width = "auto";
+      zoomImg.style.height = "auto";
+    }
     closeOverlay(document.getElementById("zoomOverlay"));
   }
   document.getElementById("zoomOverlay").addEventListener("click", (e) => {
@@ -25981,6 +26021,18 @@ var __async = (__this, __arguments, generator) => {
   document.getElementById("closeZoomBtn").addEventListener("click", (e) => {
     e.stopPropagation();
     closeZoom();
+  });
+  document.getElementById("zoomInBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    setZoomLevel(zoomLevel + 0.25);
+  });
+  document.getElementById("zoomOutBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    setZoomLevel(zoomLevel - 0.25);
+  });
+  document.getElementById("zoomResetBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    setZoomLevel(1);
   });
 
   document.getElementById("downloadBtn").addEventListener("click", () => {
