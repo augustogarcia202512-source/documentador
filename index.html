@@ -628,6 +628,50 @@
   body.presentation-mode.presentation-compact .quick-comment-panel {
     bottom: 124px;
   }
+  .steps-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px;
+    padding: 10px 12px;
+    margin: 0 0 10px 0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--panel-2);
+  }
+  .steps-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 142px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .steps-filter-field input,
+  .steps-filter-field select {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px 9px;
+    background: var(--panel);
+    color: var(--text);
+    font-size: 12px;
+  }
+  .steps-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-size: 12px;
+    border: 1px solid var(--line);
+  }
+  .steps-filter-meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
 
   @media (max-width: 720px) {
     .compact-quickbar {
@@ -727,6 +771,27 @@
     <div class="help">1) Comparte la pestaña/ventana de Meet una sola vez. 2) Activa el botón flotante para no perder de vista la llamada. 3) Haz clic en Capturar cada vez que algo sea relevante (o presiona Ctrl+Shift+Y). 4) En cada paso, elige un color y arrastra sobre la imagen para resaltar algo puntual. 5) También puedes pegar una imagen ya copiada con Ctrl+V (por ejemplo, un pantallazo que te mandaron por chat) y se agrega como paso nuevo.</div>
   </div>
 
+  <div class="steps-filter-bar" id="stepsFilterBar">
+    <label class="steps-filter-field">
+      <span>Texto</span>
+      <input type="search" id="stepFilterText" placeholder="Buscar en comentarios" />
+    </label>
+    <label class="steps-filter-field">
+      <span>Severidad</span>
+      <select id="stepFilterSeverity">
+        <option value="all">Todas</option>
+        <option value="alta">Alta</option>
+        <option value="media">Media</option>
+        <option value="baja">Baja</option>
+        <option value="none">Sin novedad</option>
+      </select>
+    </label>
+    <label class="steps-filter-pill">
+      <input type="checkbox" id="stepFilterNovedades" />
+      <span>Sólo novedades</span>
+    </label>
+    <span class="steps-filter-meta" id="stepsFilterMeta">0/0 pasos</span>
+  </div>
   <div id="steps"></div>
 
   <!-- Vista previa usada para copiar de forma confiable, sin importar cuántas imágenes tenga -->
@@ -24119,6 +24184,62 @@ var __async = (__this, __arguments, generator) => {
   const placeholder = document.getElementById("previewPlaceholder");
   const shareStatus = document.getElementById("shareStatus");
   const stepsContainer = document.getElementById("steps");
+  const stepFilterTextInput = document.getElementById("stepFilterText");
+  const stepFilterSeveritySelect = document.getElementById("stepFilterSeverity");
+  const stepFilterNovedadesCheckbox = document.getElementById("stepFilterNovedades");
+  const stepsFilterMeta = document.getElementById("stepsFilterMeta");
+  let stepsFilter = { query: "", severity: "all", onlyNovedades: false };
+
+  function stepMatchesFilter(step) {
+    const query = stepsFilter.query.trim().toLowerCase();
+    const matchesQuery = !query || (step.comment || "").toLowerCase().includes(query) || ((step.severity || "sin novedad").toLowerCase().includes(query));
+    const matchesSeverity = stepsFilter.severity === "all" || (
+      stepsFilter.severity === "none"
+        ? !step.severity
+        : step.severity === stepsFilter.severity
+    );
+    const matchesNovedades = !stepsFilter.onlyNovedades || !!step.severity;
+    return matchesQuery && matchesSeverity && matchesNovedades;
+  }
+
+  function applyStepsFilter() {
+    if (!stepsContainer) return;
+    const cards = [...stepsContainer.querySelectorAll(".step-card")];
+    let visibleCount = 0;
+    cards.forEach((card) => {
+      const step = steps.find((s) => String(s.id) === String(card.dataset.id));
+      const visible = !!step && stepMatchesFilter(step);
+      card.style.display = visible ? "" : "none";
+      if (visible) visibleCount++;
+    });
+    if (stepsFilterMeta) {
+      if (steps.length === 0) {
+        stepsFilterMeta.textContent = "0/0 pasos";
+      } else if (visibleCount === steps.length) {
+        stepsFilterMeta.textContent = `${visibleCount}/${steps.length} pasos`;
+      } else {
+        stepsFilterMeta.textContent = `${visibleCount}/${steps.length} pasos visibles`;
+      }
+    }
+  }
+
+  function initStepFilters() {
+    if (!stepFilterTextInput || !stepFilterSeveritySelect || !stepFilterNovedadesCheckbox) return;
+
+    const refreshFilterFromInputs = () => {
+      stepsFilter = {
+        query: stepFilterTextInput.value || "",
+        severity: stepFilterSeveritySelect.value || "all",
+        onlyNovedades: !!stepFilterNovedadesCheckbox.checked,
+      };
+      applyStepsFilter();
+    };
+
+    stepFilterTextInput.addEventListener("input", refreshFilterFromInputs);
+    stepFilterSeveritySelect.addEventListener("change", refreshFilterFromInputs);
+    stepFilterNovedadesCheckbox.addEventListener("change", refreshFilterFromInputs);
+  }
+  initStepFilters();
 
   // ---- Reordenar pasos arrastrando ----
   function getDragAfterElement(container, y) {
@@ -24720,6 +24841,7 @@ var __async = (__this, __arguments, generator) => {
     if (textarea) textarea.value = step.comment;
 
     saveStateToDB();
+    applyStepsFilter();
     showTransientStatus("💬 Comentario guardado.", 2000);
     announceA11y("Comentario guardado.");
   }
@@ -24912,6 +25034,7 @@ var __async = (__this, __arguments, generator) => {
         <button class="sev-btn sev-btn-baja${step.severity === "baja" ? " selected" : ""}" data-sev="baja" aria-pressed="${step.severity === "baja" ? "true" : "false"}">🟡 Baja</button>
       </div>`;
     stepsContainer.appendChild(card);
+    applyStepsFilter();
 
     function positionLabel(pos) {
       if (pos === "top") return "arriba";
@@ -25065,6 +25188,7 @@ var __async = (__this, __arguments, generator) => {
     card.querySelector("textarea").addEventListener("input", (e) => {
       step.comment = e.target.value;
       autosave();
+      applyStepsFilter();
     });
     card.querySelectorAll(".sev-btn").forEach((sb) => {
       sb.addEventListener("click", () => {
@@ -25079,6 +25203,7 @@ var __async = (__this, __arguments, generator) => {
         card.classList.remove("sev-alta", "sev-media", "sev-baja");
         if (step.severity) card.classList.add("sev-" + step.severity);
         saveStateToDB();
+        applyStepsFilter();
       });
     });
     card.querySelectorAll(".color-swatch").forEach((sw) => {
@@ -25142,12 +25267,14 @@ var __async = (__this, __arguments, generator) => {
     if (steps.length === 0) {
       stepsContainer.innerHTML = '<div class="empty-msg">Aún no hay pasos capturados.</div>';
       refreshQuickCommentTargets();
+      applyStepsFilter();
       return;
     }
     stepsContainer.querySelectorAll(".step-card").forEach((card, i) => {
       card.querySelector(".step-num").textContent = "Paso " + (i + 1);
     });
     refreshQuickCommentTargets();
+    applyStepsFilter();
   }
 
   // Activa el lienzo editable SOLO para este paso (y cierra el de cualquier otro,
