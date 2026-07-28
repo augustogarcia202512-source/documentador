@@ -182,6 +182,33 @@
   .btn-danger:hover { background: var(--red-dim); }
   .btn-full { width: 100%; }
   .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .history-chip {
+    margin-left: auto;
+    align-self: center;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-faint);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 9px;
+    background: var(--panel-2);
+    white-space: nowrap;
+  }
+  .history-chip.is-ok {
+    border-color: rgba(127, 213, 143, 0.45);
+    color: #9be6a9;
+    background: rgba(40, 86, 54, 0.35);
+  }
+  .history-chip.is-warn {
+    border-color: rgba(242, 179, 79, 0.6);
+    color: #f7d497;
+    background: rgba(115, 82, 30, 0.35);
+  }
+  .history-chip.is-danger {
+    border-color: rgba(224, 82, 74, 0.7);
+    color: #ffb2ab;
+    background: rgba(109, 36, 33, 0.4);
+  }
 
   #preview {
     width: 100%; max-height: 220px;
@@ -594,6 +621,9 @@
       <button class="btn-primary" id="shareBtn">🖥️ Compartir pantalla o pestaña</button>
       <button class="btn-secondary" id="pipBtn">📌 Activar botón flotante</button>
       <button class="btn-secondary" id="captureBtn">📸 Capturar ahora (Ctrl+Shift+Y)</button>
+      <button class="btn-secondary" id="undoBtn" title="Deshacer (Ctrl+Z)" disabled>↶ Deshacer</button>
+      <button class="btn-secondary" id="redoBtn" title="Rehacer (Ctrl+Y)" disabled>↷ Rehacer</button>
+      <span id="historyStatus" class="history-chip" role="status" aria-live="polite">Historial: 0/80</span>
     </div>
     <div class="help">1) Comparte la pestaña/ventana de Meet una sola vez. 2) Activa el botón flotante para no perder de vista la llamada. 3) Haz clic en Capturar cada vez que algo sea relevante (o presiona Ctrl+Shift+Y). 4) En cada paso, elige un color y arrastra sobre la imagen para resaltar algo puntual. 5) También puedes pegar una imagen ya copiada con Ctrl+V (por ejemplo, un pantallazo que te mandaron por chat) y se agrega como paso nuevo.</div>
   </div>
@@ -23743,6 +23773,16 @@ var __async = (__this, __arguments, generator) => {
   const STORE_NAME = "estado";
   const STATE_KEY = "casoActual";
   const autosaveStatus = document.getElementById("autosaveStatus");
+  let statusTransientTimer = null;
+
+  function showTransientStatus(message, ms) {
+    if (!autosaveStatus) return;
+    clearTimeout(statusTransientTimer);
+    autosaveStatus.textContent = message;
+    statusTransientTimer = setTimeout(() => {
+      if (autosaveStatus.textContent === message) autosaveStatus.textContent = "";
+    }, ms || 3200);
+  }
 
   function openDB() {
     return new Promise((resolve, reject) => {
@@ -23823,6 +23863,154 @@ var __async = (__this, __arguments, generator) => {
       tx.objectStore(STORE_NAME).delete(STATE_KEY);
     } catch (e) {}
   }
+
+  const MAX_HISTORY_ENTRIES = 80;
+  const undoStack = [];
+  const redoStack = [];
+  let historySuspended = false;
+  let lastTextCheckpointAt = 0;
+  let historyZone = "ok";
+
+  function normalizeStepForRestore(s) {
+    return {
+      id: s.id,
+      dataUrl: s.dataUrl,
+      renderedDataUrl: s.renderedDataUrl,
+      comment: s.comment || "",
+      commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "bottom",
+      novedad: !!s.novedad,
+      severity: s.severity !== undefined ? s.severity : (s.novedad ? "alta" : null),
+      boxes: s.boxes || [],
+      color: s.color || "#e02424",
+    };
+  }
+
+  function snapshotCaseState() {
+    return {
+      caseId: document.getElementById("caseId").value,
+      description: document.getElementById("description").value,
+      team: document.getElementById("team").value,
+      tester: document.getElementById("tester").value,
+      steps: JSON.parse(JSON.stringify(steps)),
+    };
+  }
+
+  function updateHistoryButtons() {
+    const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
+    const historyStatus = document.getElementById("historyStatus");
+    const usageRatio = undoStack.length / MAX_HISTORY_ENTRIES;
+    const prevZone = historyZone;
+    if (undoBtn) undoBtn.disabled = undoStack.length === 0;
+    if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+    if (historyStatus) {
+      historyStatus.classList.remove("is-ok", "is-warn", "is-danger");
+      if (usageRatio >= 0.9) {
+        historyZone = "danger";
+        historyStatus.classList.add("is-danger");
+      } else if (usageRatio >= 0.7) {
+        historyZone = "warn";
+        historyStatus.classList.add("is-warn");
+      } else {
+        historyZone = "ok";
+        historyStatus.classList.add("is-ok");
+      }
+      historyStatus.textContent = "Historial: " + undoStack.length + "/" + MAX_HISTORY_ENTRIES;
+      historyStatus.title = "Deshacer disponibles: " + undoStack.length + " | Rehacer disponibles: " + redoStack.length;
+    }
+    if (historyZone === "danger" && prevZone !== "danger" && autosaveStatus) {
+      showTransientStatus("⚠️ Historial casi lleno: se conservarán los últimos " + MAX_HISTORY_ENTRIES + " cambios.", 4200);
+      announceA11y("Historial casi lleno. Los cambios más antiguos se irán descartando.");
+    }
+    if (prevZone === "danger" && historyZone !== "danger" && autosaveStatus) {
+      showTransientStatus("✅ Historial estabilizado: aún hay margen antes del límite.", 3200);
+      announceA11y("Historial estabilizado.");
+    }
+  }
+
+  function pushUndoCheckpoint() {
+    if (historySuspended) return;
+    const snap = snapshotCaseState();
+    const last = undoStack[undoStack.length - 1];
+    if (last && JSON.stringify(last) === JSON.stringify(snap)) return;
+    undoStack.push(snap);
+    if (undoStack.length > MAX_HISTORY_ENTRIES) undoStack.shift();
+    redoStack.length = 0;
+    updateHistoryButtons();
+  }
+
+  function restoreCaseFromSnapshot(snapshot) {
+    historySuspended = true;
+    try {
+      resetCurrentCaseUI({ clearFields: true });
+      document.getElementById("caseId").value = snapshot.caseId || "";
+      document.getElementById("description").value = snapshot.description || "";
+      document.getElementById("team").value = snapshot.team || "";
+      document.getElementById("tester").value = snapshot.tester || "";
+      steps = (snapshot.steps || []).map((s) => normalizeStepForRestore(s));
+      steps.forEach((s) => addStepCard(s));
+      renumberSteps();
+    } finally {
+      historySuspended = false;
+    }
+    saveStateToDB();
+    updateHistoryButtons();
+  }
+
+  function undoLastChange() {
+    if (undoStack.length === 0) return;
+    const prev = undoStack.pop();
+    redoStack.push(snapshotCaseState());
+    restoreCaseFromSnapshot(prev);
+    showTransientStatus("↶ Cambio deshecho.", 2200);
+    announceA11y("Cambio deshecho.");
+    updateHistoryButtons();
+  }
+
+  function redoLastChange() {
+    if (redoStack.length === 0) return;
+    const next = redoStack.pop();
+    undoStack.push(snapshotCaseState());
+    if (undoStack.length > MAX_HISTORY_ENTRIES) undoStack.shift();
+    restoreCaseFromSnapshot(next);
+    showTransientStatus("↷ Cambio rehecho.", 2200);
+    announceA11y("Cambio rehecho.");
+    updateHistoryButtons();
+  }
+
+  // Crea checkpoints de texto en ráfagas para no llenar el historial con cada tecla.
+  document.addEventListener("beforeinput", (e) => {
+    if (historySuspended) return;
+    const target = e.target;
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
+    const isCaseField = ["caseId", "description", "team", "tester"].includes(target.id);
+    const isStepComment = !!target.closest(".comment-block");
+    if (!isCaseField && !isStepComment) return;
+    const now = Date.now();
+    if (now - lastTextCheckpointAt < 700) return;
+    lastTextCheckpointAt = now;
+    pushUndoCheckpoint();
+  });
+
+  document.getElementById("undoBtn").addEventListener("click", () => undoLastChange());
+  document.getElementById("redoBtn").addEventListener("click", () => redoLastChange());
+
+  document.addEventListener("keydown", (e) => {
+    const zKey = e.key.toLowerCase() === "z";
+    const yKey = e.key.toLowerCase() === "y";
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod) return;
+
+    if (zKey && !e.shiftKey) {
+      e.preventDefault();
+      undoLastChange();
+      return;
+    }
+    if ((zKey && e.shiftKey) || yKey) {
+      e.preventDefault();
+      redoLastChange();
+    }
+  });
   // ============================================================
 
   ["caseId", "description", "team", "tester"].forEach((id) => {
@@ -23863,6 +24051,7 @@ var __async = (__this, __arguments, generator) => {
 
   // sincroniza el arreglo `steps` con el orden visual actual de las tarjetas
   function finalizeReorder() {
+    pushUndoCheckpoint();
     const newOrderIds = [...stepsContainer.querySelectorAll(".step-card")].map((c) => c.dataset.id);
     const stepsById = new Map(steps.map((s) => [String(s.id), s]));
     steps = newOrderIds.map((id) => stepsById.get(id)).filter(Boolean);
@@ -23906,6 +24095,7 @@ var __async = (__this, __arguments, generator) => {
   // imagen pegada del portapapeles) y la convierte en un paso nuevo, con el
   // mismo tratamiento de resolución/calidad sin importar el origen.
   function addCapturedStep(sourceEl, naturalW, naturalH) {
+    pushUndoCheckpoint();
     const MAX_WIDTH = 1600; // suficiente para texto nítido en la mayoría de monitores
     const scale = Math.min(1, MAX_WIDTH / naturalW);
     const canvas = document.createElement("canvas");
@@ -24394,6 +24584,7 @@ var __async = (__this, __arguments, generator) => {
     if (idx < 0) return false;
     const nextIdx = idx + delta;
     if (nextIdx < 0 || nextIdx >= steps.length) return false;
+    pushUndoCheckpoint();
     const moved = steps[idx];
     steps.splice(idx, 1);
     steps.splice(nextIdx, 0, moved);
@@ -24526,6 +24717,7 @@ var __async = (__this, __arguments, generator) => {
       }
     });
     card.addEventListener("dragstart", (e) => {
+      pushUndoCheckpoint();
       card.classList.add("dragging");
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", String(step.id));
@@ -24555,6 +24747,7 @@ var __async = (__this, __arguments, generator) => {
     });
 
     card.querySelector(".delete-link").addEventListener("click", () => {
+      pushUndoCheckpoint();
       if (editingId === step.id) editingId = null;
       steps = steps.filter((s) => s.id !== step.id);
       card.remove();
@@ -24571,6 +24764,7 @@ var __async = (__this, __arguments, generator) => {
     commentHandle.addEventListener("keydown", (e) => {
       if (e.key !== "Enter" && e.key !== " ") return;
       e.preventDefault();
+      pushUndoCheckpoint();
       const order = ["top", "middle", "bottom"];
       const idxPos = order.indexOf(step.commentPosition);
       step.commentPosition = order[(idxPos + 1) % order.length];
@@ -24607,6 +24801,7 @@ var __async = (__this, __arguments, generator) => {
         e.preventDefault();
         const nextPos = anchor.dataset.commentAnchor;
         if (!["top", "middle", "bottom"].includes(nextPos)) return;
+        pushUndoCheckpoint();
         step.commentPosition = nextPos;
         applyCommentPosition();
         announceA11y("Comentario movido al " + positionLabel(step.commentPosition) + ".");
@@ -24615,6 +24810,7 @@ var __async = (__this, __arguments, generator) => {
     });
 
     card.querySelector(".comment-pos-btn").addEventListener("click", () => {
+      pushUndoCheckpoint();
       const order = ["top", "middle", "bottom"];
       const idxPos = order.indexOf(step.commentPosition);
       step.commentPosition = order[(idxPos + 1) % order.length];
@@ -24628,6 +24824,7 @@ var __async = (__this, __arguments, generator) => {
     });
     card.querySelectorAll(".sev-btn").forEach((sb) => {
       sb.addEventListener("click", () => {
+        pushUndoCheckpoint();
         step.severity = sb.dataset.sev || null;
         step.novedad = !!step.severity; // se mantiene sincronizado para el resto de la app
         card.querySelectorAll(".sev-btn").forEach((b) => {
@@ -24642,6 +24839,7 @@ var __async = (__this, __arguments, generator) => {
     });
     card.querySelectorAll(".color-swatch").forEach((sw) => {
       sw.addEventListener("click", () => {
+        pushUndoCheckpoint();
         step.color = sw.dataset.color;
         card.querySelectorAll(".color-swatch").forEach((s2) => {
           const selected = s2 === sw;
@@ -24652,12 +24850,14 @@ var __async = (__this, __arguments, generator) => {
       });
     });
     card.querySelector(".undo-box").addEventListener("click", () => {
+      pushUndoCheckpoint();
       if (step.boxes.length) step.boxes.pop();
       const canvas = card.querySelector("canvas");
       if (canvas) redrawStep(step, canvas);
       saveStateToDB();
     });
     card.querySelector(".clear-box").addEventListener("click", () => {
+      pushUndoCheckpoint();
       step.boxes = [];
       const canvas = card.querySelector("canvas");
       if (canvas) redrawStep(step, canvas);
@@ -24815,6 +25015,7 @@ var __async = (__this, __arguments, generator) => {
   // tener que recalcular coordenadas de cajas fuera del nuevo encuadre)
   function applyCrop(step, card) {
     if (!step.pendingCrop || step.pendingCrop.w < 5 || step.pendingCrop.h < 5) return;
+    pushUndoCheckpoint();
     const crop = step.pendingCrop;
     const srcCanvas = document.createElement("canvas");
     srcCanvas.width = step._editImg.width;
@@ -24907,13 +25108,17 @@ var __async = (__this, __arguments, generator) => {
       const rect = currentRect(getPt(evt));
       if (step.currentMode === "crop") {
         if (rect.w > 10 && rect.h > 10) {
+          pushUndoCheckpoint();
           step.pendingCrop = rect;
           updateCropButtonState(step, card);
         }
         redrawStep(step, canvas);
       } else {
         const box = { ...rect, color: step.color, type: step.currentMode || "highlight" };
-        if (box.w > 4 && box.h > 4) step.boxes.push(box);
+        if (box.w > 4 && box.h > 4) {
+          pushUndoCheckpoint();
+          step.boxes.push(box);
+        }
         redrawStep(step, canvas);
       }
     }
@@ -25571,13 +25776,16 @@ var __async = (__this, __arguments, generator) => {
   initVisualThemeSwitcher();
   initPresentationModeToggle();
   initCompactQuickbar();
+  updateHistoryButtons();
 
   document.getElementById("resetBtn").addEventListener("click", async () => {
     const proceed = await showAppConfirm("¿Reiniciar? Se perderán los pasos capturados.", document.getElementById("resetBtn"));
     if (proceed) {
+      pushUndoCheckpoint();
       resetCurrentCaseUI({ clearFields: true });
       clearStateInDB();
       autosaveStatus.textContent = "";
+      updateHistoryButtons();
     }
   });
 
@@ -25616,6 +25824,9 @@ var __async = (__this, __arguments, generator) => {
     }));
     steps.forEach((s) => addStepCard(s));
     renumberSteps();
+    undoStack.length = 0;
+    redoStack.length = 0;
+    updateHistoryButtons();
     autosaveStatus.textContent = "✅ Caso recuperado del guardado automático.";
   })();
 </script>
