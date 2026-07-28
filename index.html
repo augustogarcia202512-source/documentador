@@ -852,6 +852,12 @@
     <button class="btn-primary btn-full" id="downloadDocxBtn">📥 Descargar como Word (.docx)</button>
     <button class="btn-secondary btn-full" id="downloadNovedadesBtn" style="margin-top:8px;">🚩 Descargar solo novedades (.docx)</button>
     <button class="btn-secondary btn-full" id="previewExportBtn" style="margin-top:8px;">👁️ Vista previa del documento</button>
+    <label style="display:block;margin-top:10px;font-size:12px;color:var(--text-muted);">📝 Notas pendientes para el documento</label>
+    <textarea id="documentNotesInput" rows="4" placeholder="Escribe aquí lo que te quede pendiente y se añadirá al documento..." style="width:100%; box-sizing:border-box; margin-top:6px; border:1px solid var(--line); border-radius:6px; padding:8px; background:var(--panel-2); color:var(--text); resize:vertical;"></textarea>
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn-secondary" id="applyDocumentNotesBtn" style="flex:1;">✍️ Aplicar</button>
+      <button class="btn-secondary" id="clearDocumentNotesBtn" style="flex:1;">🧹 Limpiar</button>
+    </div>
     <div id="docxStatus" role="status" aria-live="polite" style="font-size:12px;color:#7fd58f;margin-top:6px;min-height:16px;"></div>
     <div class="btn-row" style="margin-top:8px;">
       <button class="btn-secondary" id="copyWordBtn" style="flex:1;">📄 Copiar y pegar</button>
@@ -23964,6 +23970,11 @@ var __async = (__this, __arguments, generator) => {
         default: return "⏳ Pendiente";
       }
     });
+    const buildDocumentNotesLines = caseUtils.buildDocumentNotesLines || ((value) => {
+      const normalized = String(value || "").replace(/\r\n?/g, "\n").trim();
+      if (!normalized) return [];
+      return normalized.split("\n").map((line) => line.trim()).filter(Boolean);
+    });
 
   // ================== GUARDADO AUTOMÁTICO (IndexedDB) ==================
   const DB_NAME = "documentadorCasosDB";
@@ -24022,6 +24033,7 @@ var __async = (__this, __arguments, generator) => {
         description: document.getElementById("description").value,
         team: document.getElementById("team").value,
         tester: document.getElementById("tester").value,
+        documentNotes: document.getElementById("documentNotesInput") ? document.getElementById("documentNotesInput").value : "",
         steps: serializableSteps,
         savedAt: Date.now(),
       };
@@ -25575,6 +25587,10 @@ var __async = (__this, __arguments, generator) => {
     const fecha = new Date().toLocaleDateString("es-CO");
     const novedades = sortedNovedades(steps.filter((s) => s.novedad));
     const summary = buildCaseSummary(steps, SEVERITY_LABEL);
+    const documentNotes = buildDocumentNotesLines(getDocumentNotesValue());
+    const documentNotesHtml = documentNotes.length > 0
+      ? `<div style="margin:12px 0;border:1px solid #dce6f1;background:#f7fbff;padding:10px 12px;border-radius:8px;"><strong>Notas pendientes:</strong><ul style="margin:6px 0 0 18px;padding:0;">${documentNotes.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul></div>`
+      : "";
     const summaryListHtml = summary.stepSummaries
       .map((item) => `<li><b>Paso ${item.index}:</b> ${getStepStatusLabel(item.status)} • ${item.severityLabel} • ${escapeHtml(item.comment)}</li>`)
       .join("");
@@ -25631,6 +25647,7 @@ var __async = (__this, __arguments, generator) => {
           <p style="margin:4px 0;"><b>Estados:</b> Pendiente ${summary.statusCounts.pendiente} • Aprobado ${summary.statusCounts.aprobado} • Falló ${summary.statusCounts.fallo} • Observado ${summary.statusCounts.observado}</p>
           <ul style="margin:8px 0 0 18px;padding:0;">${summaryListHtml}</ul>
         </div>
+        ${documentNotesHtml}
         <hr/>
         ${stepsHtml}
         ${resumenHtml}
@@ -25824,6 +25841,7 @@ var __async = (__this, __arguments, generator) => {
 
     const evidenceParas = [];
     const summary = buildCaseSummary(caseSteps, SEVERITY_LABEL);
+    const documentNotes = buildDocumentNotesLines(caseData.documentNotes || getDocumentNotesValue());
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Código del caso de prueba: "), panamValueRun(caseId)] }));
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Fecha de ejecución: "), panamValueRun(fecha)] }));
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Persona que ejecuta: "), panamValueRun(tester)] }));
@@ -25833,6 +25851,13 @@ var __async = (__this, __arguments, generator) => {
       evidenceParas.push(new Paragraph({ children: [new TextRun({ text: "Documento de novedades — solo se incluyen los pasos marcados como novedad.", italics: true, font: "Arial", size: 18 })] }));
     }
     evidenceParas.push(new Paragraph({ children: [new TextRun({ text: "RESUMEN DEL CASO", bold: true, color: "2B579A", font: "Arial", size: 24 })] }));
+    if (documentNotes.length > 0) {
+      evidenceParas.push(new Paragraph({ children: [new TextRun({ text: "NOTAS PENDIENTES", bold: true, color: "5B5B5B", font: "Arial", size: 22 })] }));
+      documentNotes.forEach((line) => {
+        evidenceParas.push(new Paragraph({ children: [new TextRun({ text: line, font: "Arial", size: 18 })] }));
+      });
+      evidenceParas.push(new Paragraph(""));
+    }
     evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Total de pasos: ${summary.totalSteps}`, font: "Arial", size: 20 })] }));
     evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Pasos con novedad: ${summary.novedadCount}`, font: "Arial", size: 20 })] }));
     evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Estados: Pendiente ${summary.statusCounts.pendiente} • Aprobado ${summary.statusCounts.aprobado} • Falló ${summary.statusCounts.fallo} • Observado ${summary.statusCounts.observado}`, font: "Arial", size: 20 })] }));
@@ -25895,6 +25920,7 @@ var __async = (__this, __arguments, generator) => {
       description: document.getElementById("description").value,
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
+      documentNotes: document.getElementById("documentNotesInput") ? document.getElementById("documentNotesInput").value : "",
       steps,
     };
   }
@@ -25954,6 +25980,38 @@ var __async = (__this, __arguments, generator) => {
     });
     return await Packer.toBlob(doc);
   }
+
+  function getDocumentNotesValue() {
+    const el = document.getElementById("documentNotesInput");
+    return el ? el.value : "";
+  }
+
+  function setDocumentNotesValue(value) {
+    const el = document.getElementById("documentNotesInput");
+    if (el) el.value = value || "";
+  }
+
+  function applyDocumentNotesToPreview() {
+    const preview = document.getElementById("exportPreview");
+    if (preview) preview.innerHTML = buildHtmlDocument();
+  }
+
+  document.getElementById("documentNotesInput").addEventListener("input", () => {
+    if (document.getElementById("copyOverlay").style.display === "block") {
+      applyDocumentNotesToPreview();
+    }
+  });
+
+  document.getElementById("applyDocumentNotesBtn").addEventListener("click", () => {
+    applyDocumentNotesToPreview();
+    showTransientStatus("✍️ Notas aplicadas al documento.", 2200);
+  });
+
+  document.getElementById("clearDocumentNotesBtn").addEventListener("click", () => {
+    setDocumentNotesValue("");
+    applyDocumentNotesToPreview();
+    showTransientStatus("🧹 Notas limpiadas.", 2200);
+  });
 
   document.getElementById("downloadDocxBtn").addEventListener("click", async () => {
     const statusEl = document.getElementById("docxStatus");
@@ -26221,6 +26279,7 @@ var __async = (__this, __arguments, generator) => {
       document.getElementById("description").value = "";
       document.getElementById("team").value = "";
       document.getElementById("tester").value = "";
+      setDocumentNotesValue("");
     }
     renumberSteps();
   }
@@ -26243,6 +26302,7 @@ var __async = (__this, __arguments, generator) => {
       description: document.getElementById("description").value,
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
+      documentNotes: getDocumentNotesValue(),
       fecha: new Date().toLocaleDateString("es-CO"),
       steps: steps.slice(),
     });
@@ -26342,6 +26402,7 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("description").value = saved.description || "";
     document.getElementById("team").value = saved.team || "";
     document.getElementById("tester").value = saved.tester || "";
+    setDocumentNotesValue(saved.documentNotes || "");
 
     steps = saved.steps.map((s) => ({
       id: s.id,

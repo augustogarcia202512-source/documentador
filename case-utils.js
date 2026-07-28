@@ -15,6 +15,19 @@
     }
   }
 
+  function normalizeDocumentNotes(value) {
+    return String(value || "").replace(/\r\n?/g, "\n").trim();
+  }
+
+  function buildDocumentNotesLines(value) {
+    const normalized = normalizeDocumentNotes(value);
+    if (!normalized) return [];
+    return normalized
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
   function buildCaseSummary(steps, severityLabels = {}) {
     const safeSteps = Array.isArray(steps) ? steps : [];
     const statusCounts = { pendiente: 0, aprobado: 0, fallo: 0, observado: 0 };
@@ -48,6 +61,8 @@
   const api = {
     STEP_STATUS_VALUES,
     normalizeStepStatus,
+    normalizeDocumentNotes,
+    buildDocumentNotesLines,
     getStepStatusLabel,
     buildCaseSummary,
   };
