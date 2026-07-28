@@ -340,6 +340,12 @@
   }
 
   .severity-row { display: flex; align-items: center; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+  .status-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .status-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .step-status-select {
+    border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text);
+    padding: 5px 8px; font-size: 11px; min-width: 126px;
+  }
   .sev-btn {
     padding: 5px 9px; font-size: 11px; border-radius: 4px; border: 1px solid var(--line);
     background: var(--panel-2); color: var(--text-muted); cursor: pointer; font-weight: 600;
@@ -23931,11 +23937,32 @@ var __async = (__this, __arguments, generator) => {
   return exports;
 })({});
 </script>
-<script>
-  let mediaStream = null;
-  let steps = [];
-  let savedCases = [];
-  let isCapturePaused = false;
+<script src="case-utils.js"></script>
+  <script>
+    let mediaStream = null;
+    let steps = [];
+    let savedCases = [];
+    let isCapturePaused = false;
+
+    const caseUtils = window.caseUtils || {};
+    const normalizeStepStatus = caseUtils.normalizeStepStatus || ((value) => {
+      const normalized = String(value || "").trim().toLowerCase();
+      return ["pendiente", "aprobado", "fallo", "observado"].includes(normalized) ? normalized : "pendiente";
+    });
+    const buildCaseSummary = caseUtils.buildCaseSummary || ((stepsList, severityLabels = {}) => ({
+      totalSteps: Array.isArray(stepsList) ? stepsList.length : 0,
+      novedadCount: 0,
+      statusCounts: { pendiente: 0, aprobado: 0, fallo: 0, observado: 0 },
+      stepSummaries: [],
+    }));
+    const getStepStatusLabel = caseUtils.getStepStatusLabel || ((status) => {
+      switch (normalizeStepStatus(status)) {
+        case "aprobado": return "✅ Aprobado";
+        case "fallo": return "❌ Falló";
+        case "observado": return "⚠️ Observado";
+        default: return "⏳ Pendiente";
+      }
+    });
 
   // ================== GUARDADO AUTOMÁTICO (IndexedDB) ==================
   const DB_NAME = "documentadorCasosDB";
@@ -23983,6 +24010,7 @@ var __async = (__this, __arguments, generator) => {
         renderedDataUrl: s.renderedDataUrl,
         comment: s.comment,
         commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "bottom",
+        stepStatus: normalizeStepStatus(s.stepStatus || s.status),
         novedad: s.novedad,
         severity: s.severity,
         boxes: s.boxes,
@@ -24047,6 +24075,7 @@ var __async = (__this, __arguments, generator) => {
       renderedDataUrl: s.renderedDataUrl,
       comment: s.comment || "",
       commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "bottom",
+      stepStatus: normalizeStepStatus(s.stepStatus || s.status),
       novedad: !!s.novedad,
       severity: s.severity !== undefined ? s.severity : (s.novedad ? "alta" : null),
       boxes: s.boxes || [],
@@ -24328,7 +24357,7 @@ var __async = (__this, __arguments, generator) => {
     canvas.height = naturalH * scale;
     canvas.getContext("2d").drawImage(sourceEl, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.95); // buena nitidez, el copiado ya no depende del tamaño
-    const step = { id: Date.now(), dataUrl, comment: "", commentPosition: "bottom", novedad: false, severity: null, boxes: [], color: "#e02424" };
+    const step = { id: Date.now(), dataUrl, comment: "", commentPosition: "bottom", stepStatus: "pendiente", novedad: false, severity: null, boxes: [], color: "#e02424" };
     steps.push(step);
     addStepCard(step);
     maybeWarnLargeSession();
@@ -24982,6 +25011,7 @@ var __async = (__this, __arguments, generator) => {
   // volver a decodificar 60 imágenes cada vez que se agrega un paso)
   function addStepCard(step) {
     step.commentPosition = ["top", "middle", "bottom"].includes(step.commentPosition) ? step.commentPosition : "bottom";
+    step.stepStatus = normalizeStepStatus(step.stepStatus || step.status);
 
     if (stepsContainer.querySelector(".empty-msg")) stepsContainer.innerHTML = "";
     const idx = steps.length; // número de paso al momento de crearlo
@@ -25032,6 +25062,15 @@ var __async = (__this, __arguments, generator) => {
         <textarea placeholder="Comentario del paso...">${step.comment}</textarea>
       </div>
       <div class="comment-anchor comment-bottom-anchor" data-comment-anchor="bottom">Soltar comentario abajo</div>
+      <div class="status-row">
+        <label class="status-label" for="status-${step.id}">Estado</label>
+        <select class="step-status-select" id="status-${step.id}">
+          <option value="pendiente" ${step.stepStatus === "pendiente" || !step.stepStatus ? "selected" : ""}>⏳ Pendiente</option>
+          <option value="aprobado" ${step.stepStatus === "aprobado" ? "selected" : ""}>✅ Aprobado</option>
+          <option value="fallo" ${step.stepStatus === "fallo" ? "selected" : ""}>❌ Falló</option>
+          <option value="observado" ${step.stepStatus === "observado" ? "selected" : ""}>⚠️ Observado</option>
+        </select>
+      </div>
       <div class="severity-row">
         <button class="sev-btn sev-btn-none${!step.severity ? " selected" : ""}" data-sev="" aria-pressed="${!step.severity ? "true" : "false"}">Sin novedad</button>
         <button class="sev-btn sev-btn-alta${step.severity === "alta" ? " selected" : ""}" data-sev="alta" aria-pressed="${step.severity === "alta" ? "true" : "false"}">🔴 Alta</button>
@@ -25193,6 +25232,13 @@ var __async = (__this, __arguments, generator) => {
     card.querySelector("textarea").addEventListener("input", (e) => {
       step.comment = e.target.value;
       autosave();
+      applyStepsFilter();
+    });
+    const statusSelect = card.querySelector(".step-status-select");
+    statusSelect.addEventListener("change", () => {
+      pushUndoCheckpoint();
+      step.stepStatus = normalizeStepStatus(statusSelect.value);
+      saveStateToDB();
       applyStepsFilter();
     });
     card.querySelectorAll(".sev-btn").forEach((sb) => {
@@ -25527,6 +25573,10 @@ var __async = (__this, __arguments, generator) => {
     const tester = document.getElementById("tester").value;
     const fecha = new Date().toLocaleDateString("es-CO");
     const novedades = sortedNovedades(steps.filter((s) => s.novedad));
+    const summary = buildCaseSummary(steps, SEVERITY_LABEL);
+    const summaryListHtml = summary.stepSummaries
+      .map((item) => `<li><b>Paso ${item.index}:</b> ${getStepStatusLabel(item.status)} • ${item.severityLabel} • ${escapeHtml(item.comment)}</li>`)
+      .join("");
 
     const stepsHtml = steps
       .map((s, i) => {
@@ -25573,6 +25623,13 @@ var __async = (__this, __arguments, generator) => {
         <p><b>Área / equipo:</b> ${escapeHtml(team)}</p>
         <p><b>Fecha:</b> ${fecha}</p>
         <p><b>Documentado por:</b> ${escapeHtml(tester)}</p>
+        <div style="margin:14px 0 18px;padding:12px 14px;border:1px solid #dce6f1;background:#f8fbff;border-radius:8px;">
+          <h2 style="margin:0 0 8px;color:#2b579a;">Resumen del caso</h2>
+          <p style="margin:4px 0;"><b>Total de pasos:</b> ${summary.totalSteps}</p>
+          <p style="margin:4px 0;"><b>Pasos con novedad:</b> ${summary.novedadCount}</p>
+          <p style="margin:4px 0;"><b>Estados:</b> Pendiente ${summary.statusCounts.pendiente} • Aprobado ${summary.statusCounts.aprobado} • Falló ${summary.statusCounts.fallo} • Observado ${summary.statusCounts.observado}</p>
+          <ul style="margin:8px 0 0 18px;padding:0;">${summaryListHtml}</ul>
+        </div>
         <hr/>
         ${stepsHtml}
         ${resumenHtml}
@@ -25765,6 +25822,7 @@ var __async = (__this, __arguments, generator) => {
     blocks.push(new Paragraph(""));
 
     const evidenceParas = [];
+    const summary = buildCaseSummary(caseSteps, SEVERITY_LABEL);
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Código del caso de prueba: "), panamValueRun(caseId)] }));
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Fecha de ejecución: "), panamValueRun(fecha)] }));
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Persona que ejecuta: "), panamValueRun(tester)] }));
@@ -25773,6 +25831,13 @@ var __async = (__this, __arguments, generator) => {
     if (onlyNovedades) {
       evidenceParas.push(new Paragraph({ children: [new TextRun({ text: "Documento de novedades — solo se incluyen los pasos marcados como novedad.", italics: true, font: "Arial", size: 18 })] }));
     }
+    evidenceParas.push(new Paragraph({ children: [new TextRun({ text: "RESUMEN DEL CASO", bold: true, color: "2B579A", font: "Arial", size: 24 })] }));
+    evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Total de pasos: ${summary.totalSteps}`, font: "Arial", size: 20 })] }));
+    evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Pasos con novedad: ${summary.novedadCount}`, font: "Arial", size: 20 })] }));
+    evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Estados: Pendiente ${summary.statusCounts.pendiente} • Aprobado ${summary.statusCounts.aprobado} • Falló ${summary.statusCounts.fallo} • Observado ${summary.statusCounts.observado}`, font: "Arial", size: 20 })] }));
+    summary.stepSummaries.forEach((item) => {
+      evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Paso ${item.index}: ${getStepStatusLabel(item.status)} • ${item.severityLabel} • ${item.comment}`, font: "Arial", size: 18 })] }));
+    });
     evidenceParas.push(new Paragraph(""));
 
     if (!onlyNovedades) {
