@@ -361,6 +361,8 @@
     background: linear-gradient(180deg, #293241, #232c39);
     margin-bottom: 6px; font-size: 12.5px;
   }
+  .case-chip-actions { display: flex; align-items: center; gap: 6px; }
+  .case-chip-actions button { padding: 4px 8px; font-size: 11px; }
   .case-chip .remove-case {
     background: none; border: none; color: var(--red); cursor: pointer; font-size: 13px; padding: 0 4px;
   }
@@ -26310,10 +26312,16 @@ var __async = (__this, __arguments, generator) => {
         return `
         <div class="case-chip">
           <span>${escapeHtml(c.caseId || "Sin ID")} <span style="color:var(--text-faint);">(${n} paso${n === 1 ? "" : "s"})</span></span>
-          <button class="remove-case" data-idx="${i}" title="Quitar del lote" aria-label="Quitar del lote el caso ${escapeHtml(c.caseId || "Sin ID")}">✕</button>
+          <span class="case-chip-actions">
+            <button class="btn-secondary open-case" data-idx="${i}" title="Abrir este caso para editarlo">Abrir</button>
+            <button class="remove-case" data-idx="${i}" title="Quitar del lote" aria-label="Quitar del lote el caso ${escapeHtml(c.caseId || "Sin ID")}">✕</button>
+          </span>
         </div>`;
       })
       .join("");
+    container.querySelectorAll(".open-case").forEach((btn) => {
+      btn.addEventListener("click", () => openCaseFromBatch(Number(btn.dataset.idx)));
+    });
     container.querySelectorAll(".remove-case").forEach((btn) => {
       btn.addEventListener("click", () => removeCaseFromBatch(Number(btn.dataset.idx)));
     });
@@ -26337,6 +26345,42 @@ var __async = (__this, __arguments, generator) => {
       setDocumentNotesValue("");
     }
     renumberSteps();
+  }
+
+  async function openCaseFromBatch(idx) {
+    const selectedCase = savedCases[idx];
+    if (!selectedCase) return;
+
+    const current = currentCaseData();
+    const hasCurrentData = current.steps.length > 0 || [current.caseId, current.description, current.team, current.tester]
+      .some((value) => String(value || "").trim());
+    if (hasCurrentData) {
+      const proceed = await showAppConfirm(
+        "El caso actual tiene información. ¿Reemplazarlo con el caso guardado?",
+        document.querySelector(`.open-case[data-idx="${idx}"]`)
+      );
+      if (!proceed) return;
+    }
+
+    resetCurrentCaseUI({ clearFields: true });
+    document.getElementById("caseId").value = selectedCase.caseId || "";
+    document.getElementById("description").value = selectedCase.description || "";
+    document.getElementById("team").value = selectedCase.team || "";
+    document.getElementById("tester").value = selectedCase.tester || "";
+    setDocumentNotesValue(selectedCase.documentNotes || "");
+    editingId = null;
+    steps = [];
+    (selectedCase.steps || []).map((step) => normalizeStepForRestore(step)).forEach((step) => {
+      steps.push(step);
+      addStepCard(step);
+    });
+    undoStack.length = 0;
+    redoStack.length = 0;
+    renumberSteps();
+    updateHistoryButtons();
+    saveStateToDB();
+    autosaveStatus.textContent = "✅ Caso abierto para continuar editándolo.";
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   document.getElementById("addToBatchBtn").addEventListener("click", async () => {
