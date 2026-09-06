@@ -23955,6 +23955,7 @@ var __async = (__this, __arguments, generator) => {
     let steps = [];
     let savedCases = [];
     let isCapturePaused = false;
+    let pipWindow = null;
 
     const caseUtils = window.caseUtils || {};
     const normalizeStepStatus = caseUtils.normalizeStepStatus || ((value) => {
@@ -24466,7 +24467,18 @@ var __async = (__this, __arguments, generator) => {
       await showAppAlert("Tu navegador no soporta ventana flotante (usa Chrome/Edge actualizado). Mientras tanto, deja esta pestaña visible en una ventana aparte junto a Meet.", document.getElementById("pipBtn"));
       return;
     }
-    const pipWindow = await documentPictureInPicture.requestWindow({ width: 260, height: 240 });
+    if (pipWindow && !pipWindow.closed) {
+      pipWindow.focus();
+      return;
+    }
+
+    try {
+      pipWindow = await documentPictureInPicture.requestWindow({ width: 260, height: 240 });
+    } catch (err) {
+      pipWindow = null;
+      await showAppAlert("No se pudo abrir la ventana flotante. Cierra cualquier ventana flotante anterior e inténtalo de nuevo.", document.getElementById("pipBtn"));
+      return;
+    }
 
     [...document.styleSheets].forEach((sheet) => {
       try {
@@ -24491,6 +24503,7 @@ var __async = (__this, __arguments, generator) => {
     pipWindow.document.body.appendChild(btn);
     pipWindow.document.addEventListener("keydown", handleCaptureShortcut);
     pipWindow.document.addEventListener("paste", handlePasteEvent);
+    preview.play().catch(() => {});
 
     const hint = document.createElement("div");
     hint.textContent = "Atajo: Ctrl+Shift+Y";
@@ -24500,8 +24513,10 @@ var __async = (__this, __arguments, generator) => {
     placeholder.style.display = "block";
 
     pipWindow.addEventListener("pagehide", () => {
-      document.querySelector(".card").insertBefore(preview, placeholder);
+      placeholder.parentElement.insertBefore(preview, placeholder);
       placeholder.style.display = "none";
+      pipWindow = null;
+      preview.play().catch(() => {});
     });
   });
 
