@@ -1,6 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeStepStatus, buildCaseSummary, buildDocumentNotesLines } = require('./case-utils.js');
+const {
+  normalizeStepStatus,
+  buildCaseSummary,
+  buildDocumentNotesLines,
+  CASE_TEMPLATES,
+  getCaseTemplate,
+  buildExecutiveSummary,
+} = require('./case-utils.js');
 
 test('normalizeStepStatus returns a valid fallback', () => {
   assert.equal(normalizeStepStatus('aprobado'), 'aprobado');
@@ -27,4 +34,28 @@ test('buildCaseSummary counts statuses and novedad', () => {
 test('buildDocumentNotesLines trims and splits pending notes', () => {
   assert.deepEqual(buildDocumentNotesLines('Primera nota\n\nSegunda nota'), ['Primera nota', 'Segunda nota']);
   assert.deepEqual(buildDocumentNotesLines('   '), []);
+});
+
+test('getCaseTemplate returns a known template and default fallback', () => {
+  assert.equal(getCaseTemplate('funcional').label, 'Caso funcional');
+  assert.equal(getCaseTemplate('inexistente').key, 'general');
+  assert.equal(CASE_TEMPLATES.general.key, 'general');
+});
+
+test('buildExecutiveSummary generates a concise summary from template and steps', () => {
+  const summary = buildExecutiveSummary({
+    templateKey: 'funcional',
+    description: 'Validar login con credenciales válidas',
+    steps: [
+      { severity: 'alta', comment: 'El usuario no puede ingresar', stepStatus: 'fallo' },
+      { severity: 'baja', comment: 'La pantalla está bien alineada', stepStatus: 'aprobado' },
+    ],
+  });
+
+  assert.match(summary.text, /Validar login con credenciales válidas/);
+  assert.match(summary.text, /Novedad principal/);
+  assert.match(summary.text, /Impacto/);
+  assert.equal(summary.template.key, 'funcional');
+  assert.equal(summary.totalSteps, 2);
+  assert.equal(summary.novedadCount, 2);
 });

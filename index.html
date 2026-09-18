@@ -753,6 +753,13 @@
     <input type="text" id="caseId" name="caseId" autocomplete="off" placeholder="Ej: CP-001 o Soporte contabilidad" />
     <label for="description">Descripción</label>
     <input type="text" id="description" name="description" autocomplete="off" placeholder="Descripción" />
+    <label for="caseTemplateSelect">Plantilla del caso</label>
+    <select id="caseTemplateSelect" name="caseTemplateSelect" style="width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:7px; font-size:13px; background:var(--panel-2); color:var(--text); font-family:var(--sans);">
+      <option value="general">General</option>
+      <option value="funcional">Caso funcional</option>
+      <option value="regresion">Prueba de regresión</option>
+      <option value="soporte">Soporte / incidencia</option>
+    </select>
     <div class="row2">
       <div>
         <label for="team">Área / equipo</label>
@@ -23981,7 +23988,29 @@ var __async = (__this, __arguments, generator) => {
       if (!normalized) return [];
       return normalized.split("\n").map((line) => line.trim()).filter(Boolean);
     });
+    const buildExecutiveSummary = caseUtils.buildExecutiveSummary || ((payload = {}) => ({
+      template: { key: "general", label: "General" },
+      description: String(payload.description || "").trim(),
+      totalSteps: Array.isArray(payload.steps) ? payload.steps.length : 0,
+      novedadCount: Array.isArray(payload.steps) ? payload.steps.filter((s) => s && s.severity).length : 0,
+      text: "Resumen ejecutivo no disponible.",
+    }));
     const DOCUMENT_NOTES_INPUT_ID = "documentNotesInput";
+    const DEFAULT_TEMPLATE_KEY = "general";
+
+    function getSelectedTemplateKey() {
+      const select = document.getElementById("caseTemplateSelect");
+      if (!select) return DEFAULT_TEMPLATE_KEY;
+      return (select.value || DEFAULT_TEMPLATE_KEY).trim().toLowerCase();
+    }
+
+    function getCurrentExecutiveSummary() {
+      return buildExecutiveSummary({
+        templateKey: getSelectedTemplateKey(),
+        description: document.getElementById("description").value,
+        steps,
+      });
+    }
 
   // ================== GUARDADO AUTOMÁTICO (IndexedDB) ==================
   const DB_NAME = "documentadorCasosDB";
@@ -24040,6 +24069,7 @@ var __async = (__this, __arguments, generator) => {
         description: document.getElementById("description").value,
         team: document.getElementById("team").value,
         tester: document.getElementById("tester").value,
+        templateKey: getSelectedTemplateKey(),
         documentNotes: document.getElementById("documentNotesInput") ? document.getElementById("documentNotesInput").value : "",
         steps: serializableSteps,
         savedAt: Date.now(),
@@ -24109,6 +24139,7 @@ var __async = (__this, __arguments, generator) => {
       description: document.getElementById("description").value,
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
+      templateKey: getSelectedTemplateKey(),
       steps: JSON.parse(JSON.stringify(steps)),
     };
   }
@@ -24165,6 +24196,9 @@ var __async = (__this, __arguments, generator) => {
       document.getElementById("description").value = snapshot.description || "";
       document.getElementById("team").value = snapshot.team || "";
       document.getElementById("tester").value = snapshot.tester || "";
+      const selectedTemplate = snapshot.templateKey || DEFAULT_TEMPLATE_KEY;
+      const templateSelect = document.getElementById("caseTemplateSelect");
+      if (templateSelect) templateSelect.value = selectedTemplate;
       steps = (snapshot.steps || []).map((s) => normalizeStepForRestore(s));
       steps.forEach((s) => addStepCard(s));
       renumberSteps();
@@ -24234,6 +24268,15 @@ var __async = (__this, __arguments, generator) => {
   ["caseId", "description", "team", "tester"].forEach((id) => {
     document.getElementById(id).addEventListener("input", () => autosave());
   });
+  const caseTemplateSelect = document.getElementById("caseTemplateSelect");
+  if (caseTemplateSelect) {
+    caseTemplateSelect.addEventListener("change", () => {
+      autosave();
+      if (document.getElementById("copyOverlay").style.display === "block") {
+        applyDocumentNotesToPreview();
+      }
+    });
+  }
   const preview = document.getElementById("preview");
   const placeholder = document.getElementById("previewPlaceholder");
   const shareStatus = document.getElementById("shareStatus");
@@ -25605,10 +25648,13 @@ var __async = (__this, __arguments, generator) => {
     const description = document.getElementById("description").value;
     const team = document.getElementById("team").value;
     const tester = document.getElementById("tester").value;
+    const templateKey = getSelectedTemplateKey();
+    const template = caseUtils.getCaseTemplate ? caseUtils.getCaseTemplate(templateKey) : { label: "General" };
     const fecha = new Date().toLocaleDateString("es-CO");
     const novedades = sortedNovedades(steps.filter((s) => s.novedad));
     const summary = buildCaseSummary(steps, SEVERITY_LABEL);
     const documentNotes = buildDocumentNotesLines(getDocumentNotesValue());
+    const executiveSummary = buildExecutiveSummary({ templateKey, description, steps });
     const documentNotesHtml = documentNotes.length > 0
       ? `<div style="margin:12px 0;border:1px solid #dce6f1;background:#f7fbff;padding:10px 12px;border-radius:8px;"><strong>Notas pendientes:</strong><ul style="margin:6px 0 0 18px;padding:0;">${documentNotes.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul></div>`
       : "";
@@ -25618,6 +25664,16 @@ var __async = (__this, __arguments, generator) => {
     const emptyStateHtml = steps.length === 0
       ? `<div style="margin:12px 0;padding:12px 14px;border:1px dashed #9bb7d6;background:#eef5fb;border-radius:8px;color:#35506b;"><b>Vista previa vacía:</b> todavía no hay pasos capturados. Cuando agregues evidencia, aquí verás el documento completo.</div>`
       : "";
+
+    const executiveSummaryHtml = `
+      <div style="margin:14px 0 18px;padding:12px 14px;border:1px solid #d7e5f7;background:#f9fbff;border-radius:8px;">
+        <h2 style="margin:0 0 8px;color:#2b579a;">Resumen ejecutivo</h2>
+        <p style="margin:4px 0;"><b>Plantilla:</b> ${escapeHtml(template.label || "General")}</p>
+        <p style="margin:4px 0;"><b>Objetivo:</b> ${escapeHtml(template.objective || "Documentar la evidencia del caso." )}</p>
+        <p style="margin:4px 0;"><b>Descripción:</b> ${escapeHtml(description || "Sin descripción")}</p>
+        <p style="margin:4px 0;"><b>Novedad principal:</b> ${escapeHtml((summary.stepSummaries.find((item) => item.novedad) || summary.stepSummaries[0] || {}).comment || "No se registraron elementos con novedad.")}</p>
+        <p style="margin:4px 0;"><b>Impacto:</b> ${escapeHtml(executiveSummary.text.split("Impacto:")[1] ? executiveSummary.text.split("Impacto:")[1].split("\n")[0].trim() : "Sin impacto crítico reportado.")}</p>
+      </div>`;
 
     const stepsHtml = steps
       .map((s, i) => {
@@ -25665,9 +25721,11 @@ var __async = (__this, __arguments, generator) => {
       <div style="font-family:Calibri,Arial,sans-serif;font-size:14px;color:#222;">
         <h1 style="color:#2b579a;">Caso de Prueba: ${escapeHtml(caseId)}</h1>
         <p><b>Descripción:</b> ${escapeHtml(description)}</p>
+        <p><b>Plantilla:</b> ${escapeHtml(template.label || "General")}</p>
         <p><b>Área / equipo:</b> ${escapeHtml(team)}</p>
         <p><b>Fecha:</b> ${fecha}</p>
         <p><b>Documentado por:</b> ${escapeHtml(tester)}</p>
+        ${executiveSummaryHtml}
         <div style="margin:14px 0 18px;padding:12px 14px;border:1px solid #dce6f1;background:#f8fbff;border-radius:8px;">
           <h2 style="margin:0 0 8px;color:#2b579a;">Resumen del caso</h2>
           <p style="margin:4px 0;"><b>Total de pasos:</b> ${summary.totalSteps}</p>
@@ -25851,10 +25909,12 @@ var __async = (__this, __arguments, generator) => {
     options = options || {};
     const onlyNovedades = !!options.onlyNovedades;
     const { Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, AlignmentType } = docx;
-    const { caseId, description, team, tester, steps: caseSteps } = caseData;
+    const { caseId, description, team, tester, templateKey, steps: caseSteps } = caseData;
     const fecha = caseData.fecha || new Date().toLocaleDateString("es-CO");
     const novedades = sortedNovedades(caseSteps.filter((s) => s.novedad));
     const MAX_W = 500;
+    const template = caseUtils.getCaseTemplate ? caseUtils.getCaseTemplate(templateKey || DEFAULT_TEMPLATE_KEY) : { label: "General" };
+    const executiveSummary = buildExecutiveSummary({ templateKey: templateKey || DEFAULT_TEMPLATE_KEY, description, steps: caseSteps });
 
     const blocks = [];
 
@@ -25872,10 +25932,12 @@ var __async = (__this, __arguments, generator) => {
     const summary = buildCaseSummary(caseSteps, SEVERITY_LABEL);
     const documentNotes = buildDocumentNotesLines(caseData.documentNotes || getDocumentNotesValue());
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Código del caso de prueba: "), panamValueRun(caseId)] }));
+    evidenceParas.push(new Paragraph({ children: [panamLabelRun("Plantilla: "), panamValueRun(template.label || "General")] }));
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Fecha de ejecución: "), panamValueRun(fecha)] }));
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Persona que ejecuta: "), panamValueRun(tester)] }));
     if (team) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Área / equipo: "), panamValueRun(team)] }));
     if (description) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Descripción: "), panamValueRun(description)] }));
+    evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Resumen ejecutivo: ${executiveSummary.text || ""}`, font: "Arial", size: 18 })] }));
     if (onlyNovedades) {
       evidenceParas.push(new Paragraph({ children: [new TextRun({ text: "Documento de novedades — solo se incluyen los pasos marcados como novedad.", italics: true, font: "Arial", size: 18 })] }));
     }
@@ -25949,6 +26011,7 @@ var __async = (__this, __arguments, generator) => {
       description: document.getElementById("description").value,
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
+      templateKey: getSelectedTemplateKey(),
       documentNotes: document.getElementById("documentNotesInput") ? document.getElementById("documentNotesInput").value : "",
       steps,
     };
