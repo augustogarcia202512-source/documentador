@@ -927,6 +927,8 @@
     <div class="app-dialog-panel" style="max-width:680px; max-height:90vh; overflow:auto;">
       <h2 id="defectOverlayTitle" class="app-dialog-title">🐞 Reportar defecto</h2>
       <p id="defectOverlayStep" class="app-dialog-message">Completa solo la información necesaria para reportar este paso.</p>
+      <label for="defectEvidenceList">Evidencias incluidas</label>
+      <div id="defectEvidenceList" style="display:grid;gap:6px;margin:6px 0 12px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);max-height:150px;overflow:auto;"></div>
       <div class="row2">
         <div>
           <label for="requirement">Requisito / historia</label>
@@ -24696,6 +24698,14 @@ var __async = (__this, __arguments, generator) => {
 
   let defectDraftStep = null;
   let defectDraftLabel = "";
+  let defectDraftSteps = [];
+
+  function getSelectedDefectSteps() {
+    const selectedIds = new Set(
+      [...document.querySelectorAll("#defectEvidenceList input[type=checkbox]:checked")].map((input) => String(input.value))
+    );
+    return defectDraftSteps.filter((step) => selectedIds.has(String(step.id)));
+  }
 
   function openDefectReportPanel(step, stepIndexLabel) {
     const overlay = document.getElementById("defectOverlay");
@@ -24707,7 +24717,17 @@ var __async = (__this, __arguments, generator) => {
 
     defectDraftStep = step;
     defectDraftLabel = stepIndexLabel || "Paso fallido";
-    stepLabel.textContent = `${defectDraftLabel} · completa los datos del defecto y elige una acción.`;
+    defectDraftSteps = steps.slice();
+    stepLabel.textContent = `${defectDraftLabel} · selecciona una o varias evidencias para unificarlas en el reporte.`;
+    const evidenceList = document.getElementById("defectEvidenceList");
+    if (evidenceList) {
+      evidenceList.innerHTML = defectDraftSteps.map((candidate) => {
+        const index = steps.findIndex((item) => item.id === candidate.id) + 1;
+        const checked = candidate.id === step.id ? "checked" : "";
+        const label = `Paso ${index}${candidate.comment ? ` · ${candidate.comment.slice(0, 70)}` : " · Sin comentario"}`;
+        return `<label style="display:flex;gap:8px;align-items:center;font-size:12px;cursor:pointer;"><input type="checkbox" value="${candidate.id}" ${checked} /> <span>${escapeHtml(label)}</span></label>`;
+      }).join("");
+    }
     setQaContext(getQaContext());
     if (expected && !expected.value) expected.value = "Validar el comportamiento esperado según el requisito.";
     if (actual && !actual.value) actual.value = String((step && step.comment) || "").trim();
@@ -24722,32 +24742,38 @@ var __async = (__this, __arguments, generator) => {
     if (overlay) overlay.style.display = "none";
     defectDraftStep = null;
     defectDraftLabel = "";
+    defectDraftSteps = [];
   }
 
-  function buildDefectText(step, stepIndexLabel) {
+  function buildDefectText(step, stepIndexLabel, selectedSteps) {
     const qaContext = getQaContext();
     const comment = String((step && step.comment) || "").trim() || "Sin detalle registrado.";
     const priority = document.getElementById("defectPriority");
+    const evidenceSteps = selectedSteps && selectedSteps.length ? selectedSteps : [step];
+    const reproductionSteps = evidenceSteps.map((item) => {
+      const index = steps.findIndex((candidate) => candidate.id === item.id) + 1;
+      return `Paso ${index}: ${String(item.comment || "Sin detalle registrado.").trim()}`;
+    }).join("\n");
     return [
-      `Título: ${qaContext.requirement || "Incidencia detectada"} - ${stepIndexLabel || "Paso fallido"}`,
+      `Título: ${qaContext.requirement || "Incidencia detectada"} - ${evidenceSteps.length} evidencia${evidenceSteps.length === 1 ? "" : "s"}`,
       `Requisito: ${qaContext.requirement || "Sin especificar"}`,
       `Ambiente: ${qaContext.environment || "Sin especificar"}`,
       `Versión / build: ${qaContext.buildVersion || "Sin especificar"}`,
       `Precondiciones: ${qaContext.preconditions || "Sin especificar"}`,
       "",
       "Pasos para reproducir:",
-      `${stepIndexLabel || "Paso fallido"}: ${comment}`,
+      reproductionSteps,
       "",
       `Resultado esperado: ${qaContext.expectedResult || "Sin especificar"}`,
       `Resultado actual: ${qaContext.actualResult || comment}`,
       `Prioridad: ${(priority && priority.value ? priority.value : "media").toUpperCase()}`,
       `Severidad: ${(step && step.severity ? step.severity : "media").toUpperCase()}`,
-      "Evidencia: imagen asociada al paso.",
+      `Evidencias: ${evidenceSteps.map((item) => `Paso ${steps.findIndex((candidate) => candidate.id === item.id) + 1}`).join(", ")}.`,
     ].join("\n");
   }
 
-  async function copyDefectReport(step, stepIndexLabel, opener) {
-    const defectText = buildDefectText(step, stepIndexLabel);
+  async function copyDefectReport(step, stepIndexLabel, opener, selectedSteps) {
+    const defectText = buildDefectText(step, stepIndexLabel, selectedSteps);
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(defectText);
@@ -24780,20 +24806,50 @@ var __async = (__this, __arguments, generator) => {
     }
   }
 
-  async function copyDefectWithLegacySelection(step, stepIndexLabel, defectText) {
-    const sourceUrl = step && (step.renderedDataUrl || step.dataUrl);
-    if (!sourceUrl || typeof document.execCommand !== "function") return false;
+  async function buildCompositeEvidencePng(selectedSteps) {
+    const images = await Promise.all(selectedSteps.map((step) => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = step.renderedDataUrl || step.dataUrl;
+    })));
+    const width = Math.max(...images.map((image) => image.naturalWidth));
+    const height = images.reduce((total, image) => total + Math.round(image.naturalHeight * (width / image.naturalWidth)) + 24, 0);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    let y = 0;
+    images.forEach((image, index) => {
+      const scaledHeight = Math.round(image.naturalHeight * (width / image.naturalWidth));
+      context.drawImage(image, 0, y, width, scaledHeight);
+      y += scaledHeight + 24;
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, y - 24, width, 24);
+      context.fillStyle = "#555555";
+      context.font = "14px Arial";
+      context.fillText(`Evidencia ${index + 1}`, 8, y - 7);
+    });
+    return await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  }
+
+  async function copyDefectWithLegacySelection(selectedSteps, defectText) {
+    if (!selectedSteps.length || typeof document.execCommand !== "function") return false;
     const holder = document.createElement("div");
-    const image = document.createElement("img");
     holder.contentEditable = "true";
     holder.style.cssText = "position:fixed;left:-10000px;top:0;opacity:0;pointer-events:none;";
     holder.innerHTML = `<p>${escapeHtml(defectText).replace(/\n/g, "<br>")}</p>`;
-    image.src = sourceUrl;
-    image.alt = `Evidencia ${stepIndexLabel || "del defecto"}`;
-    holder.appendChild(image);
+    selectedSteps.forEach((step) => {
+      const image = document.createElement("img");
+      image.src = step.renderedDataUrl || step.dataUrl;
+      image.alt = "Evidencia del defecto";
+      holder.appendChild(image);
+    });
     document.body.appendChild(holder);
     try {
-      if (!image.complete) await new Promise((resolve) => image.addEventListener("load", resolve, { once: true }));
+      await Promise.all([...holder.querySelectorAll("img")].map((image) => image.complete ? Promise.resolve() : new Promise((resolve) => image.addEventListener("load", resolve, { once: true }))));
       holder.focus();
       const selection = window.getSelection();
       const range = document.createRange();
@@ -24811,17 +24867,19 @@ var __async = (__this, __arguments, generator) => {
   }
 
   async function copyDefectReportWithEvidence(step, stepIndexLabel, opener) {
-    const sourceUrl = step && (step.renderedDataUrl || step.dataUrl);
-    const defectText = buildDefectText(step, stepIndexLabel);
-    if (!sourceUrl) {
+    const selectedSteps = getSelectedDefectSteps();
+    const sourceSteps = selectedSteps.length ? selectedSteps : [step];
+    const sourceUrl = sourceSteps[0] && (sourceSteps[0].renderedDataUrl || sourceSteps[0].dataUrl);
+    const defectText = buildDefectText(step, stepIndexLabel, sourceSteps);
+    if (!sourceUrl || !sourceSteps.length) {
       await copyDefectReport(step, stepIndexLabel, opener);
       return;
     }
     try {
-      const blob = await (await fetch(sourceUrl)).blob();
-      const pngBlob = await imageBlobToPng(blob);
+      const pngBlob = await buildCompositeEvidencePng(sourceSteps);
       if (!navigator.clipboard || !window.ClipboardItem || !pngBlob) throw new Error("El navegador no admite copiar imágenes como PNG.");
-      const html = `<div style="font-family:Arial,sans-serif;white-space:pre-wrap;"><p>${escapeHtml(defectText).replace(/\n/g, "<br>")}</p><img src="${sourceUrl}" style="max-width:100%;border:1px solid #ccc;" /></div>`;
+      const htmlImages = sourceSteps.map((item) => `<img src="${item.renderedDataUrl || item.dataUrl}" style="display:block;max-width:100%;border:1px solid #ccc;margin:8px 0;" />`).join("");
+      const html = `<div style="font-family:Arial,sans-serif;white-space:pre-wrap;"><p>${escapeHtml(defectText).replace(/\n/g, "<br>")}</p>${htmlImages}</div>`;
       const item = new ClipboardItem({
         "image/png": pngBlob,
         "text/plain": new Blob([defectText], { type: "text/plain" }),
@@ -24832,7 +24890,7 @@ var __async = (__this, __arguments, generator) => {
       announceA11y("Reporte de defecto y evidencia copiados al portapapeles.");
     } catch (err) {
       console.error("No se pudo copiar el reporte con evidencia:", err);
-      if (await copyDefectWithLegacySelection(step, stepIndexLabel, defectText)) {
+      if (await copyDefectWithLegacySelection(sourceSteps, defectText)) {
         showTransientStatus("🐞 Reporte y evidencia copiados.", 2600);
         announceA11y("Reporte de defecto y evidencia copiados al portapapeles.");
         return;
@@ -24850,7 +24908,8 @@ var __async = (__this, __arguments, generator) => {
     try {
       const { Document, Packer, Header } = docx;
       const caseData = currentCaseData();
-      caseData.steps = [defectDraftStep];
+      const selectedSteps = getSelectedDefectSteps();
+      caseData.steps = selectedSteps.length ? selectedSteps : [defectDraftStep];
       caseData.qaContext = getQaContext();
       const bodyChildren = await buildCaseBodyBlocks(caseData, {}, null);
       const doc = new Document({
@@ -24885,7 +24944,8 @@ var __async = (__this, __arguments, generator) => {
 
   document.getElementById("closeDefectBtn").addEventListener("click", closeDefectReportPanel);
   document.getElementById("copyDefectBtn").addEventListener("click", async (event) => {
-    await copyDefectReport(defectDraftStep, defectDraftLabel, event.currentTarget);
+    const selectedSteps = getSelectedDefectSteps();
+    await copyDefectReport(defectDraftStep, selectedSteps.map((step) => `Paso ${steps.indexOf(step) + 1}`).join(", ") || defectDraftLabel, event.currentTarget, selectedSteps);
     closeDefectReportPanel();
   });
   document.getElementById("copyDefectEvidenceBtn").addEventListener("click", async () => {
