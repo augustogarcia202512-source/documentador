@@ -282,12 +282,25 @@
   .comment-controls { display: flex; justify-content: flex-end; margin-top: 8px; }
   .comment-controls .comment-pos-btn { font-size: 11px; padding: 4px 8px; }
   .comment-block { margin-top: 6px; }
+  .comment-block.collapsed textarea { display: none; }
+  .comment-block.collapsed .comment-label { display: none; }
   .comment-block-head {
     display: flex;
     align-items: center;
     gap: 6px;
     margin-bottom: 6px;
   }
+  .comment-block.collapsed .comment-block-head { margin-bottom: 0; }
+  .comment-toggle {
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 5px;
+    padding: 4px 7px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .comment-toggle:hover { border-color: var(--focus-ring); }
   .comment-label {
     font-family: var(--mono);
     font-size: 10px;
@@ -371,6 +384,44 @@
     border: 1px dashed var(--line); border-radius: 8px; font-family: var(--mono);
   }
   .help { font-size: 11px; color: var(--text-faint); margin-top: 8px; line-height: 1.5; }
+  .shortcut-help {
+    margin-top: 12px;
+    border: 1px solid var(--line-soft);
+    border-radius: 7px;
+    background: var(--panel-2);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .shortcut-help summary {
+    cursor: pointer;
+    padding: 9px 11px;
+    color: var(--text);
+    font-weight: 700;
+    user-select: none;
+  }
+  .shortcut-help summary::marker { color: var(--teal); }
+  .shortcut-help-content {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px 18px;
+    padding: 0 11px 11px;
+  }
+  .shortcut-help-item { display: flex; gap: 8px; align-items: baseline; }
+  .shortcut-help kbd {
+    min-width: 62px;
+    padding: 3px 6px;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    background: var(--panel-3);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 10px;
+    text-align: center;
+  }
+  @media (max-width: 560px) {
+    .shortcut-help-content { grid-template-columns: 1fr; }
+  }
 
   .card,
   .step-card,
@@ -733,7 +784,7 @@
     <button class="quick-btn quick-pause" id="quickPauseBtn" type="button" aria-pressed="false">Pausar</button>
     <button class="quick-btn quick-exit" id="quickExitCompactBtn" type="button">Salir</button>
   </div>
-  <button class="quick-comment-fab" id="quickCommentFab" type="button" title="Comentario rápido (Alt+M)">💬 Comentar</button>
+  <button class="quick-comment-fab" id="quickCommentFab" type="button" title="Comentario rápido (F1 o Alt+M)">💬 Comentar</button>
   <div class="quick-comment-panel" id="quickCommentPanel" role="dialog" aria-modal="false" aria-label="Comentario rápido">
     <div class="quick-comment-head">
       <span class="quick-comment-title">Comentario rápido</span>
@@ -745,6 +796,7 @@
       <button class="btn-secondary" id="quickCommentLoadBtn" type="button">Cargar actual</button>
       <button class="btn-primary" id="quickCommentSaveBtn" type="button">Guardar</button>
     </div>
+    <div class="help">Atajos: F1 abre el comentario, Ctrl+Enter guarda y Esc cierra.</div>
   </div>
   <div id="autosaveStatus" role="status" aria-live="polite"></div>
 
@@ -777,7 +829,7 @@
     <div id="previewPlaceholder">La vista previa está activa en la ventana flotante</div>
     <div id="shareStatus" role="status" aria-live="polite"></div>
     <div class="btn-row">
-      <button class="btn-primary" id="shareBtn">🖥️ Compartir pantalla o pestaña</button>
+      <button class="btn-primary" id="shareBtn" type="button">🖥️ Compartir pantalla o pestaña</button>
       <button class="btn-secondary" id="pipBtn">📌 Activar botón flotante</button>
       <button class="btn-secondary" id="captureBtn">📸 Capturar ahora (Ctrl+Shift+Y)</button>
       <button class="btn-secondary" id="undoBtn" title="Deshacer (Ctrl+Z)" disabled>↶ Deshacer</button>
@@ -785,6 +837,21 @@
       <span id="historyStatus" class="history-chip" role="status" aria-live="polite">Historial: 0/80</span>
     </div>
     <div class="help">1) Comparte la pestaña/ventana de Meet una sola vez. 2) Activa el botón flotante para no perder de vista la llamada. 3) Haz clic en Capturar cada vez que algo sea relevante (o presiona Ctrl+Shift+Y). 4) En cada paso, elige un color y arrastra sobre la imagen para resaltar algo puntual. 5) También puedes pegar una imagen ya copiada con Ctrl+V (por ejemplo, un pantallazo que te mandaron por chat) y se agrega como paso nuevo.</div>
+    <details class="shortcut-help">
+      <summary>⌨️ Ayuda rápida y atajos de teclado</summary>
+      <div class="shortcut-help-content">
+        <div class="shortcut-help-item"><kbd>F1</kbd><span>Abre el comentario rápido.</span></div>
+        <div class="shortcut-help-item"><kbd>F2</kbd><span>Captura un nuevo paso.</span></div>
+        <div class="shortcut-help-item"><kbd>F3</kbd><span>Comparte pantalla o pestaña.</span></div>
+        <div class="shortcut-help-item"><kbd>Alt + M</kbd><span>Abre o cierra comentarios.</span></div>
+        <div class="shortcut-help-item"><kbd>Ctrl + Enter</kbd><span>Guarda el comentario.</span></div>
+        <div class="shortcut-help-item"><kbd>Esc</kbd><span>Cierra el comentario o ventana activa.</span></div>
+        <div class="shortcut-help-item"><kbd>Ctrl + Shift + Y</kbd><span>Captura desde cualquier lugar.</span></div>
+        <div class="shortcut-help-item"><kbd>Ctrl + V</kbd><span>Agrega una imagen copiada como paso.</span></div>
+        <div class="shortcut-help-item"><kbd>Alt + Shift + P</kbd><span>Activa o desactiva presentación.</span></div>
+        <div class="shortcut-help-item"><kbd>Alt + Shift + C</kbd><span>Activa la vista compacta.</span></div>
+      </div>
+    </details>
   </div>
 
   <div class="steps-filter-bar" id="stepsFilterBar">
@@ -839,6 +906,7 @@
       <button id="zoomOutBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">−</button>
       <button id="zoomResetBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">100%</button>
       <button id="zoomInBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">+</button>
+      <button id="copyZoomImageBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">📋</button>
       <button id="closeZoomBtn" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer;">✕</button>
     </div>
     <img id="zoomImg" style="max-width:92vw; max-height:88vh; border-radius:4px; box-shadow:0 8px 32px rgba(0,0,0,0.6); border:1px solid var(--line); transform-origin:center center; transition:transform .12s ease;" />
@@ -852,6 +920,50 @@
         <button id="appDialogCancel" class="btn-secondary" style="display:none;">Cancelar</button>
         <button id="appDialogOk" class="btn-primary">Aceptar</button>
       </div>
+    </div>
+  </div>
+
+  <div id="defectOverlay" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="defectOverlayTitle" style="z-index:1250;">
+    <div class="app-dialog-panel" style="max-width:680px; max-height:90vh; overflow:auto;">
+      <h2 id="defectOverlayTitle" class="app-dialog-title">🐞 Reportar defecto</h2>
+      <p id="defectOverlayStep" class="app-dialog-message">Completa solo la información necesaria para reportar este paso.</p>
+      <div class="row2">
+        <div>
+          <label for="requirement">Requisito / historia</label>
+          <input type="text" id="requirement" name="requirement" placeholder="Ej: HU-142 · Inicio de sesión" />
+        </div>
+        <div>
+          <label for="environment">Ambiente</label>
+          <input type="text" id="environment" name="environment" placeholder="Ej: QA / UAT" />
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label for="buildVersion">Versión / build</label>
+          <input type="text" id="buildVersion" name="buildVersion" placeholder="Ej: 2.4.1" />
+        </div>
+        <div>
+          <label for="preconditions">Precondiciones</label>
+          <input type="text" id="preconditions" name="preconditions" placeholder="Ej: Usuario activo" />
+        </div>
+      </div>
+      <label for="defectExpectedResult">Resultado esperado</label>
+      <textarea id="defectExpectedResult" rows="2" placeholder="Qué debería ocurrir..."></textarea>
+      <label for="defectActualResult">Resultado actual</label>
+      <textarea id="defectActualResult" rows="2" placeholder="Qué ocurrió realmente..."></textarea>
+      <label for="defectPriority">Prioridad</label>
+      <select id="defectPriority" style="width:100%; padding:9px; border:1px solid var(--line); border-radius:6px; background:var(--panel-2); color:var(--text);">
+        <option value="alta">Alta</option>
+        <option value="media" selected>Media</option>
+        <option value="baja">Baja</option>
+      </select>
+      <div class="app-dialog-actions" style="margin-top:14px; flex-wrap:wrap;">
+        <button id="closeDefectBtn" class="btn-secondary">Cancelar</button>
+        <button id="copyDefectBtn" class="btn-primary">📋 Copiar reporte</button>
+        <button id="copyDefectEvidenceBtn" class="btn-secondary">📋 Copiar + evidencia</button>
+        <button id="downloadDefectDocxBtn" class="btn-secondary">📥 Descargar defecto (.docx)</button>
+      </div>
+      <div id="defectDocxStatus" role="status" aria-live="polite" style="font-size:12px;color:var(--text-muted);margin-top:8px;min-height:16px;"></div>
     </div>
   </div>
 
@@ -24012,6 +24124,32 @@ var __async = (__this, __arguments, generator) => {
       });
     }
 
+    const QA_CONTEXT_FIELDS = ["requirement", "environment", "buildVersion", "preconditions", "defectExpectedResult", "defectActualResult"];
+    const QA_CONTEXT_KEYS = {
+      requirement: "requirement",
+      environment: "environment",
+      buildVersion: "buildVersion",
+      preconditions: "preconditions",
+      defectExpectedResult: "expectedResult",
+      defectActualResult: "actualResult",
+    };
+
+    function getQaContext() {
+      return QA_CONTEXT_FIELDS.reduce((context, id) => {
+        const field = document.getElementById(id);
+        context[QA_CONTEXT_KEYS[id]] = field ? field.value : "";
+        return context;
+      }, {});
+    }
+
+    function setQaContext(context) {
+      const values = context || {};
+      QA_CONTEXT_FIELDS.forEach((id) => {
+        const field = document.getElementById(id);
+        if (field) field.value = values[QA_CONTEXT_KEYS[id]] || "";
+      });
+    }
+
   // ================== GUARDADO AUTOMÁTICO (IndexedDB) ==================
   const DB_NAME = "documentadorCasosDB";
   const STORE_NAME = "estado";
@@ -24070,6 +24208,7 @@ var __async = (__this, __arguments, generator) => {
         team: document.getElementById("team").value,
         tester: document.getElementById("tester").value,
         templateKey: getSelectedTemplateKey(),
+        qaContext: getQaContext(),
         documentNotes: document.getElementById("documentNotesInput") ? document.getElementById("documentNotesInput").value : "",
         steps: serializableSteps,
         savedAt: Date.now(),
@@ -24140,6 +24279,7 @@ var __async = (__this, __arguments, generator) => {
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
       templateKey: getSelectedTemplateKey(),
+      qaContext: getQaContext(),
       steps: JSON.parse(JSON.stringify(steps)),
     };
   }
@@ -24196,6 +24336,7 @@ var __async = (__this, __arguments, generator) => {
       document.getElementById("description").value = snapshot.description || "";
       document.getElementById("team").value = snapshot.team || "";
       document.getElementById("tester").value = snapshot.tester || "";
+      setQaContext(snapshot.qaContext);
       const selectedTemplate = snapshot.templateKey || DEFAULT_TEMPLATE_KEY;
       const templateSelect = document.getElementById("caseTemplateSelect");
       if (templateSelect) templateSelect.value = selectedTemplate;
@@ -24235,7 +24376,7 @@ var __async = (__this, __arguments, generator) => {
     if (historySuspended) return;
     const target = e.target;
     if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
-    const isCaseField = ["caseId", "description", "team", "tester"].includes(target.id);
+    const isCaseField = ["caseId", "description", "team", "tester", ...QA_CONTEXT_FIELDS].includes(target.id);
     const isStepComment = !!target.closest(".comment-block");
     if (!isCaseField && !isStepComment) return;
     const now = Date.now();
@@ -24265,7 +24406,7 @@ var __async = (__this, __arguments, generator) => {
   });
   // ============================================================
 
-  ["caseId", "description", "team", "tester"].forEach((id) => {
+  ["caseId", "description", "team", "tester", ...QA_CONTEXT_FIELDS].forEach((id) => {
     document.getElementById(id).addEventListener("input", () => autosave());
   });
   const caseTemplateSelect = document.getElementById("caseTemplateSelect");
@@ -24390,7 +24531,384 @@ var __async = (__this, __arguments, generator) => {
     return div.innerHTML.replace(/\n/g, "<br>");
   }
 
+  async function copyImageWithLegacyCommand(imageUrl) {
+    if (!imageUrl || typeof document.execCommand !== "function") return false;
+
+    const holder = document.createElement("div");
+    const image = document.createElement("img");
+    holder.contentEditable = "true";
+    holder.style.cssText = "position:fixed;left:-10000px;top:0;opacity:0;pointer-events:none;";
+    image.src = imageUrl;
+    image.alt = "";
+    holder.appendChild(image);
+    document.body.appendChild(holder);
+
+    try {
+      if (!image.complete) {
+        await new Promise((resolve) => {
+          image.addEventListener("load", resolve, { once: true });
+          image.addEventListener("error", resolve, { once: true });
+        });
+      }
+      holder.focus();
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNode(image);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return document.execCommand("copy");
+    } catch (err) {
+      console.error("No se pudo usar el fallback de copia del navegador:", err);
+      return false;
+    } finally {
+      window.getSelection().removeAllRanges();
+      holder.remove();
+    }
+  }
+
+  async function copyEvidenceWithLegacyCommand(imageUrl, snippet) {
+    if (!imageUrl || typeof document.execCommand !== "function") return false;
+
+    const holder = document.createElement("div");
+    const image = document.createElement("img");
+    holder.contentEditable = "true";
+    holder.style.cssText = "position:fixed;left:-10000px;top:0;opacity:0;pointer-events:none;";
+    holder.innerHTML = `<p>${escapeHtml(snippet).replace(/\n/g, "<br>")}</p>`;
+    image.src = imageUrl;
+    image.alt = "Evidencia";
+    holder.appendChild(image);
+    document.body.appendChild(holder);
+
+    try {
+      if (!image.complete) {
+        await new Promise((resolve) => {
+          image.addEventListener("load", resolve, { once: true });
+          image.addEventListener("error", resolve, { once: true });
+        });
+      }
+      holder.focus();
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(holder);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return document.execCommand("copy");
+    } catch (err) {
+      console.error("No se pudo usar el fallback enriquecido de copia:", err);
+      return false;
+    } finally {
+      window.getSelection().removeAllRanges();
+      holder.remove();
+    }
+  }
+
+  async function copyImageToClipboard(imageUrl, targetName) {
+    try {
+      if (!imageUrl) {
+        throw new Error("No hay imagen para copiar.");
+      }
+      if (!navigator.clipboard || !window.ClipboardItem) {
+        if (await copyImageWithLegacyCommand(imageUrl)) {
+          showTransientStatus("📋 Imagen copiada al portapapeles.", 2200);
+          announceA11y("Imagen copiada al portapapeles.");
+          return true;
+        }
+        openZoom(imageUrl);
+        showTransientStatus("🖼️ Este navegador no permite copiar imágenes directamente. Usa Ctrl+C sobre la imagen ampliada.", 5200);
+        announceA11y("La imagen se mostró ampliada. Usa Ctrl+C para copiarla.");
+        return true;
+      }
+
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const type = blob.type && blob.type.startsWith("image/") ? blob.type : "image/png";
+      const item = new ClipboardItem({ [type]: blob });
+      await navigator.clipboard.write([item]);
+      showTransientStatus("📋 Imagen copiada al portapapeles.", 2200);
+      announceA11y("Imagen copiada al portapapeles.");
+      return true;
+    } catch (err) {
+      console.error("No se pudo copiar la imagen:", err);
+      if (imageUrl) {
+        openZoom(imageUrl);
+        showTransientStatus("🖼️ No se pudo copiar directamente. Usa Ctrl+C sobre la imagen ampliada.", 5200);
+        announceA11y("La imagen se mostró ampliada. Usa Ctrl+C para copiarla.");
+        return true;
+      }
+      showTransientStatus("No se pudo abrir la imagen. Inténtalo de nuevo.", 5200);
+      return false;
+    }
+  }
+
+  async function copyStepEvidenceToClipboard(step, stepIndexLabel) {
+    const sourceUrl = step && (step.renderedDataUrl || step.dataUrl);
+    const documentNotes = buildDocumentNotesLines(getDocumentNotesValue());
+    const snippetParts = [
+      stepIndexLabel || "Evidencia",
+      (step && step.comment ? String(step.comment).trim() : "").trim() || "Sin comentario",
+    ];
+    if (documentNotes.length > 0) {
+      snippetParts.push("Notas:\n" + documentNotes.join("\n"));
+    }
+    const snippet = snippetParts.join("\n");
+
+    try {
+      if (!sourceUrl) {
+        throw new Error("No hay imagen para copiar evidencias.");
+      }
+      if (!navigator.clipboard || !window.ClipboardItem) {
+        throw new Error("Tu navegador no admite esta copia combinada.");
+      }
+
+      const response = await fetch(sourceUrl);
+      const blob = await response.blob();
+      const mimeType = blob.type && blob.type.startsWith("image/") ? blob.type : "image/png";
+      const html = `
+        <div style="font-family: Arial, sans-serif; font-size: 13px; color: #222;">
+          <p style="margin: 0 0 8px 0; font-weight: 700;">${escapeHtml(stepIndexLabel || "Evidencia")}</p>
+          <p style="margin: 0 0 10px 0; white-space: pre-wrap;">${escapeHtml((step && step.comment ? String(step.comment).trim() : "") || "Sin comentario")}</p>
+          ${documentNotes.length > 0 ? `<p style="margin: 0 0 10px 0; white-space: pre-wrap;"><strong>Notas:</strong><br>${escapeHtml(documentNotes.join("\n"))}</p>` : ""}
+          <img src="${sourceUrl}" style="max-width: 100%; border: 1px solid #ccc;" />
+        </div>
+      `;
+
+      const item = new ClipboardItem({
+        [mimeType]: blob,
+        "text/plain": new Blob([snippet], { type: "text/plain" }),
+        "text/html": new Blob([html], { type: "text/html" }),
+      });
+
+      await navigator.clipboard.write([item]);
+      showTransientStatus("📋 Evidencia con comentario copiada.", 2200);
+      announceA11y("Evidencia con comentario copiada al portapapeles.");
+      return true;
+    } catch (err) {
+      console.error("No se pudo copiar la evidencia con comentario:", err);
+      if (await copyEvidenceWithLegacyCommand(sourceUrl, snippet)) {
+        showTransientStatus("📋 Evidencia con comentario copiada.", 2200);
+        announceA11y("Evidencia con comentario copiada al portapapeles.");
+        return true;
+      }
+      const fallback = await copyImageToClipboard(sourceUrl, stepIndexLabel || "evidencia");
+      return fallback;
+    }
+  }
+
+  let defectDraftStep = null;
+  let defectDraftLabel = "";
+
+  function openDefectReportPanel(step, stepIndexLabel) {
+    const overlay = document.getElementById("defectOverlay");
+    const stepLabel = document.getElementById("defectOverlayStep");
+    const expected = document.getElementById("defectExpectedResult");
+    const actual = document.getElementById("defectActualResult");
+    const priority = document.getElementById("defectPriority");
+    if (!overlay) return;
+
+    defectDraftStep = step;
+    defectDraftLabel = stepIndexLabel || "Paso fallido";
+    stepLabel.textContent = `${defectDraftLabel} · completa los datos del defecto y elige una acción.`;
+    setQaContext(getQaContext());
+    if (expected && !expected.value) expected.value = "Validar el comportamiento esperado según el requisito.";
+    if (actual && !actual.value) actual.value = String((step && step.comment) || "").trim();
+    if (priority) priority.value = step && step.severity ? step.severity : "media";
+    overlay.style.display = "flex";
+    const firstField = document.getElementById("requirement");
+    if (firstField) firstField.focus();
+  }
+
+  function closeDefectReportPanel() {
+    const overlay = document.getElementById("defectOverlay");
+    if (overlay) overlay.style.display = "none";
+    defectDraftStep = null;
+    defectDraftLabel = "";
+  }
+
+  function buildDefectText(step, stepIndexLabel) {
+    const qaContext = getQaContext();
+    const comment = String((step && step.comment) || "").trim() || "Sin detalle registrado.";
+    const priority = document.getElementById("defectPriority");
+    return [
+      `Título: ${qaContext.requirement || "Incidencia detectada"} - ${stepIndexLabel || "Paso fallido"}`,
+      `Requisito: ${qaContext.requirement || "Sin especificar"}`,
+      `Ambiente: ${qaContext.environment || "Sin especificar"}`,
+      `Versión / build: ${qaContext.buildVersion || "Sin especificar"}`,
+      `Precondiciones: ${qaContext.preconditions || "Sin especificar"}`,
+      "",
+      "Pasos para reproducir:",
+      `${stepIndexLabel || "Paso fallido"}: ${comment}`,
+      "",
+      `Resultado esperado: ${qaContext.expectedResult || "Sin especificar"}`,
+      `Resultado actual: ${qaContext.actualResult || comment}`,
+      `Prioridad: ${(priority && priority.value ? priority.value : "media").toUpperCase()}`,
+      `Severidad: ${(step && step.severity ? step.severity : "media").toUpperCase()}`,
+      "Evidencia: imagen asociada al paso.",
+    ].join("\n");
+  }
+
+  async function copyDefectReport(step, stepIndexLabel, opener) {
+    const defectText = buildDefectText(step, stepIndexLabel);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(defectText);
+        showTransientStatus("🐞 Reporte de defecto copiado.", 2600);
+        announceA11y("Reporte de defecto copiado al portapapeles.");
+        return;
+      }
+    } catch (err) {
+      console.error("No se pudo copiar el reporte de defecto:", err);
+    }
+    await showAppAlert(defectText, opener || document.body);
+  }
+
+  async function imageBlobToPng(blob) {
+    const imageUrl = URL.createObjectURL(blob);
+    try {
+      const image = new Image();
+      image.src = imageUrl;
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      canvas.getContext("2d").drawImage(image, 0, 0);
+      return await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    } finally {
+      URL.revokeObjectURL(imageUrl);
+    }
+  }
+
+  async function copyDefectWithLegacySelection(step, stepIndexLabel, defectText) {
+    const sourceUrl = step && (step.renderedDataUrl || step.dataUrl);
+    if (!sourceUrl || typeof document.execCommand !== "function") return false;
+    const holder = document.createElement("div");
+    const image = document.createElement("img");
+    holder.contentEditable = "true";
+    holder.style.cssText = "position:fixed;left:-10000px;top:0;opacity:0;pointer-events:none;";
+    holder.innerHTML = `<p>${escapeHtml(defectText).replace(/\n/g, "<br>")}</p>`;
+    image.src = sourceUrl;
+    image.alt = `Evidencia ${stepIndexLabel || "del defecto"}`;
+    holder.appendChild(image);
+    document.body.appendChild(holder);
+    try {
+      if (!image.complete) await new Promise((resolve) => image.addEventListener("load", resolve, { once: true }));
+      holder.focus();
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(holder);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return document.execCommand("copy");
+    } catch (err) {
+      console.error("No se pudo usar la selección enriquecida:", err);
+      return false;
+    } finally {
+      window.getSelection().removeAllRanges();
+      holder.remove();
+    }
+  }
+
+  async function copyDefectReportWithEvidence(step, stepIndexLabel, opener) {
+    const sourceUrl = step && (step.renderedDataUrl || step.dataUrl);
+    const defectText = buildDefectText(step, stepIndexLabel);
+    if (!sourceUrl) {
+      await copyDefectReport(step, stepIndexLabel, opener);
+      return;
+    }
+    try {
+      const blob = await (await fetch(sourceUrl)).blob();
+      const pngBlob = await imageBlobToPng(blob);
+      if (!navigator.clipboard || !window.ClipboardItem || !pngBlob) throw new Error("El navegador no admite copiar imágenes como PNG.");
+      const html = `<div style="font-family:Arial,sans-serif;white-space:pre-wrap;"><p>${escapeHtml(defectText).replace(/\n/g, "<br>")}</p><img src="${sourceUrl}" style="max-width:100%;border:1px solid #ccc;" /></div>`;
+      const item = new ClipboardItem({
+        "image/png": pngBlob,
+        "text/plain": new Blob([defectText], { type: "text/plain" }),
+        "text/html": new Blob([html], { type: "text/html" }),
+      });
+      await navigator.clipboard.write([item]);
+      showTransientStatus("🐞 Reporte y evidencia copiados.", 2600);
+      announceA11y("Reporte de defecto y evidencia copiados al portapapeles.");
+    } catch (err) {
+      console.error("No se pudo copiar el reporte con evidencia:", err);
+      if (await copyDefectWithLegacySelection(step, stepIndexLabel, defectText)) {
+        showTransientStatus("🐞 Reporte y evidencia copiados.", 2600);
+        announceA11y("Reporte de defecto y evidencia copiados al portapapeles.");
+        return;
+      }
+      await copyDefectReport(step, stepIndexLabel, opener);
+    }
+  }
+
+  async function downloadDefectDocx() {
+    const status = document.getElementById("defectDocxStatus");
+    const button = document.getElementById("downloadDefectDocxBtn");
+    if (!defectDraftStep) return;
+    button.disabled = true;
+    if (status) status.textContent = "Generando Word del defecto...";
+    try {
+      const { Document, Packer, Header } = docx;
+      const caseData = currentCaseData();
+      caseData.steps = [defectDraftStep];
+      caseData.qaContext = getQaContext();
+      const bodyChildren = await buildCaseBodyBlocks(caseData, {}, null);
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              size: { width: 12242, height: 15842 },
+              margin: { top: 567, right: 902, bottom: 851, left: 851, header: 709, footer: 369 },
+            },
+          },
+          headers: { default: new Header({ children: [buildPanamHeaderTable()] }) },
+          footers: { default: buildPanamFooter() },
+          children: bodyChildren,
+        }],
+      });
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      const safeCaseId = sanitizeFilenamePart(document.getElementById("caseId").value, "sin_id");
+      anchor.href = url;
+      anchor.download = `Defecto_${safeCaseId}_${defectDraftLabel.replace(/\s+/g, "_")}.docx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      if (status) status.textContent = "✅ Word del defecto descargado.";
+    } catch (err) {
+      console.error("No se pudo generar el Word del defecto:", err);
+      if (status) status.textContent = "❌ No se pudo generar el Word del defecto.";
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  document.getElementById("closeDefectBtn").addEventListener("click", closeDefectReportPanel);
+  document.getElementById("copyDefectBtn").addEventListener("click", async (event) => {
+    await copyDefectReport(defectDraftStep, defectDraftLabel, event.currentTarget);
+    closeDefectReportPanel();
+  });
+  document.getElementById("copyDefectEvidenceBtn").addEventListener("click", async () => {
+    await copyDefectReportWithEvidence(defectDraftStep, defectDraftLabel, document.getElementById("copyDefectEvidenceBtn"));
+    closeDefectReportPanel();
+  });
+  document.getElementById("downloadDefectDocxBtn").addEventListener("click", downloadDefectDocx);
+  document.getElementById("defectOverlay").addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) closeDefectReportPanel();
+  });
+
   document.getElementById("shareBtn").addEventListener("click", async () => {
+    const shareBtn = document.getElementById("shareBtn");
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== "function") {
+      shareStatus.textContent = window.isSecureContext === false
+        ? "⚠️ El navegador requiere HTTPS o localhost para compartir pantalla."
+        : "⚠️ Este navegador no permite compartir pantalla desde esta página.";
+      announceA11y(shareStatus.textContent);
+      return;
+    }
+
+    shareBtn.disabled = true;
+    shareStatus.textContent = "Selecciona una pantalla, ventana o pestaña para compartir...";
     try {
       mediaStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: "always" }, audio: false });
       preview.srcObject = mediaStream;
@@ -24402,9 +24920,18 @@ var __async = (__this, __arguments, generator) => {
         shareStatus.textContent = "⚠️ Se detuvo el uso compartido.";
         mediaStream = null;
         document.getElementById("liveDot").classList.remove("on");
+        shareBtn.disabled = false;
       });
     } catch (err) {
-      shareStatus.textContent = "No se pudo compartir pantalla (¿cancelaste el permiso?).";
+      if (err && err.name === "NotAllowedError") {
+        shareStatus.textContent = "⚠️ Se canceló o bloqueó el permiso para compartir pantalla.";
+      } else if (err && err.name === "NotFoundError") {
+        shareStatus.textContent = "⚠️ No se encontró una pantalla o ventana para compartir.";
+      } else {
+        shareStatus.textContent = "⚠️ No se pudo compartir pantalla: " + ((err && err.message) || "error desconocido") + ".";
+      }
+      announceA11y(shareStatus.textContent);
+      shareBtn.disabled = false;
     }
   });
 
@@ -24413,13 +24940,13 @@ var __async = (__this, __arguments, generator) => {
   // mismo tratamiento de resolución/calidad sin importar el origen.
   function addCapturedStep(sourceEl, naturalW, naturalH) {
     pushUndoCheckpoint();
-    const MAX_WIDTH = 1600; // suficiente para texto nítido en la mayoría de monitores
+    const MAX_WIDTH = 2560; // conserva más detalle en capturas de pantallas grandes
     const scale = Math.min(1, MAX_WIDTH / naturalW);
     const canvas = document.createElement("canvas");
     canvas.width = naturalW * scale;
     canvas.height = naturalH * scale;
     canvas.getContext("2d").drawImage(sourceEl, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.95); // buena nitidez, el copiado ya no depende del tamaño
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.98); // alta nitidez con compatibilidad amplia
     const step = { id: Date.now(), dataUrl, comment: "", commentPosition: "top", stepStatus: "pendiente", novedad: false, severity: null, boxes: [], color: "#e02424" };
     steps.push(step);
     addStepCard(step);
@@ -24531,12 +25058,8 @@ var __async = (__this, __arguments, generator) => {
         pipWindow.document.head.appendChild(style);
       } catch (e) {}
     });
-
-    pipWindow.document.body.style.padding = "10px";
-    pipWindow.document.body.style.margin = "0";
-    pipWindow.document.body.appendChild(preview); // mueve el video real, sigue reproduciendo
-
     const btn = document.createElement("button");
+    pipWindow.document.body.appendChild(preview); // mueve el video real, sigue reproduciendo
     btn.textContent = "📸 Capturar paso";
     btn.className = "btn-primary btn-full";
     btn.style.marginTop = "8px";
@@ -24985,10 +25508,26 @@ var __async = (__this, __arguments, generator) => {
         closeQuickCommentPanel();
         return;
       }
-      if (!(e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "m")) return;
+      if (e.key === "F1" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+        e.preventDefault();
+        if (!panel.classList.contains("open")) openQuickCommentPanel();
+        else if (quickInput && !quickInput.disabled) quickInput.focus();
+        return;
+      }
       const active = document.activeElement;
       const tag = active && active.tagName ? active.tagName.toLowerCase() : "";
       const typingContext = tag === "input" || tag === "textarea" || (active && active.isContentEditable);
+      if (!typingContext && e.key === "F2" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+        e.preventDefault();
+        document.getElementById("captureBtn")?.click();
+        return;
+      }
+      if (!typingContext && e.key === "F3" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+        e.preventDefault();
+        document.getElementById("shareBtn")?.click();
+        return;
+      }
+      if (!(e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "m")) return;
       if (typingContext && !(panel.classList.contains("open") && active === quickInput)) return;
       e.preventDefault();
       toggleQuickCommentPanel();
@@ -25126,14 +25665,19 @@ var __async = (__this, __arguments, generator) => {
       </div>
       <p class="edit-only mode-help" style="display:none;font-size:11px;color:var(--text-muted);margin:0 0 4px 0;">"Ocultar" tapa por completo la zona (útil para datos sensibles); "Resaltar" solo dibuja un recuadro.</p>
       <img class="step-img" src="${step.renderedDataUrl || step.dataUrl}" role="button" tabindex="0" aria-label="Abrir imagen ampliada del paso ${idx}" />
-      <button class="btn-secondary btn-full mark-btn">✏️ Marcar zona</button>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn-secondary copy-image-btn" type="button" style="flex:1;">📋 Copiar evidencia</button>
+        <button class="btn-secondary defect-btn" type="button" style="flex:1;">🐞 Generar defecto</button>
+        <button class="btn-secondary mark-btn" type="button" style="flex:1;">✏️ Marcar zona</button>
+      </div>
       <div class="comment-anchor comment-middle-anchor" data-comment-anchor="middle">Soltar comentario al centro</div>
       <div class="comment-controls">
         <button class="reorder-btn comment-pos-btn" aria-pressed="${step.commentPosition === "top" ? "true" : "false"}">Mover comentario</button>
       </div>
-      <div class="comment-block">
+      <div class="comment-block collapsed">
         <div class="comment-block-head">
           <span class="comment-drag-handle" tabindex="0" title="Arrastra para mover el comentario" aria-label="Arrastrar comentario">↕</span>
+          <button class="comment-toggle" type="button" aria-expanded="false" aria-label="Abrir comentario" title="Abrir comentario">💬</button>
           <span class="comment-label">Comentario</span>
         </div>
         <textarea placeholder="Comentario del paso...">${step.comment}</textarea>
@@ -25245,6 +25789,15 @@ var __async = (__this, __arguments, generator) => {
 
     const commentBlock = card.querySelector(".comment-block");
     const commentHandle = card.querySelector(".comment-drag-handle");
+    const commentToggle = card.querySelector(".comment-toggle");
+
+    commentToggle.addEventListener("click", () => {
+      const isOpen = commentBlock.classList.toggle("collapsed") === false;
+      commentToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      commentToggle.setAttribute("aria-label", isOpen ? "Cerrar comentario" : "Abrir comentario");
+      commentToggle.title = isOpen ? "Cerrar comentario" : "Abrir comentario";
+      if (isOpen) card.querySelector(".comment-block textarea").focus();
+    });
 
     commentHandle.addEventListener("mousedown", () => {
       commentBlock.draggable = true;
@@ -25379,6 +25932,14 @@ var __async = (__this, __arguments, generator) => {
         if (canvas) redrawStep(step, canvas);
       });
     });
+    card.querySelector(".copy-image-btn").addEventListener("click", async () => {
+      const idx = steps.findIndex((s) => s.id === step.id);
+      await copyStepEvidenceToClipboard(step, `Paso ${idx + 1}`);
+    });
+    card.querySelector(".defect-btn").addEventListener("click", async (event) => {
+      const idx = steps.findIndex((s) => s.id === step.id);
+      openDefectReportPanel(step, `Paso ${idx + 1}`);
+    });
     card.querySelector(".mark-btn").addEventListener("click", () => {
       if (editingId === step.id) {
         exitEditMode(step, card);
@@ -25508,7 +26069,7 @@ var __async = (__this, __arguments, generator) => {
     // mientras se muestra una vista previa (arrastre o recorte pendiente) NO se
     // guarda como versión final, para no hornear un estado a medias en el export
     if (!previewBox && !crop) {
-      step.renderedDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      step.renderedDataUrl = canvas.toDataURL("image/jpeg", 0.98);
     }
   }
 
@@ -25534,7 +26095,7 @@ var __async = (__this, __arguments, generator) => {
       srcCanvas, crop.x, crop.y, crop.w, crop.h, 0, 0, cropCanvas.width, cropCanvas.height
     );
 
-    step.dataUrl = cropCanvas.toDataURL("image/jpeg", 0.95);
+    step.dataUrl = cropCanvas.toDataURL("image/jpeg", 0.98);
     step.renderedDataUrl = null;
     step.boxes = [];
     step.pendingCrop = null;
@@ -25648,6 +26209,7 @@ var __async = (__this, __arguments, generator) => {
     const description = document.getElementById("description").value;
     const team = document.getElementById("team").value;
     const tester = document.getElementById("tester").value;
+    const qaContext = getQaContext();
     const templateKey = getSelectedTemplateKey();
     const template = caseUtils.getCaseTemplate ? caseUtils.getCaseTemplate(templateKey) : { label: "General" };
     const fecha = new Date().toLocaleDateString("es-CO");
@@ -25723,8 +26285,12 @@ var __async = (__this, __arguments, generator) => {
         <p><b>Descripción:</b> ${escapeHtml(description)}</p>
         <p><b>Plantilla:</b> ${escapeHtml(template.label || "General")}</p>
         <p><b>Área / equipo:</b> ${escapeHtml(team)}</p>
+        <p><b>Requisito / historia:</b> ${escapeHtml(qaContext.requirement || "Sin especificar")}</p>
+        <p><b>Ambiente:</b> ${escapeHtml(qaContext.environment || "Sin especificar")} · <b>Versión:</b> ${escapeHtml(qaContext.buildVersion || "Sin especificar")}</p>
+        <p><b>Precondiciones:</b> ${escapeHtml(qaContext.preconditions || "Sin especificar")}</p>
         <p><b>Fecha:</b> ${fecha}</p>
         <p><b>Documentado por:</b> ${escapeHtml(tester)}</p>
+        <div style="margin:12px 0;padding:10px 12px;border:1px solid #dce6f1;background:#f8fbff;border-radius:8px;"><b>Resultado esperado:</b><div style="white-space:pre-wrap;margin-top:4px;">${escapeHtml(qaContext.expectedResult || "Sin especificar")}</div><b style="display:block;margin-top:8px;">Resultado actual:</b><div style="white-space:pre-wrap;margin-top:4px;">${escapeHtml(qaContext.actualResult || "Sin especificar")}</div></div>
         ${executiveSummaryHtml}
         <div style="margin:14px 0 18px;padding:12px 14px;border:1px solid #dce6f1;background:#f8fbff;border-radius:8px;">
           <h2 style="margin:0 0 8px;color:#2b579a;">Resumen del caso</h2>
@@ -25909,7 +26475,7 @@ var __async = (__this, __arguments, generator) => {
     options = options || {};
     const onlyNovedades = !!options.onlyNovedades;
     const { Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, AlignmentType } = docx;
-    const { caseId, description, team, tester, templateKey, steps: caseSteps } = caseData;
+    const { caseId, description, team, tester, templateKey, qaContext = {}, steps: caseSteps } = caseData;
     const fecha = caseData.fecha || new Date().toLocaleDateString("es-CO");
     const novedades = sortedNovedades(caseSteps.filter((s) => s.novedad));
     const MAX_W = 500;
@@ -25936,7 +26502,15 @@ var __async = (__this, __arguments, generator) => {
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Fecha de ejecución: "), panamValueRun(fecha)] }));
     evidenceParas.push(new Paragraph({ children: [panamLabelRun("Persona que ejecuta: "), panamValueRun(tester)] }));
     if (team) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Área / equipo: "), panamValueRun(team)] }));
+    if (qaContext.requirement) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Requisito / historia: "), panamValueRun(qaContext.requirement)] }));
+    if (qaContext.environment) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Ambiente: "), panamValueRun(qaContext.environment)] }));
+    if (qaContext.buildVersion) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Versión / build: "), panamValueRun(qaContext.buildVersion)] }));
+    if (qaContext.preconditions) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Precondiciones: "), panamValueRun(qaContext.preconditions)] }));
     if (description) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Descripción: "), panamValueRun(description)] }));
+    if (qaContext.expectedResult || qaContext.actualResult) {
+      evidenceParas.push(new Paragraph({ children: [panamLabelRun("Resultado esperado: "), panamValueRun(qaContext.expectedResult || "Sin especificar")] }));
+      evidenceParas.push(new Paragraph({ children: [panamLabelRun("Resultado actual: "), panamValueRun(qaContext.actualResult || "Sin especificar")] }));
+    }
     evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Resumen ejecutivo: ${executiveSummary.text || ""}`, font: "Arial", size: 18 })] }));
     if (onlyNovedades) {
       evidenceParas.push(new Paragraph({ children: [new TextRun({ text: "Documento de novedades — solo se incluyen los pasos marcados como novedad.", italics: true, font: "Arial", size: 18 })] }));
@@ -26012,6 +26586,7 @@ var __async = (__this, __arguments, generator) => {
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
       templateKey: getSelectedTemplateKey(),
+      qaContext: getQaContext(),
       documentNotes: document.getElementById("documentNotesInput") ? document.getElementById("documentNotesInput").value : "",
       steps,
     };
@@ -26318,6 +26893,17 @@ var __async = (__this, __arguments, generator) => {
   document.getElementById("zoomControlsBar").addEventListener("click", (e) => {
     e.stopPropagation();
   });
+  document.getElementById("copyZoomImageBtn").addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const zoomImg = document.getElementById("zoomImg");
+    if (zoomImg && zoomImg.src) {
+      const activeStep = steps.find((s) => {
+        const src = (s.renderedDataUrl || s.dataUrl || "");
+        return src && zoomImg.src.indexOf(src) !== -1;
+      });
+      await copyStepEvidenceToClipboard(activeStep || { comment: "", dataUrl: zoomImg.src }, "Imagen ampliada");
+    }
+  });
   document.getElementById("closeZoomBtn").addEventListener("click", (e) => {
     e.stopPropagation();
     closeZoom();
@@ -26420,6 +27006,7 @@ var __async = (__this, __arguments, generator) => {
       document.getElementById("description").value = "";
       document.getElementById("team").value = "";
       document.getElementById("tester").value = "";
+      setQaContext({});
       setDocumentNotesValue("");
     }
     renumberSteps();
@@ -26445,6 +27032,7 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("description").value = selectedCase.description || "";
     document.getElementById("team").value = selectedCase.team || "";
     document.getElementById("tester").value = selectedCase.tester || "";
+    setQaContext(selectedCase.qaContext);
     setDocumentNotesValue(selectedCase.documentNotes || "");
     editingId = null;
     steps = [];
@@ -26579,6 +27167,7 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("description").value = saved.description || "";
     document.getElementById("team").value = saved.team || "";
     document.getElementById("tester").value = saved.tester || "";
+    setQaContext(saved.qaContext);
     setDocumentNotesValue(saved.documentNotes || "");
 
     steps = saved.steps.map((s) => ({

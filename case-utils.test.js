@@ -7,6 +7,7 @@ const {
   CASE_TEMPLATES,
   getCaseTemplate,
   buildExecutiveSummary,
+  getClipboardFallbackMessage,
 } = require('./case-utils.js');
 
 test('normalizeStepStatus returns a valid fallback', () => {
@@ -58,4 +59,10 @@ test('buildExecutiveSummary generates a concise summary from template and steps'
   assert.equal(summary.template.key, 'funcional');
   assert.equal(summary.totalSteps, 2);
   assert.equal(summary.novedadCount, 2);
+});
+
+test('getClipboardFallbackMessage offers a helpful browser fallback without false errors', () => {
+  assert.match(getClipboardFallbackMessage('Paso 1'), /Este navegador no permite copiar imágenes/i);
+  assert.match(getClipboardFallbackMessage('Paso 1'), /abrirla/i);
+  assert.match(getClipboardFallbackMessage(), /imágenes|imagen/i);
 });

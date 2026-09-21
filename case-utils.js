@@ -147,6 +147,13 @@
     return result;
   }
 
+  function getClipboardFallbackMessage(targetName) {
+    const name = String(targetName || "imagen").trim();
+    const label = name && name !== "imagen" ? ` de “${name}”` : "";
+
+    return `Este navegador no permite copiar imágenes al portapapeles${label}. Puedes abrirla y usar Ctrl+C para copiarla manualmente.`;
+  }
+
   const api = {
     CASE_TEMPLATES,
     STEP_STATUS_VALUES,
@@ -157,6 +164,7 @@
     getCaseTemplate,
     buildCaseSummary,
     buildExecutiveSummary,
+    getClipboardFallbackMessage,
   };
 
   if (typeof module !== "undefined" && module.exports) {
