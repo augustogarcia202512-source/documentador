@@ -419,6 +419,12 @@
     font-size: 10px;
     text-align: center;
   }
+  #exportPreview.preview-editing [contenteditable="true"] {
+    outline: 1px dashed #2b579a;
+    outline-offset: 3px;
+    cursor: text;
+    background: rgba(43,87,154,0.06);
+  }
   @media (max-width: 560px) {
     .shortcut-help-content { grid-template-columns: 1fr; }
   }
@@ -879,10 +885,16 @@
 
   <!-- Vista previa usada para copiar de forma confiable, sin importar cuántas imágenes tenga -->
   <div id="copyOverlay" role="dialog" aria-modal="true" aria-labelledby="copyOverlayTitle" tabindex="-1" style="display:none; position:fixed; inset:0; background:rgba(10,12,15,0.82); z-index:999; padding:20px; overflow:auto;">
-    <div style="background:var(--panel); border:1px solid var(--line); max-width:700px; margin:0 auto; padding:20px; border-radius:8px;">
+    <div style="background:var(--panel); border:1px solid var(--line); width:min(1100px, 100%); min-height:calc(100vh - 40px); margin:0 auto; padding:20px; border-radius:8px; box-sizing:border-box;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <strong id="copyOverlayTitle" style="font-family:var(--mono); font-size:12.5px; letter-spacing:0.04em; color:var(--text);">Selecciona todo y copia</strong>
         <button class="btn-secondary" id="closeOverlayBtn">Cerrar</button>
+      </div>
+      <div class="btn-row" style="margin:0 0 10px;">
+        <button class="btn-secondary" id="editPreviewTextBtn" type="button">✏️ Editar texto</button>
+        <button class="btn-primary" id="savePreviewTextBtn" type="button" style="display:none;">✅ Guardar cambios</button>
+        <button class="btn-secondary" id="copyEditedPreviewBtn" type="button" style="display:none;">📋 Copiar vista editada</button>
+        <span id="previewEditStatus" role="status" aria-live="polite" style="font-size:12px;color:var(--text-muted);align-self:center;"></span>
       </div>
       <p id="copyOverlayDescription" style="font-size:12px;color:var(--text-muted);">
         Ya está todo seleccionado. Presiona <b style="color:var(--text);">Ctrl+C</b> y luego pega en Word con <b style="color:var(--text);">Ctrl+V</b>.
@@ -896,7 +908,7 @@
         <button class="btn-secondary" id="clearDocumentNotesBtn" style="flex:1;">🧹 Limpiar</button>
         </div>
       </div>
-      <div id="exportPreview" style="border:1px solid var(--line); border-radius:5px; padding:12px; max-height:400px; overflow:auto; background:#fff; color:#222;"></div>
+      <div id="exportPreview" style="border:1px solid var(--line); border-radius:5px; padding:24px; min-height:900px; overflow:visible; background:#fff; color:#222;"></div>
     </div>
   </div>
 
@@ -26277,6 +26289,24 @@ var __async = (__this, __arguments, generator) => {
     const summary = buildCaseSummary(steps, SEVERITY_LABEL);
     const documentNotes = buildDocumentNotesLines(getDocumentNotesValue());
     const executiveSummary = buildExecutiveSummary({ templateKey, description, steps });
+    const documentHeaderHtml = `
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-family:Arial,sans-serif;font-size:11px;color:#222;">
+        <tr>
+          <td rowspan="3" style="width:33%;border:1px solid #7f7f7f;text-align:center;vertical-align:middle;padding:10px;background:#fff;"><img src="data:image/png;base64,${PANAM_LOGO_BASE64}" alt="Logo institucional" style="max-width:180px;height:auto;" /></td>
+          <td style="width:39%;border:1px solid #7f7f7f;text-align:center;padding:8px;"><b>MACROPROCESO:</b> GESTIÓN DE LAS TICS</td>
+          <td style="width:14%;border:1px solid #7f7f7f;padding:8px;"><b>VERSIÓN:</b> 1.0</td>
+          <td style="width:14%;border:1px solid #7f7f7f;padding:8px;"><b>PÁGINA:</b> 1 DE 1</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #7f7f7f;text-align:center;padding:8px;"><b>PROCESO:</b> GESTIÓN DE APLICACIONES</td>
+          <td colspan="2" style="border:1px solid #7f7f7f;padding:8px;"><b>FECHA DEL FORMATO:</b> 15/12/2022</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #7f7f7f;text-align:center;padding:8px;"><b>SUBPROCESO:</b> DESARROLLO Y GESTIÓN DE SOFTWARE</td>
+          <td colspan="2" style="border:1px solid #7f7f7f;padding:8px;"><b>CÓDIGO:</b> FT-GTI-AP-CP-001</td>
+        </tr>
+        <tr><td colspan="4" style="border:1px solid #7f7f7f;text-align:center;padding:9px;font-weight:700;">EVIDENCIA DE PRUEBAS</td></tr>
+      </table>`;
     const documentNotesHtml = documentNotes.length > 0
       ? `<div style="margin:12px 0;border:1px solid #dce6f1;background:#f7fbff;padding:10px 12px;border-radius:8px;"><strong>Notas pendientes:</strong><ul style="margin:6px 0 0 18px;padding:0;">${documentNotes.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul></div>`
       : "";
@@ -26302,7 +26332,6 @@ var __async = (__this, __arguments, generator) => {
         const commentPosition = s.commentPosition || "top";
         const commentHtml = `<p><b>Comentario:</b> ${escapeHtml(s.comment || "")}</p>`;
         const imageHtml = `<div style="text-align:center;margin:8px 0;"><img src="${s.renderedDataUrl || s.dataUrl}" style="max-width:600px;border:1px solid #ccc;display:inline-block;" /></div>`;
-        const editHtml = `<div style="margin-top:8px;"><button type="button" data-preview-edit-step="${s.id}" style="border:1px solid #c7d3e0;background:#eef5fb;color:#274b6d;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;">Editar este paso</button></div>`;
         const content = commentPosition === "top"
           ? `${commentHtml}${imageHtml}`
           : `${imageHtml}${commentHtml}`;
@@ -26310,7 +26339,6 @@ var __async = (__this, __arguments, generator) => {
         <div style="margin-bottom:20px;">
           <p style="font-weight:bold;">Paso ${i + 1}</p>
           ${content}
-          ${editHtml}
         </div>`;
       })
       .join("");
@@ -26325,7 +26353,6 @@ var __async = (__this, __arguments, generator) => {
             const commentPosition = n.commentPosition || "top";
             const commentHtml = `<p>${escapeHtml(n.comment || "")}</p>`;
             const imageHtml = `<div style="text-align:center;margin:8px 0;"><img src="${n.renderedDataUrl || n.dataUrl}" style="max-width:600px;border:1px solid #ccc;display:inline-block;" /></div>`;
-            const editHtml = `<div style="margin-top:8px;"><button type="button" data-preview-edit-step="${n.id}" style="border:1px solid #c7d3e0;background:#eef5fb;color:#274b6d;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;">Editar esta novedad</button></div>`;
             const content = commentPosition === "top"
               ? `${commentHtml}${imageHtml}`
               : `${imageHtml}${commentHtml}`;
@@ -26333,7 +26360,6 @@ var __async = (__this, __arguments, generator) => {
           <div style="background:#fff6cc;border:1px solid ${sevColor};padding:10px;margin-bottom:14px;">
             <p style="font-weight:bold;color:${sevColor};">Novedad ${i + 1}${sevLabel ? " — " + sevLabel : ""}</p>
             ${content}
-            ${editHtml}
           </div>`;
           })
           .join("");
@@ -26341,6 +26367,7 @@ var __async = (__this, __arguments, generator) => {
 
     return `
       <div style="font-family:Calibri,Arial,sans-serif;font-size:14px;color:#222;">
+        ${documentHeaderHtml}
         <h1 style="color:#2b579a;">Caso de Prueba: ${escapeHtml(caseId)}</h1>
         <p><b>Descripción:</b> ${escapeHtml(description)}</p>
         <p><b>Plantilla:</b> ${escapeHtml(template.label || "General")}</p>
@@ -26809,6 +26836,42 @@ var __async = (__this, __arguments, generator) => {
     }
   });
 
+  let previewEditedHtml = null;
+
+  function setPreviewEditing(enabled) {
+    const preview = document.getElementById("exportPreview");
+    const editBtn = document.getElementById("editPreviewTextBtn");
+    const saveBtn = document.getElementById("savePreviewTextBtn");
+    const copyBtn = document.getElementById("copyEditedPreviewBtn");
+    const status = document.getElementById("previewEditStatus");
+    if (!preview) return;
+    preview.classList.toggle("preview-editing", enabled);
+    preview.querySelectorAll("h1,h2,h3,p,li,td,th").forEach((element) => {
+      if (element.querySelector("button")) return;
+      element.contentEditable = enabled ? "true" : "false";
+      element.spellcheck = enabled;
+    });
+    if (editBtn) editBtn.style.display = enabled ? "none" : "inline-flex";
+    if (saveBtn) saveBtn.style.display = enabled ? "inline-flex" : "none";
+    if (copyBtn) copyBtn.style.display = previewEditedHtml ? "inline-flex" : "none";
+    if (status) status.textContent = enabled ? "Haz clic en cualquier texto para editarlo." : "";
+  }
+
+  function savePreviewTextChanges() {
+    const preview = document.getElementById("exportPreview");
+    const status = document.getElementById("previewEditStatus");
+    if (!preview) return;
+    previewEditedHtml = preview.innerHTML;
+    setPreviewEditing(false);
+    const copyBtn = document.getElementById("copyEditedPreviewBtn");
+    if (copyBtn) copyBtn.style.display = "inline-flex";
+    if (status) status.textContent = "Cambios guardados en esta vista previa.";
+  }
+
+  function getPreviewHtmlForExport() {
+    return previewEditedHtml || buildHtmlDocument();
+  }
+
   function openExportPreview(options) {
     const overlay = document.getElementById("copyOverlay");
     const preview = document.getElementById("exportPreview");
@@ -26816,6 +26879,7 @@ var __async = (__this, __arguments, generator) => {
     const descriptionEl = document.getElementById("copyOverlayDescription");
     const notesEl = document.getElementById(DOCUMENT_NOTES_INPUT_ID);
 
+    previewEditedHtml = null;
     preview.innerHTML = buildHtmlDocument();
     titleEl.textContent = options && options.title ? options.title : "Vista previa del documento";
     if (descriptionEl) {
@@ -26836,7 +26900,7 @@ var __async = (__this, __arguments, generator) => {
       onEscape: () => closeCopyOverlay(),
     });
 
-    attachPreviewEditHandlers();
+    setPreviewEditing(false);
 
     if (!options || options.selectPreviewText !== false) {
       const range = document.createRange();
@@ -26866,30 +26930,17 @@ var __async = (__this, __arguments, generator) => {
     });
   });
 
-  function closeCopyOverlay() {
-    closeOverlay(document.getElementById("copyOverlay"));
-  }
-
-  function scrollToStepCard(stepId) {
-    const card = stepsContainer.querySelector(`.step-card[data-id="${stepId}"]`);
-    if (!card) return false;
-    card.scrollIntoView({ behavior: "smooth", block: "center" });
-    card.classList.add("preview-highlight");
-    setTimeout(() => card.classList.remove("preview-highlight"), 1800);
-    return true;
-  }
-
-  function attachPreviewEditHandlers() {
+  document.getElementById("editPreviewTextBtn").addEventListener("click", () => setPreviewEditing(true));
+  document.getElementById("savePreviewTextBtn").addEventListener("click", savePreviewTextChanges);
+  document.getElementById("copyEditedPreviewBtn").addEventListener("click", async () => {
     const preview = document.getElementById("exportPreview");
     if (!preview) return;
-    preview.querySelectorAll("[data-preview-edit-step]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        const stepId = btn.getAttribute("data-preview-edit-step");
-        closeCopyOverlay();
-        setTimeout(() => scrollToStepCard(stepId), 50);
-      });
-    });
+    await copyHtmlWithFallback(preview);
+    showTransientStatus("📋 Vista previa editada copiada.", 2200);
+  });
+
+  function closeCopyOverlay() {
+    closeOverlay(document.getElementById("copyOverlay"));
   }
 
   document.getElementById("closeOverlayBtn").addEventListener("click", () => {
@@ -26982,7 +27033,7 @@ var __async = (__this, __arguments, generator) => {
   });
 
   document.getElementById("downloadBtn").addEventListener("click", () => {
-    const html = `<html><head><meta charset="UTF-8"></head><body>${buildHtmlDocument()}</body></html>`;
+    const html = `<html><head><meta charset="UTF-8"></head><body>${getPreviewHtmlForExport()}</body></html>`;
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
