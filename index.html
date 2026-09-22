@@ -24161,6 +24161,8 @@ var __async = (__this, __arguments, generator) => {
       defectActualResult: "actualResult",
       defectPriority: "priority",
     };
+    let savedDefectContext = {};
+    let savedDocumentPreviewHtml = "";
 
     function getQaContext() {
       return QA_CONTEXT_FIELDS.reduce((context, id) => {
@@ -24236,22 +24238,36 @@ var __async = (__this, __arguments, generator) => {
         team: document.getElementById("team").value,
         tester: document.getElementById("tester").value,
         templateKey: getSelectedTemplateKey(),
-        qaContext: getQaContext(),
+        qaContext: savedDefectContext,
+        previewEditedHtml: savedDocumentPreviewHtml,
         documentNotes: document.getElementById("documentNotesInput") ? document.getElementById("documentNotesInput").value : "",
         steps: serializableSteps,
         savedAt: Date.now(),
       };
-      tx.objectStore(STORE_NAME).put(payload, STATE_KEY);
-      tx.oncomplete = () => {
-        db.close();
-        if (autosaveStatus) {
-          const hora = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-          autosaveStatus.textContent = "💾 Guardado automáticamente • " + hora;
-        }
-      };
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = () => {
+          db.close();
+          if (autosaveStatus) {
+            const hora = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+            autosaveStatus.textContent = "💾 Guardado automáticamente • " + hora;
+          }
+          resolve();
+        };
+        tx.onerror = () => {
+          db.close();
+          reject(tx.error || new Error("La transacción de guardado falló."));
+        };
+        tx.onabort = () => {
+          db.close();
+          reject(new Error("La transacción de guardado fue cancelada."));
+        };
+        tx.objectStore(STORE_NAME).put(payload, STATE_KEY);
+      });
+      return true;
     } catch (e) {
       console.error("No se pudo autoguardar:", e);
       if (autosaveStatus) autosaveStatus.textContent = "⚠️ El guardado automático no está disponible en este navegador.";
+      return false;
     }
   }
   const autosave = debounce(saveStateToDB, 800);
@@ -24307,7 +24323,8 @@ var __async = (__this, __arguments, generator) => {
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
       templateKey: getSelectedTemplateKey(),
-      qaContext: getQaContext(),
+      qaContext: { ...savedDefectContext },
+      previewEditedHtml: savedDocumentPreviewHtml,
       steps: JSON.parse(JSON.stringify(steps)),
     };
   }
@@ -24365,6 +24382,7 @@ var __async = (__this, __arguments, generator) => {
       document.getElementById("team").value = snapshot.team || "";
       document.getElementById("tester").value = snapshot.tester || "";
       setQaContext(snapshot.qaContext);
+      savedDocumentPreviewHtml = snapshot.previewEditedHtml || "";
       const selectedTemplate = snapshot.templateKey || DEFAULT_TEMPLATE_KEY;
       const templateSelect = document.getElementById("caseTemplateSelect");
       if (templateSelect) templateSelect.value = selectedTemplate;
@@ -24746,8 +24764,8 @@ var __async = (__this, __arguments, generator) => {
     defectDraftStep = step;
     defectDraftLabel = stepIndexLabel || "Paso fallido";
     defectDraftSteps = steps.slice();
-    defectPreviewCustomText = "";
-    defectPreviewCustomLabels = [];
+    defectPreviewCustomText = savedDefectContext.previewText || "";
+    defectPreviewCustomLabels = Array.isArray(savedDefectContext.previewLabels) ? savedDefectContext.previewLabels.slice() : [];
     stepLabel.textContent = `${defectDraftLabel} · selecciona una o varias evidencias para unificarlas en el reporte.`;
     const evidenceList = document.getElementById("defectEvidenceList");
     if (evidenceList) {
@@ -24758,11 +24776,10 @@ var __async = (__this, __arguments, generator) => {
         return `<label style="display:flex;gap:8px;align-items:center;font-size:12px;cursor:pointer;"><input type="checkbox" value="${candidate.id}" ${checked} /> <span>${escapeHtml(label)}</span></label>`;
       }).join("");
     }
-    const savedPriority = getQaContext().priority;
-    setQaContext(getQaContext());
+    setQaContext(savedDefectContext);
     if (expected && !expected.value) expected.value = "Validar el comportamiento esperado según el requisito.";
     if (actual && !actual.value) actual.value = String((step && step.comment) || "").trim();
-    if (priority) priority.value = savedPriority || (step && step.severity) || "media";
+    if (priority && !savedDefectContext.priority) priority.value = (step && step.severity) || "media";
     hideDefectPreview();
     overlay.style.display = "flex";
     const firstField = document.getElementById("requirement");
@@ -24835,14 +24852,27 @@ var __async = (__this, __arguments, generator) => {
     if (enabled) text.focus();
   }
 
-  function saveDefectPreviewEdit() {
+  async function saveDefectPreviewEdit() {
     const preview = document.getElementById("defectPreview");
     const text = preview && preview.querySelector("[data-defect-preview-text]");
     if (!text) return;
+    captureDefectPreviewDraft();
+    setDefectPreviewEditing(false);
+    savedDefectContext = {
+      ...getQaContext(),
+      previewText: defectPreviewCustomText,
+      previewLabels: defectPreviewCustomLabels,
+    };
+    const saved = await saveStateToDB();
+    showTransientStatus(saved ? "✅ Edición del defecto guardada." : "⚠️ No se pudo guardar la edición del defecto.", 2600);
+  }
+
+  function captureDefectPreviewDraft() {
+    const preview = document.getElementById("defectPreview");
+    const text = preview && preview.querySelector("[data-defect-preview-text]");
+    if (!text || preview.style.display === "none") return;
     defectPreviewCustomText = text.innerText.trim();
     defectPreviewCustomLabels = [...preview.querySelectorAll("[data-defect-preview-editable]")].map((label) => label.innerText.trim());
-    setDefectPreviewEditing(false);
-    showTransientStatus("✅ Edición del defecto guardada.", 2200);
   }
 
   function buildDefectText(step, stepIndexLabel, selectedSteps) {
@@ -25058,11 +25088,17 @@ var __async = (__this, __arguments, generator) => {
   });
   document.getElementById("downloadDefectDocxBtn").addEventListener("click", downloadDefectDocx);
   document.getElementById("saveDefectFormBtn").addEventListener("click", async () => {
-    await saveStateToDB();
+    captureDefectPreviewDraft();
+    savedDefectContext = {
+      ...getQaContext(),
+      previewText: defectPreviewCustomText,
+      previewLabels: defectPreviewCustomLabels.slice(),
+    };
+    const saved = await saveStateToDB();
     const status = document.getElementById("defectFormStatus");
-    if (status) status.textContent = "✅ Datos del defecto guardados.";
-    if (document.getElementById("defectPreview").style.display !== "none") showDefectPreview();
-    showTransientStatus("💾 Datos del defecto guardados.", 2200);
+    if (status) status.textContent = saved ? "✅ Datos del defecto guardados." : "❌ No se pudieron guardar los datos.";
+    if (saved && document.getElementById("defectPreview").style.display !== "none") showDefectPreview();
+    showTransientStatus(saved ? "💾 Datos del defecto guardados." : "⚠️ No se pudieron guardar los datos del defecto.", 2600);
   });
   document.getElementById("previewDefectBtn").addEventListener("click", showDefectPreview);
   document.getElementById("editDefectPreviewBtn").addEventListener("click", () => setDefectPreviewEditing(true));
@@ -26936,6 +26972,11 @@ var __async = (__this, __arguments, generator) => {
 
   let previewEditedHtml = null;
 
+  function getPreviewStorageKey() {
+    const caseId = String(document.getElementById("caseId")?.value || "sin_id").trim() || "sin_id";
+    return `documentadorPreview_${caseId}`;
+  }
+
   function setPreviewEditing(enabled) {
     const preview = document.getElementById("exportPreview");
     const editBtn = document.getElementById("editPreviewTextBtn");
@@ -26955,15 +26996,18 @@ var __async = (__this, __arguments, generator) => {
     if (status) status.textContent = enabled ? "Haz clic en cualquier texto para editarlo." : "";
   }
 
-  function savePreviewTextChanges() {
+  async function savePreviewTextChanges() {
     const preview = document.getElementById("exportPreview");
     const status = document.getElementById("previewEditStatus");
     if (!preview) return;
     previewEditedHtml = preview.innerHTML;
+    savedDocumentPreviewHtml = previewEditedHtml;
+    localStorage.setItem(getPreviewStorageKey(), savedDocumentPreviewHtml);
     setPreviewEditing(false);
     const copyBtn = document.getElementById("copyEditedPreviewBtn");
     if (copyBtn) copyBtn.style.display = "inline-flex";
-    if (status) status.textContent = "Cambios guardados en esta vista previa.";
+    const saved = await saveStateToDB();
+    if (status) status.textContent = saved ? "Cambios guardados en esta vista previa." : "No se pudieron guardar los cambios.";
   }
 
   function getPreviewHtmlForExport() {
@@ -26977,8 +27021,9 @@ var __async = (__this, __arguments, generator) => {
     const descriptionEl = document.getElementById("copyOverlayDescription");
     const notesEl = document.getElementById(DOCUMENT_NOTES_INPUT_ID);
 
-    previewEditedHtml = null;
-    preview.innerHTML = buildHtmlDocument();
+    const storedPreviewHtml = localStorage.getItem(getPreviewStorageKey()) || "";
+    previewEditedHtml = storedPreviewHtml || savedDocumentPreviewHtml || null;
+    preview.innerHTML = previewEditedHtml || buildHtmlDocument();
     titleEl.textContent = options && options.title ? options.title : "Vista previa del documento";
     if (descriptionEl) {
       descriptionEl.textContent = options && options.description
@@ -27216,6 +27261,8 @@ var __async = (__this, __arguments, generator) => {
       document.getElementById("team").value = "";
       document.getElementById("tester").value = "";
       setQaContext({});
+      savedDefectContext = {};
+      savedDocumentPreviewHtml = "";
       setDocumentNotesValue("");
     }
     renumberSteps();
@@ -27241,7 +27288,9 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("description").value = selectedCase.description || "";
     document.getElementById("team").value = selectedCase.team || "";
     document.getElementById("tester").value = selectedCase.tester || "";
-    setQaContext(selectedCase.qaContext);
+    savedDefectContext = selectedCase.qaContext || {};
+    setQaContext(savedDefectContext);
+    savedDocumentPreviewHtml = selectedCase.previewEditedHtml || "";
     setDocumentNotesValue(selectedCase.documentNotes || "");
     editingId = null;
     steps = [];
@@ -27376,7 +27425,9 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("description").value = saved.description || "";
     document.getElementById("team").value = saved.team || "";
     document.getElementById("tester").value = saved.tester || "";
-    setQaContext(saved.qaContext);
+    savedDefectContext = saved.qaContext || {};
+    setQaContext(savedDefectContext);
+    savedDocumentPreviewHtml = saved.previewEditedHtml || "";
     setDocumentNotesValue(saved.documentNotes || "");
 
     steps = saved.steps.map((s) => ({
