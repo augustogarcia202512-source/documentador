@@ -937,7 +937,10 @@
 
   <div id="defectOverlay" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="defectOverlayTitle" style="z-index:1250;">
     <div class="app-dialog-panel" style="max-width:680px; max-height:90vh; overflow:auto;">
-      <h2 id="defectOverlayTitle" class="app-dialog-title">🐞 Reportar defecto</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <h2 id="defectOverlayTitle" class="app-dialog-title">🐞 Reportar defecto</h2>
+        <button id="closeDefectTopBtn" class="btn-secondary" type="button" aria-label="Cerrar formulario de defecto" title="Cerrar">✕</button>
+      </div>
       <p id="defectOverlayStep" class="app-dialog-message">Completa solo la información necesaria para reportar este paso.</p>
       <label for="defectEvidenceList">Evidencias incluidas</label>
       <div id="defectEvidenceList" style="display:grid;gap:6px;margin:6px 0 12px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);max-height:150px;overflow:auto;"></div>
@@ -971,6 +974,16 @@
         <option value="media" selected>Media</option>
         <option value="baja">Baja</option>
       </select>
+      <div class="btn-row" style="margin-top:10px;">
+        <button id="saveDefectFormBtn" class="btn-secondary" type="button">💾 Guardar datos del defecto</button>
+        <span id="defectFormStatus" role="status" aria-live="polite" style="font-size:12px;color:var(--text-muted);align-self:center;"></span>
+      </div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button id="previewDefectBtn" class="btn-secondary" type="button">👁️ Vista previa</button>
+        <button id="editDefectPreviewBtn" class="btn-secondary" type="button" style="display:none;">✏️ Editar defecto</button>
+        <button id="saveDefectPreviewBtn" class="btn-primary" type="button" style="display:none;">✅ Guardar edición</button>
+      </div>
+      <div id="defectPreview" style="display:none;margin-top:10px;max-height:360px;overflow:auto;padding:16px;border:1px solid var(--line);border-radius:6px;background:#fff;color:#222;font-family:Calibri,Arial,sans-serif;font-size:13px;"></div>
       <div class="app-dialog-actions" style="margin-top:14px; flex-wrap:wrap;">
         <button id="closeDefectBtn" class="btn-secondary">Cancelar</button>
         <button id="copyDefectBtn" class="btn-primary">📋 Copiar reporte</button>
@@ -24138,7 +24151,7 @@ var __async = (__this, __arguments, generator) => {
       });
     }
 
-    const QA_CONTEXT_FIELDS = ["requirement", "environment", "buildVersion", "preconditions", "defectExpectedResult", "defectActualResult"];
+    const QA_CONTEXT_FIELDS = ["requirement", "environment", "buildVersion", "preconditions", "defectExpectedResult", "defectActualResult", "defectPriority"];
     const QA_CONTEXT_KEYS = {
       requirement: "requirement",
       environment: "environment",
@@ -24146,6 +24159,7 @@ var __async = (__this, __arguments, generator) => {
       preconditions: "preconditions",
       defectExpectedResult: "expectedResult",
       defectActualResult: "actualResult",
+      defectPriority: "priority",
     };
 
     function getQaContext() {
@@ -24711,6 +24725,7 @@ var __async = (__this, __arguments, generator) => {
   let defectDraftStep = null;
   let defectDraftLabel = "";
   let defectDraftSteps = [];
+  let defectPreviewCustomText = "";
 
   function getSelectedDefectSteps() {
     const selectedIds = new Set(
@@ -24730,6 +24745,7 @@ var __async = (__this, __arguments, generator) => {
     defectDraftStep = step;
     defectDraftLabel = stepIndexLabel || "Paso fallido";
     defectDraftSteps = steps.slice();
+    defectPreviewCustomText = "";
     stepLabel.textContent = `${defectDraftLabel} · selecciona una o varias evidencias para unificarlas en el reporte.`;
     const evidenceList = document.getElementById("defectEvidenceList");
     if (evidenceList) {
@@ -24740,10 +24756,12 @@ var __async = (__this, __arguments, generator) => {
         return `<label style="display:flex;gap:8px;align-items:center;font-size:12px;cursor:pointer;"><input type="checkbox" value="${candidate.id}" ${checked} /> <span>${escapeHtml(label)}</span></label>`;
       }).join("");
     }
+    const savedPriority = getQaContext().priority;
     setQaContext(getQaContext());
     if (expected && !expected.value) expected.value = "Validar el comportamiento esperado según el requisito.";
     if (actual && !actual.value) actual.value = String((step && step.comment) || "").trim();
-    if (priority) priority.value = step && step.severity ? step.severity : "media";
+    if (priority) priority.value = savedPriority || (step && step.severity) || "media";
+    hideDefectPreview();
     overlay.style.display = "flex";
     const firstField = document.getElementById("requirement");
     if (firstField) firstField.focus();
@@ -24755,6 +24773,66 @@ var __async = (__this, __arguments, generator) => {
     defectDraftStep = null;
     defectDraftLabel = "";
     defectDraftSteps = [];
+    defectPreviewCustomText = "";
+  }
+
+  function getCurrentDefectText(step, stepIndexLabel, selectedSteps) {
+    return defectPreviewCustomText || buildDefectText(step, stepIndexLabel, selectedSteps);
+  }
+
+  function buildDefectPreviewHtml() {
+    const selectedSteps = getSelectedDefectSteps();
+    const evidenceSteps = selectedSteps.length ? selectedSteps : [defectDraftStep];
+    const text = getCurrentDefectText(defectDraftStep, defectDraftLabel, evidenceSteps);
+    const evidenceHtml = evidenceSteps.map((step, index) => `
+      <figure style="margin:14px 0;text-align:center;">
+        <figcaption style="font-weight:700;text-align:left;margin-bottom:6px;">Evidencia ${index + 1} · Paso ${steps.findIndex((item) => item.id === step.id) + 1}</figcaption>
+        <img src="${step.renderedDataUrl || step.dataUrl}" alt="Evidencia ${index + 1}" style="max-width:100%;border:1px solid #ccc;" />
+      </figure>`).join("");
+    return `<div><h2 style="margin-top:0;color:#2b579a;">Reporte de defecto</h2><div data-defect-preview-text style="white-space:pre-wrap;line-height:1.5;">${escapeHtml(text)}</div>${evidenceHtml}</div>`;
+  }
+
+  function showDefectPreview() {
+    const preview = document.getElementById("defectPreview");
+    const editBtn = document.getElementById("editDefectPreviewBtn");
+    const saveBtn = document.getElementById("saveDefectPreviewBtn");
+    if (!preview) return;
+    preview.innerHTML = buildDefectPreviewHtml();
+    preview.style.display = "block";
+    if (editBtn) editBtn.style.display = "inline-flex";
+    if (saveBtn) saveBtn.style.display = "none";
+  }
+
+  function hideDefectPreview() {
+    const preview = document.getElementById("defectPreview");
+    if (preview) preview.style.display = "none";
+    const editBtn = document.getElementById("editDefectPreviewBtn");
+    const saveBtn = document.getElementById("saveDefectPreviewBtn");
+    if (editBtn) editBtn.style.display = "none";
+    if (saveBtn) saveBtn.style.display = "none";
+  }
+
+  function setDefectPreviewEditing(enabled) {
+    const preview = document.getElementById("defectPreview");
+    const text = preview && preview.querySelector("[data-defect-preview-text]");
+    const editBtn = document.getElementById("editDefectPreviewBtn");
+    const saveBtn = document.getElementById("saveDefectPreviewBtn");
+    if (!text) return;
+    text.contentEditable = enabled ? "true" : "false";
+    text.style.outline = enabled ? "1px dashed #2b579a" : "none";
+    text.style.padding = enabled ? "6px" : "0";
+    if (editBtn) editBtn.style.display = enabled ? "none" : "inline-flex";
+    if (saveBtn) saveBtn.style.display = enabled ? "inline-flex" : "none";
+    if (enabled) text.focus();
+  }
+
+  function saveDefectPreviewEdit() {
+    const preview = document.getElementById("defectPreview");
+    const text = preview && preview.querySelector("[data-defect-preview-text]");
+    if (!text) return;
+    defectPreviewCustomText = text.innerText.trim();
+    setDefectPreviewEditing(false);
+    showTransientStatus("✅ Edición del defecto guardada.", 2200);
   }
 
   function buildDefectText(step, stepIndexLabel, selectedSteps) {
@@ -24785,7 +24863,7 @@ var __async = (__this, __arguments, generator) => {
   }
 
   async function copyDefectReport(step, stepIndexLabel, opener, selectedSteps) {
-    const defectText = buildDefectText(step, stepIndexLabel, selectedSteps);
+    const defectText = getCurrentDefectText(step, stepIndexLabel, selectedSteps);
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(defectText);
@@ -24882,7 +24960,7 @@ var __async = (__this, __arguments, generator) => {
     const selectedSteps = getSelectedDefectSteps();
     const sourceSteps = selectedSteps.length ? selectedSteps : [step];
     const sourceUrl = sourceSteps[0] && (sourceSteps[0].renderedDataUrl || sourceSteps[0].dataUrl);
-    const defectText = buildDefectText(step, stepIndexLabel, sourceSteps);
+    const defectText = getCurrentDefectText(step, stepIndexLabel, sourceSteps);
     if (!sourceUrl || !sourceSteps.length) {
       await copyDefectReport(step, stepIndexLabel, opener);
       return;
@@ -24923,6 +25001,9 @@ var __async = (__this, __arguments, generator) => {
       const selectedSteps = getSelectedDefectSteps();
       caseData.steps = selectedSteps.length ? selectedSteps : [defectDraftStep];
       caseData.qaContext = getQaContext();
+      if (defectPreviewCustomText) {
+        caseData.qaContext.actualResult = defectPreviewCustomText;
+      }
       const bodyChildren = await buildCaseBodyBlocks(caseData, {}, null);
       const doc = new Document({
         sections: [{
@@ -24955,6 +25036,7 @@ var __async = (__this, __arguments, generator) => {
   }
 
   document.getElementById("closeDefectBtn").addEventListener("click", closeDefectReportPanel);
+  document.getElementById("closeDefectTopBtn").addEventListener("click", closeDefectReportPanel);
   document.getElementById("copyDefectBtn").addEventListener("click", async (event) => {
     const selectedSteps = getSelectedDefectSteps();
     await copyDefectReport(defectDraftStep, selectedSteps.map((step) => `Paso ${steps.indexOf(step) + 1}`).join(", ") || defectDraftLabel, event.currentTarget, selectedSteps);
@@ -24965,10 +25047,16 @@ var __async = (__this, __arguments, generator) => {
     closeDefectReportPanel();
   });
   document.getElementById("downloadDefectDocxBtn").addEventListener("click", downloadDefectDocx);
-  document.getElementById("defectOverlay").addEventListener("click", (event) => {
-    if (event.target === event.currentTarget) closeDefectReportPanel();
+  document.getElementById("saveDefectFormBtn").addEventListener("click", async () => {
+    await saveStateToDB();
+    const status = document.getElementById("defectFormStatus");
+    if (status) status.textContent = "✅ Datos del defecto guardados.";
+    if (document.getElementById("defectPreview").style.display !== "none") showDefectPreview();
+    showTransientStatus("💾 Datos del defecto guardados.", 2200);
   });
-
+  document.getElementById("previewDefectBtn").addEventListener("click", showDefectPreview);
+  document.getElementById("editDefectPreviewBtn").addEventListener("click", () => setDefectPreviewEditing(true));
+  document.getElementById("saveDefectPreviewBtn").addEventListener("click", saveDefectPreviewEdit);
   document.getElementById("shareBtn").addEventListener("click", async () => {
     const shareBtn = document.getElementById("shareBtn");
     if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== "function") {
