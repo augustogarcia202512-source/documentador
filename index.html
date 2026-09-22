@@ -24726,6 +24726,7 @@ var __async = (__this, __arguments, generator) => {
   let defectDraftLabel = "";
   let defectDraftSteps = [];
   let defectPreviewCustomText = "";
+  let defectPreviewCustomLabels = [];
 
   function getSelectedDefectSteps() {
     const selectedIds = new Set(
@@ -24746,6 +24747,7 @@ var __async = (__this, __arguments, generator) => {
     defectDraftLabel = stepIndexLabel || "Paso fallido";
     defectDraftSteps = steps.slice();
     defectPreviewCustomText = "";
+    defectPreviewCustomLabels = [];
     stepLabel.textContent = `${defectDraftLabel} · selecciona una o varias evidencias para unificarlas en el reporte.`;
     const evidenceList = document.getElementById("defectEvidenceList");
     if (evidenceList) {
@@ -24774,6 +24776,7 @@ var __async = (__this, __arguments, generator) => {
     defectDraftLabel = "";
     defectDraftSteps = [];
     defectPreviewCustomText = "";
+    defectPreviewCustomLabels = [];
   }
 
   function getCurrentDefectText(step, stepIndexLabel, selectedSteps) {
@@ -24786,7 +24789,7 @@ var __async = (__this, __arguments, generator) => {
     const text = getCurrentDefectText(defectDraftStep, defectDraftLabel, evidenceSteps);
     const evidenceHtml = evidenceSteps.map((step, index) => `
       <figure style="margin:14px 0;text-align:center;">
-        <figcaption style="font-weight:700;text-align:left;margin-bottom:6px;">Evidencia ${index + 1} · Paso ${steps.findIndex((item) => item.id === step.id) + 1}</figcaption>
+        <figcaption data-defect-preview-editable="true" style="font-weight:700;text-align:left;margin-bottom:6px;">${escapeHtml(defectPreviewCustomLabels[index] || `Evidencia ${index + 1} · Paso ${steps.findIndex((item) => item.id === step.id) + 1}`)}</figcaption>
         <img src="${step.renderedDataUrl || step.dataUrl}" alt="Evidencia ${index + 1}" style="max-width:100%;border:1px solid #ccc;" />
       </figure>`).join("");
     return `<div><h2 style="margin-top:0;color:#2b579a;">Reporte de defecto</h2><div data-defect-preview-text style="white-space:pre-wrap;line-height:1.5;">${escapeHtml(text)}</div>${evidenceHtml}</div>`;
@@ -24815,12 +24818,18 @@ var __async = (__this, __arguments, generator) => {
   function setDefectPreviewEditing(enabled) {
     const preview = document.getElementById("defectPreview");
     const text = preview && preview.querySelector("[data-defect-preview-text]");
+    const editableLabels = preview ? preview.querySelectorAll("[data-defect-preview-editable]") : [];
     const editBtn = document.getElementById("editDefectPreviewBtn");
     const saveBtn = document.getElementById("saveDefectPreviewBtn");
     if (!text) return;
     text.contentEditable = enabled ? "true" : "false";
     text.style.outline = enabled ? "1px dashed #2b579a" : "none";
     text.style.padding = enabled ? "6px" : "0";
+    editableLabels.forEach((label) => {
+      label.contentEditable = enabled ? "true" : "false";
+      label.style.outline = enabled ? "1px dashed #2b579a" : "none";
+      label.style.padding = enabled ? "4px" : "0";
+    });
     if (editBtn) editBtn.style.display = enabled ? "none" : "inline-flex";
     if (saveBtn) saveBtn.style.display = enabled ? "inline-flex" : "none";
     if (enabled) text.focus();
@@ -24831,6 +24840,7 @@ var __async = (__this, __arguments, generator) => {
     const text = preview && preview.querySelector("[data-defect-preview-text]");
     if (!text) return;
     defectPreviewCustomText = text.innerText.trim();
+    defectPreviewCustomLabels = [...preview.querySelectorAll("[data-defect-preview-editable]")].map((label) => label.innerText.trim());
     setDefectPreviewEditing(false);
     showTransientStatus("✅ Edición del defecto guardada.", 2200);
   }
@@ -24968,7 +24978,7 @@ var __async = (__this, __arguments, generator) => {
     try {
       const pngBlob = await buildCompositeEvidencePng(sourceSteps);
       if (!navigator.clipboard || !window.ClipboardItem || !pngBlob) throw new Error("El navegador no admite copiar imágenes como PNG.");
-      const htmlImages = sourceSteps.map((item) => `<img src="${item.renderedDataUrl || item.dataUrl}" style="display:block;max-width:100%;border:1px solid #ccc;margin:8px 0;" />`).join("");
+      const htmlImages = sourceSteps.map((item, index) => `<p style="font-weight:700;margin:10px 0 4px;">${escapeHtml(defectPreviewCustomLabels[index] || `Evidencia ${index + 1}`)}</p><img src="${item.renderedDataUrl || item.dataUrl}" style="display:block;max-width:100%;border:1px solid #ccc;margin:8px 0;" />`).join("");
       const html = `<div style="font-family:Arial,sans-serif;white-space:pre-wrap;"><p>${escapeHtml(defectText).replace(/\n/g, "<br>")}</p>${htmlImages}</div>`;
       const item = new ClipboardItem({
         "image/png": pngBlob,
@@ -26465,7 +26475,7 @@ var __async = (__this, __arguments, generator) => {
         <p><b>Precondiciones:</b> ${escapeHtml(qaContext.preconditions || "Sin especificar")}</p>
         <p><b>Fecha:</b> ${fecha}</p>
         <p><b>Documentado por:</b> ${escapeHtml(tester)}</p>
-        <div style="margin:12px 0;padding:10px 12px;border:1px solid #dce6f1;background:#f8fbff;border-radius:8px;"><b>Resultado esperado:</b><div style="white-space:pre-wrap;margin-top:4px;">${escapeHtml(qaContext.expectedResult || "Sin especificar")}</div><b style="display:block;margin-top:8px;">Resultado actual:</b><div style="white-space:pre-wrap;margin-top:4px;">${escapeHtml(qaContext.actualResult || "Sin especificar")}</div></div>
+        <div style="margin:12px 0;padding:10px 12px;border:1px solid #dce6f1;background:#f8fbff;border-radius:8px;"><b>Resultado esperado:</b><div data-preview-editable="true" style="white-space:pre-wrap;margin-top:4px;">${escapeHtml(qaContext.expectedResult || "Sin especificar")}</div><b style="display:block;margin-top:8px;">Resultado actual:</b><div data-preview-editable="true" style="white-space:pre-wrap;margin-top:4px;">${escapeHtml(qaContext.actualResult || "Sin especificar")}</div></div>
         ${executiveSummaryHtml}
         <div style="margin:14px 0 18px;padding:12px 14px;border:1px solid #dce6f1;background:#f8fbff;border-radius:8px;">
           <h2 style="margin:0 0 8px;color:#2b579a;">Resumen del caso</h2>
@@ -26934,7 +26944,7 @@ var __async = (__this, __arguments, generator) => {
     const status = document.getElementById("previewEditStatus");
     if (!preview) return;
     preview.classList.toggle("preview-editing", enabled);
-    preview.querySelectorAll("h1,h2,h3,p,li,td,th").forEach((element) => {
+    preview.querySelectorAll("h1,h2,h3,p,li,td,th,[data-preview-editable]").forEach((element) => {
       if (element.querySelector("button")) return;
       element.contentEditable = enabled ? "true" : "false";
       element.spellcheck = enabled;
