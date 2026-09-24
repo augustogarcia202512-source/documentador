@@ -911,6 +911,7 @@
       </div>
     </div>
     <div id="screenSelectionTools" aria-label="Herramientas de anotación">
+      <button type="button" data-selection-tool="select" title="Seleccionar">↖</button>
       <button type="button" data-selection-tool="pen" title="Lápiz">✎</button>
       <button type="button" data-selection-tool="line" title="Línea">╱</button>
       <button type="button" data-selection-tool="arrow" title="Flecha">➜</button>
@@ -923,6 +924,7 @@
     <div id="screenSelectionActions" aria-label="Acciones de selección">
       <button type="button" id="selectionUndoBtn" title="Deshacer">↶</button>
       <button type="button" id="selectionRedoBtn" title="Rehacer">↷</button>
+      <button type="button" id="selectionDeleteBtn" title="Eliminar anotación">🗑️</button>
       <button type="button" id="selectionCopyBtn" title="Copiar selección">▣</button>
       <button type="button" id="selectionSaveBtn" class="selection-action-primary" title="Capturar selección">✅ Capturar</button>
       <button type="button" id="selectionMarkBtn" class="selection-action-primary" title="Capturar y marcar">✏️ Marcar</button>
@@ -25347,6 +25349,20 @@ var __async = (__this, __arguments, generator) => {
     context.restore();
   }
 
+  function getSelectionAnnotationBounds(annotation) {
+    if (!annotation || !annotation.points || !annotation.points.length) return null;
+    const points = annotation.points;
+    let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
+    points.forEach((point) => {
+      minX = Math.min(minX, point.x);
+      minY = Math.min(minY, point.y);
+      maxX = Math.max(maxX, point.x);
+      maxY = Math.max(maxY, point.y);
+    });
+    const padding = annotation.kind === "text" ? 12 : 10;
+    return { left: minX - padding, top: minY - padding, width: maxX - minX + padding * 2, height: maxY - minY + padding * 2 };
+  }
+
   function redrawScreenAnnotations(preview) {
     if (!screenSelectionState) return;
     const canvas = document.getElementById("screenSelectionAnnotationCanvas");
@@ -25354,6 +25370,30 @@ var __async = (__this, __arguments, generator) => {
     const context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
     screenSelectionState.annotations.forEach((annotation) => drawScreenAnnotation(context, annotation));
+    if (screenSelectionState.selectedAnnotationIndex !== undefined && screenSelectionState.selectedAnnotationIndex !== null) {
+      const selected = screenSelectionState.annotations[screenSelectionState.selectedAnnotationIndex];
+      const bounds = getSelectionAnnotationBounds(selected);
+      if (bounds) {
+        context.save();
+        context.setLineDash([8, 6]);
+        context.strokeStyle = "#ffffff";
+        context.lineWidth = 2;
+        context.strokeRect(bounds.left, bounds.top, bounds.width, bounds.height);
+        context.setLineDash([]);
+        context.fillStyle = "#ffffff";
+        const handleSize = 7;
+        const handles = [
+          [bounds.left, bounds.top],
+          [bounds.left + bounds.width, bounds.top],
+          [bounds.left, bounds.top + bounds.height],
+          [bounds.left + bounds.width, bounds.top + bounds.height],
+        ];
+        handles.forEach(([x, y]) => {
+          context.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize);
+        });
+        context.restore();
+      }
+    }
     if (preview) drawScreenAnnotation(context, preview, true);
   }
 
@@ -25624,6 +25664,37 @@ var __async = (__this, __arguments, generator) => {
   });
 
   const annotationCanvas = document.getElementById("screenSelectionAnnotationCanvas");
+
+  function findSelectedAnnotationAtPoint(point) {
+    if (!screenSelectionState || !screenSelectionState.annotations) return null;
+    for (let index = screenSelectionState.annotations.length - 1; index >= 0; index -= 1) {
+      const annotation = screenSelectionState.annotations[index];
+      const bounds = getSelectionAnnotationBounds(annotation);
+      if (!bounds) continue;
+      if (point.x >= bounds.left && point.x <= bounds.left + bounds.width && point.y >= bounds.top && point.y <= bounds.top + bounds.height) {
+        return index;
+      }
+    }
+    return null;
+  }
+
+  function removeSelectedAnnotation() {
+    if (!screenSelectionState || screenSelectionState.selectedAnnotationIndex === null || screenSelectionState.selectedAnnotationIndex === undefined) return;
+    screenSelectionState.annotations.splice(screenSelectionState.selectedAnnotationIndex, 1);
+    screenSelectionState.selectedAnnotationIndex = null;
+    screenSelectionState.annotationRedo = [];
+    redrawScreenAnnotations();
+    updateSelectionHistoryButtons();
+  }
+
+  function cycleSelectedAnnotationColor() {
+    if (!screenSelectionState || screenSelectionState.selectedAnnotationIndex === null || screenSelectionState.selectedAnnotationIndex === undefined) return;
+    const selected = screenSelectionState.annotations[screenSelectionState.selectedAnnotationIndex];
+    const current = SCREEN_SELECTION_COLORS.indexOf(selected.color);
+    selected.color = SCREEN_SELECTION_COLORS[(current + 1) % SCREEN_SELECTION_COLORS.length];
+    redrawScreenAnnotations();
+  }
+
   function finalizeSelectionAnnotation() {
     if (!screenSelectionState || !screenSelectionState.annotationDrawing) return;
     screenSelectionState.annotationDrawing = false;
@@ -25642,11 +25713,31 @@ var __async = (__this, __arguments, generator) => {
   }
 
   annotationCanvas.addEventListener("pointerdown", (event) => {
-    if (!screenSelectionState || !screenSelectionState.rect || !screenSelectionState.tool || screenSelectionState.tool === "color") return;
+    if (!screenSelectionState || !screenSelectionState.rect) return;
     event.stopPropagation();
     const point = pointFromSelectionEvent(event);
     if (!pointInsideScreenSelection(point)) return;
     annotationCanvas.setPointerCapture(event.pointerId);
+
+    if (screenSelectionState.tool === "select") {
+      const idx = findSelectedAnnotationAtPoint(point);
+      screenSelectionState.selectedAnnotationIndex = idx;
+      if (idx !== null) {
+        screenSelectionState.annotationDragging = {
+          index: idx,
+          start: { ...point },
+          original: screenSelectionState.annotations[idx].points.map((p) => ({ ...p })),
+        };
+        redrawScreenAnnotations();
+      }
+      return;
+    }
+
+    if (screenSelectionState.tool === "color") {
+      cycleSelectedAnnotationColor();
+      return;
+    }
+
     if (screenSelectionState.tool === "text") {
       const text = window.prompt("Texto para la anotación:", "");
       if (text) {
@@ -25663,9 +25754,20 @@ var __async = (__this, __arguments, generator) => {
     screenSelectionState.annotationPoints = [point];
   });
   annotationCanvas.addEventListener("pointermove", (event) => {
-    if (!screenSelectionState || !screenSelectionState.annotationDrawing) return;
-    event.stopPropagation();
+    if (!screenSelectionState) return;
     const point = pointFromSelectionEvent(event);
+    if (screenSelectionState.tool === "select" && screenSelectionState.annotationDragging) {
+      event.stopPropagation();
+      const drag = screenSelectionState.annotationDragging;
+      const selected = screenSelectionState.annotations[drag.index];
+      const dx = point.x - drag.start.x;
+      const dy = point.y - drag.start.y;
+      selected.points = drag.original.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+      redrawScreenAnnotations();
+      return;
+    }
+    if (!screenSelectionState.annotationDrawing) return;
+    event.stopPropagation();
     screenSelectionState.annotationLastPoint = point;
     if (screenSelectionState.tool === "pen") {
       screenSelectionState.annotationPoints.push(point);
@@ -25673,6 +25775,11 @@ var __async = (__this, __arguments, generator) => {
     redrawScreenAnnotations({ kind: screenSelectionState.tool, points: [screenSelectionState.annotationStart, point], color: screenSelectionState.color });
   });
   annotationCanvas.addEventListener("pointerup", (event) => {
+    if (screenSelectionState && screenSelectionState.tool === "select" && screenSelectionState.annotationDragging) {
+      event.stopPropagation();
+      screenSelectionState.annotationDragging = null;
+      return;
+    }
     if (!screenSelectionState || !screenSelectionState.annotationDrawing) return;
     event.stopPropagation();
     const point = pointFromSelectionEvent(event);
@@ -25694,6 +25801,21 @@ var __async = (__this, __arguments, generator) => {
     if (!screenSelectionState || !screenSelectionState.annotationDrawing) return;
     finalizeSelectionAnnotation();
   });
+  annotationCanvas.addEventListener("wheel", (event) => {
+    if (!screenSelectionState || screenSelectionState.tool !== "select" || screenSelectionState.selectedAnnotationIndex === null || screenSelectionState.selectedAnnotationIndex === undefined) return;
+    event.preventDefault();
+    const selected = screenSelectionState.annotations[screenSelectionState.selectedAnnotationIndex];
+    if (!selected) return;
+    const bounds = getSelectionAnnotationBounds(selected);
+    const scale = event.deltaY < 0 ? 1.12 : 0.88;
+    const centerX = bounds.left + bounds.width / 2;
+    const centerY = bounds.top + bounds.height / 2;
+    selected.points = selected.points.map((p) => ({
+      x: centerX + (p.x - centerX) * scale,
+      y: centerY + (p.y - centerY) * scale,
+    }));
+    redrawScreenAnnotations();
+  }, { passive: false });
   document.getElementById("selectCaptureBtn").addEventListener("click", openScreenSelection);
   document.getElementById("confirmScreenSelectionBtn").addEventListener("click", () => confirmScreenSelection(false));
   document.getElementById("markScreenSelectionBtn").addEventListener("click", () => confirmScreenSelection(true));
@@ -25701,6 +25823,9 @@ var __async = (__this, __arguments, generator) => {
   document.getElementById("selectionSaveBtn").addEventListener("click", () => confirmScreenSelection(false));
   document.getElementById("selectionMarkBtn").addEventListener("click", () => confirmScreenSelection(true));
   document.getElementById("selectionCloseBtn").addEventListener("click", closeScreenSelection);
+  document.getElementById("selectionDeleteBtn").addEventListener("click", () => {
+    removeSelectedAnnotation();
+  });
   document.getElementById("selectionCopyBtn").addEventListener("click", () => copyScreenSelection().catch(() => showTransientStatus("⚠️ No se pudo copiar la selección.", 2200)));
   document.getElementById("selectionUndoBtn").addEventListener("click", () => {
     if (!screenSelectionState) return;
@@ -25743,10 +25868,16 @@ var __async = (__this, __arguments, generator) => {
       screenSelectionState.annotationStart = null;
       screenSelectionState.annotationPoints = [];
       screenSelectionState.annotationLastPoint = null;
+      screenSelectionState.annotationDragging = null;
+      screenSelectionState.selectedAnnotationIndex = null;
       setScreenAnnotationPointerMode(true);
       const annotationCanvas = document.getElementById("screenSelectionAnnotationCanvas");
-      if (annotationCanvas) annotationCanvas.style.cursor = "crosshair";
-      showTransientStatus(`🛠️ Herramienta seleccionada: ${button.title}.`, 1600);
+      if (annotationCanvas) annotationCanvas.style.cursor = screenSelectionState.tool === "select" ? "pointer" : "crosshair";
+      if (screenSelectionState.tool === "select") {
+        showTransientStatus("🖱️ Selecciona una anotación para moverla, cambiar color o eliminarla.", 1800);
+      } else {
+        showTransientStatus(`🛠️ Herramienta seleccionada: ${button.title}.`, 1600);
+      }
     });
   });
 
