@@ -55,6 +55,81 @@
       .filter(Boolean);
   }
 
+  function escapeRegExp(value) {
+    return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function normalizePreviewText(value) {
+    return String(value || "")
+      .replace(/\u00a0/g, " ")
+      .replace(/\r\n?/g, "\n")
+      .replace(/\n+/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+
+  function extractCaseFieldsFromPreviewText(text = "") {
+    const source = normalizePreviewText(text);
+    const orderedLabels = [
+      "Caso de Prueba",
+      "Descripción",
+      "Plantilla",
+      "Área / equipo",
+      "Requisito / historia",
+      "Ambiente",
+      "Versión",
+      "Precondiciones",
+      "Fecha",
+      "Documentado por",
+      "Resultado esperado",
+      "Resultado actual",
+      "Resumen ejecutivo",
+      "Resumen del caso",
+      "Total de pasos",
+    ];
+
+    function capture(label, nextLabels = orderedLabels) {
+      const patternLabel = escapeRegExp(label);
+      const nextPattern = nextLabels
+        .filter((item) => item !== label)
+        .map((item) => escapeRegExp(item))
+        .join("|");
+
+      const regex = new RegExp(
+        `${patternLabel}\\s*[:\-]?\\s*([\\s\\S]*?)(?=\\s*(?:${nextPattern})\\s*[:\-]|\\s*(?:${nextPattern})\\s*$|$)`,
+        "i"
+      );
+
+      const match = source.match(regex);
+      if (!match) return undefined;
+      return match[1].replace(/\s+/g, " ").trim();
+    }
+
+    const caseId = capture("Caso de Prueba");
+    const description = capture("Descripción");
+    const team = capture("Área / equipo");
+    const requirement = capture("Requisito / historia");
+    const environment = capture("Ambiente");
+    const buildVersion = capture("Versión");
+    const preconditions = capture("Precondiciones");
+    const tester = capture("Documentado por");
+    const expectedResult = capture("Resultado esperado");
+    const actualResult = capture("Resultado actual");
+
+    return {
+      caseId,
+      description,
+      team,
+      requirement,
+      environment,
+      buildVersion,
+      preconditions,
+      tester,
+      expectedResult,
+      actualResult,
+    };
+  }
+
   function buildCaseSummary(steps, severityLabels = {}) {
     const safeSteps = Array.isArray(steps) ? steps : [];
     const statusCounts = { pendiente: 0, aprobado: 0, fallo: 0, observado: 0 };
@@ -160,6 +235,8 @@
     normalizeStepStatus,
     normalizeDocumentNotes,
     buildDocumentNotesLines,
+    normalizePreviewText,
+    extractCaseFieldsFromPreviewText,
     getStepStatusLabel,
     getCaseTemplate,
     buildCaseSummary,

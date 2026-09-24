@@ -26067,6 +26067,7 @@ var __async = (__this, __arguments, generator) => {
     });
     card.querySelector("textarea").addEventListener("input", (e) => {
       step.comment = e.target.value;
+      invalidateSavedPreview();
       autosave();
       applyStepsFilter();
     });
@@ -26401,6 +26402,15 @@ var __async = (__this, __arguments, generator) => {
 
   renumberSteps();
 
+  function syncStepInputsToData() {
+    stepsContainer.querySelectorAll(".step-card").forEach((card) => {
+      const stepId = String(card.dataset.id || "");
+      const step = steps.find((candidate) => String(candidate.id) === stepId);
+      const textarea = card.querySelector("textarea");
+      if (step && textarea) step.comment = textarea.value;
+    });
+  }
+
   // aviso informativo (no obligatorio) para sesiones muy largas
   function maybeWarnLargeSession() {
     if (steps.length > 0 && steps.length % 60 === 0) {
@@ -26411,6 +26421,7 @@ var __async = (__this, __arguments, generator) => {
   }
 
   function buildHtmlDocument() {
+    syncStepInputsToData();
     const caseId = document.getElementById("caseId").value;
     const description = document.getElementById("description").value;
     const team = document.getElementById("team").value;
@@ -26464,7 +26475,7 @@ var __async = (__this, __arguments, generator) => {
     const stepsHtml = steps
       .map((s, i) => {
         const commentPosition = s.commentPosition || "top";
-        const commentHtml = `<p><b>Comentario:</b> ${escapeHtml(s.comment || "")}</p>`;
+        const commentHtml = `<p data-preview-step-comment="${s.id}"><b>Comentario:</b> ${escapeHtml(s.comment || "")}</p>`;
         const imageHtml = `<div style="text-align:center;margin:8px 0;"><img src="${s.renderedDataUrl || s.dataUrl}" style="max-width:600px;border:1px solid #ccc;display:inline-block;" /></div>`;
         const content = commentPosition === "top"
           ? `${commentHtml}${imageHtml}`
@@ -26801,6 +26812,9 @@ var __async = (__this, __arguments, generator) => {
   }
 
   function currentCaseData() {
+    syncStepInputsToData();
+    const preview = document.getElementById("exportPreview");
+    if (preview) syncEditedPreviewToCaseFields();
     return {
       caseId: document.getElementById("caseId").value,
       description: document.getElementById("description").value,
@@ -26814,6 +26828,9 @@ var __async = (__this, __arguments, generator) => {
   }
 
   async function buildDocxBlob(onProgress, options) {
+    syncStepInputsToData();
+    const preview = document.getElementById("exportPreview");
+    if (preview) syncEditedPreviewToCaseFields();
     const { Document, Packer, Header } = docx;
     const header = new Header({ children: [buildPanamHeaderTable()] });
     const footer = buildPanamFooter();
@@ -26913,6 +26930,8 @@ var __async = (__this, __arguments, generator) => {
   document.getElementById("downloadDocxBtn").addEventListener("click", async () => {
     const statusEl = document.getElementById("docxStatus");
     const btn = document.getElementById("downloadDocxBtn");
+    const preview = document.getElementById("exportPreview");
+    if (preview) syncEditedPreviewToCaseFields();
     if (steps.length === 0) {
       await showAppAlert("Aún no hay pasos capturados.", btn);
       return;
@@ -26972,9 +26991,29 @@ var __async = (__this, __arguments, generator) => {
 
   let previewEditedHtml = null;
 
+  function invalidateSavedPreview() {
+    previewEditedHtml = null;
+    savedDocumentPreviewHtml = "";
+    localStorage.removeItem(getPreviewStorageKey());
+  }
+
   function getPreviewStorageKey() {
     const caseId = String(document.getElementById("caseId")?.value || "sin_id").trim() || "sin_id";
     return `documentadorPreview_${caseId}`;
+  }
+
+  function previewHtmlMatchesCurrentSteps(html) {
+    if (!html) return false;
+    const holder = document.createElement("div");
+    holder.innerHTML = html;
+    const cachedComments = [...holder.querySelectorAll("[data-preview-step-comment]")];
+    if (cachedComments.length !== steps.length) return false;
+    return steps.every((step) => {
+      const node = cachedComments.find((candidate) => String(candidate.dataset.previewStepComment) === String(step.id));
+      if (!node) return false;
+      const comment = (node.textContent || "").replace(/^Comentario:\s*/i, "").trim();
+      return comment === String(step.comment || "").trim();
+    });
   }
 
   function setPreviewEditing(enabled) {
@@ -26996,10 +27035,121 @@ var __async = (__this, __arguments, generator) => {
     if (status) status.textContent = enabled ? "Haz clic en cualquier texto para editarlo." : "";
   }
 
+  function syncEditedPreviewToCaseFields() {
+    const preview = document.getElementById("exportPreview");
+    if (!preview) return;
+
+    const previewText = preview.textContent || "";
+    const parsedFromPreview = (typeof caseUtils !== "undefined" && caseUtils.extractCaseFieldsFromPreviewText)
+      ? caseUtils.extractCaseFieldsFromPreviewText(previewText)
+      : {};
+
+    const caseIdInput = document.getElementById("caseId");
+    const descriptionInput = document.getElementById("description");
+    const teamInput = document.getElementById("team");
+    const testerInput = document.getElementById("tester");
+    const expectedInput = document.getElementById("expectedResult");
+    const actualInput = document.getElementById("actualResult");
+    const requirementInput = document.getElementById("requirement");
+    const environmentInput = document.getElementById("environment");
+    const buildVersionInput = document.getElementById("buildVersion");
+    const preconditionsInput = document.getElementById("preconditions");
+    const documentNotesInputEl = document.getElementById("documentNotesInput");
+    if (!caseIdInput || !descriptionInput) return;
+
+    const h1 = preview.querySelector("h1");
+    if (h1) {
+      const titleText = (h1.textContent || "").replace(/^Caso de Prueba:\s*/i, "").trim();
+      caseIdInput.value = parsedFromPreview.caseId || titleText;
+    }
+
+    const descriptionNode = [...preview.querySelectorAll("p")].find((el) => /Descripción:/i.test(el.textContent || ""));
+    if (descriptionNode) {
+      const descriptionText = (descriptionNode.textContent || "").replace(/^Descripción:\s*/i, "").trim();
+      descriptionInput.value = parsedFromPreview.description || descriptionText;
+    }
+
+    if (teamInput) {
+      const teamText = [...preview.querySelectorAll("p")].find((el) => /Área \/ equipo:/i.test(el.textContent || ""));
+      const nextTeam = teamText ? (teamText.textContent || "").replace(/^Área \/ equipo:\s*/i, "").trim() : "";
+      if (nextTeam || parsedFromPreview.team) teamInput.value = parsedFromPreview.team || nextTeam;
+    }
+
+    if (testerInput) {
+      const testerText = [...preview.querySelectorAll("p")].find((el) => /Documentado por:/i.test(el.textContent || ""));
+      const nextTester = testerText ? (testerText.textContent || "").replace(/^Documentado por:\s*/i, "").trim() : "";
+      if (nextTester || parsedFromPreview.tester) testerInput.value = parsedFromPreview.tester || nextTester;
+    }
+
+    if (requirementInput) {
+      const requirementText = [...preview.querySelectorAll("p")].find((el) => /Requisito \/ historia:/i.test(el.textContent || ""));
+      const nextRequirement = requirementText ? (requirementText.textContent || "").replace(/^Requisito \/ historia:\s*/i, "").trim() : "";
+      if (nextRequirement || parsedFromPreview.requirement) requirementInput.value = parsedFromPreview.requirement || nextRequirement;
+    }
+
+    if (environmentInput) {
+      const environmentText = [...preview.querySelectorAll("p")].find((el) => /Ambiente:/i.test(el.textContent || ""));
+      const nextEnvironment = environmentText ? (environmentText.textContent || "").replace(/^Ambiente:\s*/i, "").split(/\s*·\s*Versión:/i)[0].trim() : "";
+      if (nextEnvironment || parsedFromPreview.environment) environmentInput.value = parsedFromPreview.environment || nextEnvironment;
+    }
+
+    if (buildVersionInput) {
+      const buildVersionText = [...preview.querySelectorAll("p")].find((el) => /Versión:/i.test(el.textContent || ""));
+      const nextVersion = buildVersionText ? (buildVersionText.textContent || "").replace(/^.*?Versión:\s*/i, "").split(/\s*·\s*|\s*$/)[0].trim() : "";
+      if (nextVersion || parsedFromPreview.buildVersion) buildVersionInput.value = parsedFromPreview.buildVersion || nextVersion;
+    }
+
+    if (preconditionsInput) {
+      const preconditionsText = [...preview.querySelectorAll("p")].find((el) => /Precondiciones:/i.test(el.textContent || ""));
+      const nextPreconditions = preconditionsText ? (preconditionsText.textContent || "").replace(/^Precondiciones:\s*/i, "").trim() : "";
+      if (nextPreconditions || parsedFromPreview.preconditions) preconditionsInput.value = parsedFromPreview.preconditions || nextPreconditions;
+    }
+
+    const expectedNode = [...preview.querySelectorAll("[data-preview-editable]")].find((el) => {
+      const sibling = el.previousElementSibling;
+      return !!sibling && /Resultado esperado:/i.test((sibling.textContent || ""));
+    });
+    if (expectedNode && expectedInput) {
+      expectedInput.value = parsedFromPreview.expectedResult || (expectedNode.textContent || "").trim();
+    }
+
+    const actualNode = [...preview.querySelectorAll("[data-preview-editable]")].find((el) => {
+      const sibling = el.previousElementSibling;
+      return !!sibling && /Resultado actual:/i.test((sibling.textContent || ""));
+    });
+    if (actualNode && actualInput) {
+      actualInput.value = parsedFromPreview.actualResult || (actualNode.textContent || "").trim();
+    }
+
+    if (documentNotesInputEl && previewText) {
+      const notesMarker = [...preview.querySelectorAll("strong")].find((el) => /Notas pendientes:/i.test(el.textContent || ""));
+      if (notesMarker) {
+        const notesBlock = notesMarker.closest("div");
+        if (notesBlock) {
+          const notesLines = [...notesBlock.querySelectorAll("li")].map((li) => (li.textContent || "").trim()).filter(Boolean);
+          if (notesLines.length) {
+            documentNotesInputEl.value = notesLines.join("\n");
+          }
+        }
+      }
+    }
+
+    preview.querySelectorAll("[data-preview-step-comment]").forEach((commentNode) => {
+      const stepId = String(commentNode.dataset.previewStepComment || "");
+      const step = steps.find((candidate) => String(candidate.id) === stepId);
+      if (!step) return;
+      step.comment = (commentNode.textContent || "").replace(/^Comentario:\s*/i, "").trim();
+      const card = stepsContainer.querySelector(`.step-card[data-id="${stepId}"]`);
+      const textarea = card && card.querySelector("textarea");
+      if (textarea && textarea.value !== step.comment) textarea.value = step.comment;
+    });
+  }
+
   async function savePreviewTextChanges() {
     const preview = document.getElementById("exportPreview");
     const status = document.getElementById("previewEditStatus");
     if (!preview) return;
+    syncEditedPreviewToCaseFields();
     previewEditedHtml = preview.innerHTML;
     savedDocumentPreviewHtml = previewEditedHtml;
     localStorage.setItem(getPreviewStorageKey(), savedDocumentPreviewHtml);
@@ -27011,6 +27161,9 @@ var __async = (__this, __arguments, generator) => {
   }
 
   function getPreviewHtmlForExport() {
+    if (document.getElementById("exportPreview")) {
+      syncEditedPreviewToCaseFields();
+    }
     return previewEditedHtml || buildHtmlDocument();
   }
 
@@ -27021,9 +27174,16 @@ var __async = (__this, __arguments, generator) => {
     const descriptionEl = document.getElementById("copyOverlayDescription");
     const notesEl = document.getElementById(DOCUMENT_NOTES_INPUT_ID);
 
+    syncStepInputsToData();
     const storedPreviewHtml = localStorage.getItem(getPreviewStorageKey()) || "";
-    previewEditedHtml = storedPreviewHtml || savedDocumentPreviewHtml || null;
+    const cachedPreviewHtml = storedPreviewHtml || savedDocumentPreviewHtml || "";
+    previewEditedHtml = previewHtmlMatchesCurrentSteps(cachedPreviewHtml) ? cachedPreviewHtml : null;
+    if (!previewEditedHtml && cachedPreviewHtml) {
+      localStorage.removeItem(getPreviewStorageKey());
+      savedDocumentPreviewHtml = "";
+    }
     preview.innerHTML = previewEditedHtml || buildHtmlDocument();
+    syncEditedPreviewToCaseFields();
     titleEl.textContent = options && options.title ? options.title : "Vista previa del documento";
     if (descriptionEl) {
       descriptionEl.textContent = options && options.description
@@ -27176,6 +27336,8 @@ var __async = (__this, __arguments, generator) => {
   });
 
   document.getElementById("downloadBtn").addEventListener("click", () => {
+    const preview = document.getElementById("exportPreview");
+    if (preview) syncEditedPreviewToCaseFields();
     const html = `<html><head><meta charset="UTF-8"></head><body>${getPreviewHtmlForExport()}</body></html>`;
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
@@ -27263,9 +27425,11 @@ var __async = (__this, __arguments, generator) => {
       setQaContext({});
       savedDefectContext = {};
       savedDocumentPreviewHtml = "";
+      previewEditedHtml = null;
       setDocumentNotesValue("");
     }
     renumberSteps();
+
   }
 
   async function openCaseFromBatch(idx) {
@@ -27291,6 +27455,9 @@ var __async = (__this, __arguments, generator) => {
     savedDefectContext = selectedCase.qaContext || {};
     setQaContext(savedDefectContext);
     savedDocumentPreviewHtml = selectedCase.previewEditedHtml || "";
+    previewEditedHtml = savedDocumentPreviewHtml || null;
+    const selectedTemplate = document.getElementById("caseTemplateSelect");
+    if (selectedTemplate) selectedTemplate.value = selectedCase.templateKey || DEFAULT_TEMPLATE_KEY;
     setDocumentNotesValue(selectedCase.documentNotes || "");
     editingId = null;
     steps = [];
@@ -27308,6 +27475,10 @@ var __async = (__this, __arguments, generator) => {
   }
 
   document.getElementById("addToBatchBtn").addEventListener("click", async () => {
+    syncStepInputsToData();
+    if (document.getElementById("exportPreview")) {
+      syncEditedPreviewToCaseFields();
+    }
     const caseId = document.getElementById("caseId").value.trim();
     if (!caseId) {
       await showAppAlert("Ponle un ID al caso antes de guardarlo en el lote.", document.getElementById("addToBatchBtn"));
@@ -27325,6 +27496,9 @@ var __async = (__this, __arguments, generator) => {
       description: document.getElementById("description").value,
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
+      templateKey: getSelectedTemplateKey(),
+      qaContext: { ...savedDefectContext },
+      previewEditedHtml: savedDocumentPreviewHtml || previewEditedHtml || "",
       documentNotes: getDocumentNotesValue(),
       fecha: new Date().toLocaleDateString("es-CO"),
       steps: steps.slice(),

@@ -4,6 +4,7 @@ const {
   normalizeStepStatus,
   buildCaseSummary,
   buildDocumentNotesLines,
+  extractCaseFieldsFromPreviewText,
   CASE_TEMPLATES,
   getCaseTemplate,
   buildExecutiveSummary,
@@ -35,6 +36,34 @@ test('buildCaseSummary counts statuses and novedad', () => {
 test('buildDocumentNotesLines trims and splits pending notes', () => {
   assert.deepEqual(buildDocumentNotesLines('Primera nota\n\nSegunda nota'), ['Primera nota', 'Segunda nota']);
   assert.deepEqual(buildDocumentNotesLines('   '), []);
+});
+
+test('extractCaseFieldsFromPreviewText captures the edited document data', () => {
+  const previewText = [
+    'Caso de Prueba: CASO-123',
+    'Descripción: Se validó la corrección del flujo.',
+    'Plantilla: Caso funcional',
+    'Área / equipo: Soporte',
+    'Requisito / historia: HU-10',
+    'Ambiente: QA',
+    'Versión: 1.2.3',
+    'Precondiciones: Usuario autenticado',
+    'Documentado por: Ana',
+    'Resultado esperado: Login exitoso',
+    'Resultado actual: Login bloqueado tras borrar el dato',
+  ].join(' ');
+
+  const parsed = extractCaseFieldsFromPreviewText(previewText);
+  assert.equal(parsed.caseId, 'CASO-123');
+  assert.equal(parsed.description, 'Se validó la corrección del flujo.');
+  assert.equal(parsed.team, 'Soporte');
+  assert.equal(parsed.requirement, 'HU-10');
+  assert.equal(parsed.environment, 'QA');
+  assert.equal(parsed.buildVersion, '1.2.3');
+  assert.equal(parsed.preconditions, 'Usuario autenticado');
+  assert.equal(parsed.tester, 'Ana');
+  assert.equal(parsed.expectedResult, 'Login exitoso');
+  assert.equal(parsed.actualResult, 'Login bloqueado tras borrar el dato');
 });
 
 test('getCaseTemplate returns a known template and default fallback', () => {
