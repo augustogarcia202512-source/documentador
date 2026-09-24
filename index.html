@@ -241,7 +241,16 @@
   #screenSelectionToolbar { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:2; display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; padding:10px 12px; border:1px solid rgba(255,255,255,.22); border-radius:10px; background:rgba(18,23,31,.94); box-shadow:0 8px 24px rgba(0,0,0,.4); }
   #screenSelectionToolbar button { white-space:nowrap; }
   #screenSelectionHint { font-size:12px; color:#cbd5e1; }
-  #screenSelectionRect { position:absolute; display:none; z-index:2; border:2px solid #ffcc33; background:rgba(255,204,51,.12); box-shadow:0 0 0 9999px rgba(0,0,0,.48); pointer-events:none; }
+  #screenSelectionRect { position:absolute; display:none; z-index:2; border:2px solid #ffcc33; background:rgba(255,204,51,.12); box-shadow:0 0 0 9999px rgba(0,0,0,.48); pointer-events:auto; cursor:move; }
+  #screenSelectionRect .selection-handle { position:absolute; width:10px; height:10px; border:2px solid #222; border-radius:2px; background:#fff; box-sizing:border-box; z-index:1; }
+  #screenSelectionRect .selection-handle[data-resize="nw"] { left:-6px; top:-6px; cursor:nwse-resize; }
+  #screenSelectionRect .selection-handle[data-resize="n"] { left:50%; top:-6px; transform:translateX(-50%); cursor:ns-resize; }
+  #screenSelectionRect .selection-handle[data-resize="ne"] { right:-6px; top:-6px; cursor:nesw-resize; }
+  #screenSelectionRect .selection-handle[data-resize="e"] { right:-6px; top:50%; transform:translateY(-50%); cursor:ew-resize; }
+  #screenSelectionRect .selection-handle[data-resize="se"] { right:-6px; bottom:-6px; cursor:nwse-resize; }
+  #screenSelectionRect .selection-handle[data-resize="s"] { left:50%; bottom:-6px; transform:translateX(-50%); cursor:ns-resize; }
+  #screenSelectionRect .selection-handle[data-resize="sw"] { left:-6px; bottom:-6px; cursor:nesw-resize; }
+  #screenSelectionRect .selection-handle[data-resize="w"] { left:-6px; top:50%; transform:translateY(-50%); cursor:ew-resize; }
   #screenSelectionTools { position:fixed; display:none; flex-direction:column; gap:5px; z-index:3; padding:6px; border:1px solid rgba(255,255,255,.22); border-radius:6px; background:#f7f7f7; box-shadow:0 4px 16px rgba(0,0,0,.45); }
   #screenSelectionTools button { width:34px; height:32px; padding:0; border:0; border-radius:4px; background:#f7f7f7; color:#333; font-size:19px; cursor:pointer; }
   #screenSelectionTools button:hover, #screenSelectionTools button.active { background:#dbeafe; color:#1255a0; }
@@ -890,7 +899,16 @@
       <canvas id="screenSelectionCanvas"></canvas>
       <canvas id="screenSelectionAnnotationCanvas"></canvas>
       <div id="screenSelectionShade"></div>
-      <div id="screenSelectionRect"></div>
+      <div id="screenSelectionRect">
+        <span class="selection-handle" data-resize="nw"></span>
+        <span class="selection-handle" data-resize="n"></span>
+        <span class="selection-handle" data-resize="ne"></span>
+        <span class="selection-handle" data-resize="e"></span>
+        <span class="selection-handle" data-resize="se"></span>
+        <span class="selection-handle" data-resize="s"></span>
+        <span class="selection-handle" data-resize="sw"></span>
+        <span class="selection-handle" data-resize="w"></span>
+      </div>
     </div>
     <div id="screenSelectionTools" aria-label="Herramientas de anotación">
       <button type="button" data-selection-tool="pen" title="Lápiz">✎</button>
@@ -904,6 +922,7 @@
     </div>
     <div id="screenSelectionActions" aria-label="Acciones de selección">
       <button type="button" id="selectionUndoBtn" title="Deshacer">↶</button>
+      <button type="button" id="selectionRedoBtn" title="Rehacer">↷</button>
       <button type="button" id="selectionCopyBtn" title="Copiar selección">▣</button>
       <button type="button" id="selectionSaveBtn" class="selection-action-primary" title="Capturar selección">✅ Capturar</button>
       <button type="button" id="selectionMarkBtn" class="selection-action-primary" title="Capturar y marcar">✏️ Marcar</button>
@@ -25264,7 +25283,23 @@ var __async = (__this, __arguments, generator) => {
     if (actions) actions.style.display = "none";
     if (topToolbar) topToolbar.style.display = "flex";
     setScreenAnnotationPointerMode(false);
+    setSelectionHistoryButtons(false, false);
     screenSelectionState = null;
+  }
+
+  function setSelectionHistoryButtons(canUndo, canRedo) {
+    const undoButton = document.getElementById("selectionUndoBtn");
+    const redoButton = document.getElementById("selectionRedoBtn");
+    if (undoButton) undoButton.disabled = !canUndo;
+    if (redoButton) redoButton.disabled = !canRedo;
+  }
+
+  function updateSelectionHistoryButtons() {
+    if (!screenSelectionState) return;
+    setSelectionHistoryButtons(
+      screenSelectionState.annotations.length > 0 || !!screenSelectionState.rect,
+      screenSelectionState.annotationRedo.length > 0
+    );
   }
 
   function drawScreenAnnotation(context, annotation, preview) {
@@ -25324,7 +25359,15 @@ var __async = (__this, __arguments, generator) => {
 
   function setScreenAnnotationPointerMode(enabled) {
     const canvas = document.getElementById("screenSelectionAnnotationCanvas");
-    if (canvas) canvas.style.pointerEvents = enabled ? "auto" : "none";
+    const rect = document.getElementById("screenSelectionRect");
+    if (canvas) {
+      canvas.style.pointerEvents = enabled ? "auto" : "none";
+      canvas.style.zIndex = enabled ? "3" : "1";
+    }
+    if (rect) {
+      rect.style.zIndex = enabled ? "1" : "2";
+      rect.style.pointerEvents = enabled ? "none" : "auto";
+    }
   }
 
   function getScreenSelectionImageRect(canvas, sourceWidth, sourceHeight) {
@@ -25355,6 +25398,60 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("confirmScreenSelectionBtn").disabled = !valid;
     document.getElementById("markScreenSelectionBtn").disabled = !valid;
     positionScreenSelectionMenus();
+  }
+
+  function clampSelectionRect(rect) {
+    const imageRect = screenSelectionState && screenSelectionState.imageRect;
+    if (!imageRect) return rect;
+    const minLeft = imageRect.left;
+    const minTop = imageRect.top;
+    const maxRight = imageRect.left + imageRect.width;
+    const maxBottom = imageRect.top + imageRect.height;
+    const width = Math.max(8, Math.min(rect.width, maxRight - minLeft));
+    const height = Math.max(8, Math.min(rect.height, maxBottom - minTop));
+    const left = Math.max(minLeft, Math.min(rect.left, maxRight - width));
+    const top = Math.max(minTop, Math.min(rect.top, maxBottom - height));
+    return { left, top, width, height };
+  }
+
+  function applyScreenSelectionRect(rect) {
+    if (!screenSelectionState) return;
+    const next = clampSelectionRect(rect);
+    screenSelectionState.rect = next;
+    const rectEl = document.getElementById("screenSelectionRect");
+    rectEl.style.display = "block";
+    rectEl.style.left = `${next.left}px`;
+    rectEl.style.top = `${next.top}px`;
+    rectEl.style.width = `${next.width}px`;
+    rectEl.style.height = `${next.height}px`;
+    document.getElementById("confirmScreenSelectionBtn").disabled = false;
+    document.getElementById("markScreenSelectionBtn").disabled = false;
+    positionScreenSelectionMenus();
+  }
+
+  function updateSelectionAdjustment(point) {
+    const adjustment = screenSelectionState && screenSelectionState.adjustment;
+    if (!adjustment) return;
+    const initial = adjustment.initial;
+    const dx = point.x - adjustment.start.x;
+    const dy = point.y - adjustment.start.y;
+    let next = { ...initial };
+    if (adjustment.mode === "move") {
+      next.left += dx;
+      next.top += dy;
+    } else {
+      if (adjustment.mode.includes("w")) {
+        next.left = initial.left + dx;
+        next.width = initial.width - dx;
+      }
+      if (adjustment.mode.includes("e")) next.width = initial.width + dx;
+      if (adjustment.mode.includes("n")) {
+        next.top = initial.top + dy;
+        next.height = initial.height - dy;
+      }
+      if (adjustment.mode.includes("s")) next.height = initial.height + dy;
+    }
+    applyScreenSelectionRect(next);
   }
 
   function positionScreenSelectionMenus() {
@@ -25482,12 +25579,35 @@ var __async = (__this, __arguments, generator) => {
     annotationCanvas.height = overlay.clientHeight;
     annotationCanvas.getContext("2d").clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
     setScreenAnnotationPointerMode(false);
-    screenSelectionState = { sourceCanvas: canvas, imageRect, start: null, rect: null, drawing: false, annotations: [], tool: null, color: SCREEN_SELECTION_COLORS[0] };
+    screenSelectionState = { sourceCanvas: canvas, imageRect, start: null, rect: null, drawing: false, annotations: [], annotationRedo: [], tool: null, color: SCREEN_SELECTION_COLORS[0], annotationLastPoint: null };
+    updateSelectionHistoryButtons();
   }
 
   const selectionStage = document.getElementById("screenSelectionStage");
+  const selectionRect = document.getElementById("screenSelectionRect");
+  selectionRect.addEventListener("pointerdown", (event) => {
+    if (!screenSelectionState || !screenSelectionState.rect || screenSelectionState.tool) return;
+    event.stopPropagation();
+    const handle = event.target.closest("[data-resize]");
+    screenSelectionState.adjustment = {
+      mode: handle ? handle.dataset.resize : "move",
+      start: pointFromSelectionEvent(event),
+      initial: { ...screenSelectionState.rect },
+    };
+    selectionRect.setPointerCapture(event.pointerId);
+  });
+  selectionRect.addEventListener("pointermove", (event) => {
+    if (!screenSelectionState || !screenSelectionState.adjustment) return;
+    event.stopPropagation();
+    updateSelectionAdjustment(pointFromSelectionEvent(event));
+  });
+  selectionRect.addEventListener("pointerup", (event) => {
+    if (!screenSelectionState) return;
+    event.stopPropagation();
+    screenSelectionState.adjustment = null;
+  });
   selectionStage.addEventListener("pointerdown", (event) => {
-    if (!screenSelectionState || screenSelectionState.tool) return;
+    if (!screenSelectionState || screenSelectionState.tool || screenSelectionState.rect) return;
     selectionStage.setPointerCapture(event.pointerId);
     screenSelectionState.drawing = true;
     screenSelectionState.start = pointFromSelectionEvent(event);
@@ -25504,6 +25624,23 @@ var __async = (__this, __arguments, generator) => {
   });
 
   const annotationCanvas = document.getElementById("screenSelectionAnnotationCanvas");
+  function finalizeSelectionAnnotation() {
+    if (!screenSelectionState || !screenSelectionState.annotationDrawing) return;
+    screenSelectionState.annotationDrawing = false;
+    const finalPoint = screenSelectionState.annotationLastPoint || screenSelectionState.annotationStart;
+    const points = screenSelectionState.tool === "pen"
+      ? [...screenSelectionState.annotationPoints, finalPoint]
+      : [screenSelectionState.annotationStart, finalPoint];
+    if (points.length > 1 && points[0] && points[1]) {
+      screenSelectionState.annotations.push({ kind: screenSelectionState.tool, points, color: screenSelectionState.color });
+      screenSelectionState.annotationRedo = [];
+    }
+    screenSelectionState.annotationPoints = [];
+    screenSelectionState.annotationLastPoint = null;
+    redrawScreenAnnotations();
+    updateSelectionHistoryButtons();
+  }
+
   annotationCanvas.addEventListener("pointerdown", (event) => {
     if (!screenSelectionState || !screenSelectionState.rect || !screenSelectionState.tool || screenSelectionState.tool === "color") return;
     event.stopPropagation();
@@ -25514,34 +25651,48 @@ var __async = (__this, __arguments, generator) => {
       const text = window.prompt("Texto para la anotación:", "");
       if (text) {
         screenSelectionState.annotations.push({ kind: "text", points: [point], text, color: screenSelectionState.color });
+        screenSelectionState.annotationRedo = [];
         redrawScreenAnnotations();
+        updateSelectionHistoryButtons();
       }
       return;
     }
     screenSelectionState.annotationDrawing = true;
     screenSelectionState.annotationStart = point;
+    screenSelectionState.annotationLastPoint = point;
     screenSelectionState.annotationPoints = [point];
   });
   annotationCanvas.addEventListener("pointermove", (event) => {
     if (!screenSelectionState || !screenSelectionState.annotationDrawing) return;
     event.stopPropagation();
     const point = pointFromSelectionEvent(event);
-    if (screenSelectionState.tool === "pen") screenSelectionState.annotationPoints.push(point);
+    screenSelectionState.annotationLastPoint = point;
+    if (screenSelectionState.tool === "pen") {
+      screenSelectionState.annotationPoints.push(point);
+    }
     redrawScreenAnnotations({ kind: screenSelectionState.tool, points: [screenSelectionState.annotationStart, point], color: screenSelectionState.color });
   });
   annotationCanvas.addEventListener("pointerup", (event) => {
     if (!screenSelectionState || !screenSelectionState.annotationDrawing) return;
     event.stopPropagation();
-    screenSelectionState.annotationDrawing = false;
     const point = pointFromSelectionEvent(event);
+    screenSelectionState.annotationLastPoint = point;
     const points = screenSelectionState.tool === "pen"
       ? [...screenSelectionState.annotationPoints, point]
       : [screenSelectionState.annotationStart, point];
     if (points.length > 1) {
       screenSelectionState.annotations.push({ kind: screenSelectionState.tool, points, color: screenSelectionState.color });
+      screenSelectionState.annotationRedo = [];
     }
+    screenSelectionState.annotationDrawing = false;
     screenSelectionState.annotationPoints = [];
+    screenSelectionState.annotationLastPoint = null;
     redrawScreenAnnotations();
+    updateSelectionHistoryButtons();
+  });
+  annotationCanvas.addEventListener("pointerleave", () => {
+    if (!screenSelectionState || !screenSelectionState.annotationDrawing) return;
+    finalizeSelectionAnnotation();
   });
   document.getElementById("selectCaptureBtn").addEventListener("click", openScreenSelection);
   document.getElementById("confirmScreenSelectionBtn").addEventListener("click", () => confirmScreenSelection(false));
@@ -25552,25 +25703,28 @@ var __async = (__this, __arguments, generator) => {
   document.getElementById("selectionCloseBtn").addEventListener("click", closeScreenSelection);
   document.getElementById("selectionCopyBtn").addEventListener("click", () => copyScreenSelection().catch(() => showTransientStatus("⚠️ No se pudo copiar la selección.", 2200)));
   document.getElementById("selectionUndoBtn").addEventListener("click", () => {
-    const rect = document.getElementById("screenSelectionRect");
-    if (rect) rect.style.display = "none";
-    if (screenSelectionState) {
-      if (screenSelectionState.annotations.length) {
-        screenSelectionState.annotations.pop();
-        redrawScreenAnnotations();
-      } else {
-        screenSelectionState.rect = null;
-      }
-    }
-    if (screenSelectionState && screenSelectionState.rect) {
-      positionScreenSelectionMenus();
+    if (!screenSelectionState) return;
+    if (screenSelectionState.annotations.length) {
+      screenSelectionState.annotationRedo.push(screenSelectionState.annotations.pop());
+      redrawScreenAnnotations();
+      updateSelectionHistoryButtons();
       return;
     }
+    const rect = document.getElementById("screenSelectionRect");
+    if (rect) rect.style.display = "none";
+    screenSelectionState.rect = null;
     document.getElementById("screenSelectionTools").style.display = "none";
     document.getElementById("screenSelectionActions").style.display = "none";
     document.getElementById("screenSelectionToolbar").style.display = "flex";
     document.getElementById("confirmScreenSelectionBtn").disabled = true;
     document.getElementById("markScreenSelectionBtn").disabled = true;
+    updateSelectionHistoryButtons();
+  });
+  document.getElementById("selectionRedoBtn").addEventListener("click", () => {
+    if (!screenSelectionState || !screenSelectionState.annotationRedo.length) return;
+    screenSelectionState.annotations.push(screenSelectionState.annotationRedo.pop());
+    redrawScreenAnnotations();
+    updateSelectionHistoryButtons();
   });
   document.querySelectorAll("#screenSelectionTools [data-selection-tool]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -25585,7 +25739,13 @@ var __async = (__this, __arguments, generator) => {
       document.querySelectorAll("#screenSelectionTools [data-selection-tool]").forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
       screenSelectionState.tool = button.dataset.selectionTool;
+      screenSelectionState.annotationDrawing = false;
+      screenSelectionState.annotationStart = null;
+      screenSelectionState.annotationPoints = [];
+      screenSelectionState.annotationLastPoint = null;
       setScreenAnnotationPointerMode(true);
+      const annotationCanvas = document.getElementById("screenSelectionAnnotationCanvas");
+      if (annotationCanvas) annotationCanvas.style.cursor = "crosshair";
       showTransientStatus(`🛠️ Herramienta seleccionada: ${button.title}.`, 1600);
     });
   });
