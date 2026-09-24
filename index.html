@@ -233,6 +233,14 @@
   .step-card.sev-baja { background: rgba(79,181,168,0.12); border-left-color: var(--teal); border-color: rgba(79,181,168,0.25); }
   .step-card img { width: 100%; border-radius: 4px; border: 1px solid var(--line); margin-bottom: 8px; cursor: zoom-in; }
   .step-card canvas { width: 100%; border-radius: 4px; border: 1px solid var(--line); margin-bottom: 8px; cursor: crosshair; display: block; }
+  #screenSelectionOverlay { display:none; position:fixed; inset:0; z-index:1400; background:rgba(5,8,12,.92); color:#fff; }
+  #screenSelectionStage { position:relative; width:100vw; height:100vh; overflow:hidden; touch-action:none; cursor:crosshair; }
+  #screenSelectionCanvas { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
+  #screenSelectionShade { position:absolute; inset:0; pointer-events:none; border:2px solid transparent; box-sizing:border-box; }
+  #screenSelectionToolbar { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:2; display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; padding:10px 12px; border:1px solid rgba(255,255,255,.22); border-radius:10px; background:rgba(18,23,31,.94); box-shadow:0 8px 24px rgba(0,0,0,.4); }
+  #screenSelectionToolbar button { white-space:nowrap; }
+  #screenSelectionHint { font-size:12px; color:#cbd5e1; }
+  #screenSelectionRect { position:absolute; display:none; border:2px solid #ffcc33; background:rgba(255,204,51,.12); box-shadow:0 0 0 9999px rgba(0,0,0,.48); pointer-events:none; }
 
   .color-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
   .mode-toggle { display: flex; gap: 4px; margin-right: 8px; }
@@ -838,6 +846,7 @@
       <button class="btn-primary" id="shareBtn" type="button">🖥️ Compartir pantalla o pestaña</button>
       <button class="btn-secondary" id="pipBtn">📌 Activar botón flotante</button>
       <button class="btn-secondary" id="captureBtn">📸 Capturar ahora (Ctrl+Shift+Y)</button>
+      <button class="btn-secondary" id="selectCaptureBtn" type="button">✂️ Seleccionar área</button>
       <button class="btn-secondary" id="undoBtn" title="Deshacer (Ctrl+Z)" disabled>↶ Deshacer</button>
       <button class="btn-secondary" id="redoBtn" title="Rehacer (Ctrl+Y)" disabled>↷ Rehacer</button>
       <span id="historyStatus" class="history-chip" role="status" aria-live="polite">Historial: 0/80</span>
@@ -858,6 +867,21 @@
         <div class="shortcut-help-item"><kbd>Alt + Shift + C</kbd><span>Activa la vista compacta.</span></div>
       </div>
     </details>
+  </div>
+
+  <div id="screenSelectionOverlay" role="dialog" aria-modal="true" aria-label="Seleccionar área de la pantalla">
+    <div id="screenSelectionToolbar">
+      <strong>Selecciona un área</strong>
+      <span id="screenSelectionHint">Arrastra sobre la pantalla compartida</span>
+      <button class="btn-primary" id="confirmScreenSelectionBtn" type="button" disabled>✅ Capturar selección</button>
+      <button class="btn-secondary" id="markScreenSelectionBtn" type="button" disabled>✏️ Capturar y marcar</button>
+      <button class="btn-secondary" id="cancelScreenSelectionBtn" type="button">Cancelar</button>
+    </div>
+    <div id="screenSelectionStage">
+      <canvas id="screenSelectionCanvas"></canvas>
+      <div id="screenSelectionShade"></div>
+      <div id="screenSelectionRect"></div>
+    </div>
   </div>
 
   <div class="steps-filter-bar" id="stepsFilterBar">
@@ -25193,6 +25217,136 @@ var __async = (__this, __arguments, generator) => {
     }
     addCapturedStep(preview, preview.videoWidth, preview.videoHeight);
   }
+
+  let screenSelectionState = null;
+
+  function closeScreenSelection() {
+    const overlay = document.getElementById("screenSelectionOverlay");
+    const rect = document.getElementById("screenSelectionRect");
+    const confirmBtn = document.getElementById("confirmScreenSelectionBtn");
+    const markBtn = document.getElementById("markScreenSelectionBtn");
+    if (overlay) overlay.style.display = "none";
+    if (rect) rect.style.display = "none";
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (markBtn) markBtn.disabled = true;
+    screenSelectionState = null;
+  }
+
+  function getScreenSelectionImageRect(canvas, sourceWidth, sourceHeight) {
+    const stage = document.getElementById("screenSelectionStage");
+    const stageWidth = stage.clientWidth;
+    const stageHeight = stage.clientHeight;
+    const scale = Math.min(stageWidth / sourceWidth, stageHeight / sourceHeight);
+    const width = sourceWidth * scale;
+    const height = sourceHeight * scale;
+    return { left: (stageWidth - width) / 2, top: (stageHeight - height) / 2, width, height, scale };
+  }
+
+  function updateScreenSelectionRect(point) {
+    const rectEl = document.getElementById("screenSelectionRect");
+    if (!rectEl || !screenSelectionState) return;
+    const start = screenSelectionState.start;
+    const left = Math.min(start.x, point.x);
+    const top = Math.min(start.y, point.y);
+    const width = Math.abs(point.x - start.x);
+    const height = Math.abs(point.y - start.y);
+    screenSelectionState.rect = { left, top, width, height };
+    rectEl.style.display = "block";
+    rectEl.style.left = `${left}px`;
+    rectEl.style.top = `${top}px`;
+    rectEl.style.width = `${width}px`;
+    rectEl.style.height = `${height}px`;
+    const valid = width >= 8 && height >= 8;
+    document.getElementById("confirmScreenSelectionBtn").disabled = !valid;
+    document.getElementById("markScreenSelectionBtn").disabled = !valid;
+  }
+
+  function pointFromSelectionEvent(event) {
+    const stage = document.getElementById("screenSelectionStage");
+    const rect = stage.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  }
+
+  function buildSelectedScreenCanvas() {
+    if (!screenSelectionState || !screenSelectionState.rect) return null;
+    const source = screenSelectionState.sourceCanvas;
+    const imageRect = screenSelectionState.imageRect;
+    const selected = screenSelectionState.rect;
+    const left = Math.max(selected.left, imageRect.left);
+    const top = Math.max(selected.top, imageRect.top);
+    const right = Math.min(selected.left + selected.width, imageRect.left + imageRect.width);
+    const bottom = Math.min(selected.top + selected.height, imageRect.top + imageRect.height);
+    if (right - left < 8 || bottom - top < 8) return null;
+
+    const scale = imageRect.scale;
+    const sx = Math.round((left - imageRect.left) / scale);
+    const sy = Math.round((top - imageRect.top) / scale);
+    const sw = Math.round((right - left) / scale);
+    const sh = Math.round((bottom - top) / scale);
+    const crop = document.createElement("canvas");
+    crop.width = sw;
+    crop.height = sh;
+    crop.getContext("2d").drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh);
+    return crop;
+  }
+
+  function confirmScreenSelection(enterMarkMode) {
+    const crop = buildSelectedScreenCanvas();
+    if (!crop) return;
+    addCapturedStep(crop, crop.width, crop.height);
+    closeScreenSelection();
+    if (enterMarkMode) {
+      const step = steps[steps.length - 1];
+      const card = stepsContainer.querySelector(`.step-card[data-id="${step.id}"]`);
+      if (step && card) enterEditMode(step, card);
+    }
+    showTransientStatus(enterMarkMode ? "✅ Selección capturada. Marca una zona." : "✅ Selección capturada como nuevo paso.", 2200);
+  }
+
+  function openScreenSelection() {
+    if (isCapturePaused) {
+      shareStatus.textContent = "⏸️ Captura pausada. Reanuda para seleccionar un área.";
+      return;
+    }
+    if (!mediaStream || !preview.videoWidth || !preview.videoHeight) {
+      showAppAlert("Primero comparte una pantalla o pestaña.", document.getElementById("selectCaptureBtn"));
+      return;
+    }
+    const overlay = document.getElementById("screenSelectionOverlay");
+    const canvas = document.getElementById("screenSelectionCanvas");
+    const context = canvas.getContext("2d");
+    overlay.style.display = "block";
+    canvas.width = preview.videoWidth;
+    canvas.height = preview.videoHeight;
+    context.fillStyle = "#05080c";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    const imageRect = getScreenSelectionImageRect(canvas, canvas.width, canvas.height);
+    context.drawImage(preview, 0, 0, canvas.width, canvas.height);
+    screenSelectionState = { sourceCanvas: canvas, imageRect, start: null, rect: null, drawing: false };
+  }
+
+  const selectionStage = document.getElementById("screenSelectionStage");
+  selectionStage.addEventListener("pointerdown", (event) => {
+    if (!screenSelectionState) return;
+    selectionStage.setPointerCapture(event.pointerId);
+    screenSelectionState.drawing = true;
+    screenSelectionState.start = pointFromSelectionEvent(event);
+    updateScreenSelectionRect(screenSelectionState.start);
+  });
+  selectionStage.addEventListener("pointermove", (event) => {
+    if (!screenSelectionState || !screenSelectionState.drawing) return;
+    updateScreenSelectionRect(pointFromSelectionEvent(event));
+  });
+  selectionStage.addEventListener("pointerup", (event) => {
+    if (!screenSelectionState) return;
+    screenSelectionState.drawing = false;
+    updateScreenSelectionRect(pointFromSelectionEvent(event));
+  });
+  document.getElementById("selectCaptureBtn").addEventListener("click", openScreenSelection);
+  document.getElementById("confirmScreenSelectionBtn").addEventListener("click", () => confirmScreenSelection(false));
+  document.getElementById("markScreenSelectionBtn").addEventListener("click", () => confirmScreenSelection(true));
+  document.getElementById("cancelScreenSelectionBtn").addEventListener("click", closeScreenSelection);
+
   document.getElementById("captureBtn").addEventListener("click", () => {
     captureFrame();
   });
@@ -25273,6 +25427,14 @@ var __async = (__this, __arguments, generator) => {
       captureFrame();
     });
     pipWindow.document.body.appendChild(btn);
+    const selectBtn = document.createElement("button");
+    selectBtn.textContent = "✂️ Seleccionar área";
+    selectBtn.className = "btn-secondary btn-full";
+    selectBtn.style.marginTop = "8px";
+    selectBtn.addEventListener("click", () => {
+      openScreenSelection();
+    });
+    pipWindow.document.body.appendChild(selectBtn);
     pipWindow.document.addEventListener("keydown", handleCaptureShortcut);
     pipWindow.document.addEventListener("paste", handlePasteEvent);
     preview.play().catch(() => {});
