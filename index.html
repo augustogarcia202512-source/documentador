@@ -25414,11 +25414,24 @@ var __async = (__this, __arguments, generator) => {
     crop.height = sh;
     crop.getContext("2d").drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh);
     const annotationContext = crop.getContext("2d");
-    annotationContext.save();
-    annotationContext.translate(-left, -top);
-    annotationContext.scale(1 / imageRect.scale, 1 / imageRect.scale);
-    screenSelectionState.annotations.forEach((annotation) => drawScreenAnnotation(annotationContext, annotation));
-    annotationContext.restore();
+    const annotationsInCrop = screenSelectionState.annotations.map((annotation) => ({
+      ...annotation,
+      points: (annotation.points || []).map((point) => ({
+        x: (point.x - left) / imageRect.scale,
+        y: (point.y - top) / imageRect.scale,
+      })),
+    }));
+    annotationsInCrop.forEach((annotation) => {
+      const scaledAnnotation = {
+        ...annotation,
+        color: annotation.color,
+        points: annotation.points.map((point) => ({
+          x: point.x,
+          y: point.y,
+        })),
+      };
+      drawScreenAnnotation(annotationContext, scaledAnnotation);
+    });
     return crop;
   }
 
