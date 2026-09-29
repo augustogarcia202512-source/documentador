@@ -765,6 +765,69 @@
     color: var(--text-muted);
   }
 
+  body.theme-light {
+    --bg: #eef2f6;
+    --bg-soft: #f8fafc;
+    --panel: rgba(255, 255, 255, 0.94);
+    --panel-2: #f1f4f7;
+    --panel-3: #e3e9ef;
+    --line: #c7d0da;
+    --line-soft: #dde4eb;
+    --text: #1d2935;
+    --text-muted: #4e5e6f;
+    --text-faint: #68798b;
+    --focus-ring: #1672b8;
+    --amber: #a86508;
+    --amber-dim: rgba(196, 128, 28, 0.13);
+    --teal: #168477;
+    --red: #c33d3d;
+    --red-dim: rgba(195, 61, 61, 0.1);
+    --shadow-soft: 0 12px 30px rgba(38, 54, 70, 0.1);
+    color-scheme: light;
+    background:
+      radial-gradient(1200px 500px at 8% -10%, rgba(79, 181, 168, 0.1), transparent 62%),
+      radial-gradient(900px 420px at 100% 0%, rgba(232, 163, 61, 0.1), transparent 62%),
+      linear-gradient(180deg, var(--bg-soft), var(--bg));
+  }
+  body.theme-light .theme-switch {
+    background: rgba(255, 255, 255, 0.86);
+    border-color: var(--line);
+  }
+  body.theme-light .theme-btn.active {
+    border-color: var(--line);
+  }
+  body.theme-light .theme-divider { background: var(--line); }
+  body.theme-light .card { border-color: rgba(44, 60, 76, 0.12); }
+  body.theme-light .card::before {
+    background: linear-gradient(90deg, transparent, rgba(44, 60, 76, 0.1), transparent);
+  }
+  body.theme-light .step-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(244,247,250,0.96));
+  }
+  body.theme-light .step-card.sev-alta { background: rgba(195, 61, 61, 0.09); }
+  body.theme-light .step-card.sev-media { background: rgba(196, 128, 28, 0.11); }
+  body.theme-light .step-card.sev-baja { background: rgba(22, 132, 119, 0.09); }
+  body.theme-light .case-chip {
+    background: linear-gradient(180deg, #fff, #f2f5f8);
+  }
+  body.theme-light #preview {
+    background: radial-gradient(circle at 50% 20%, #f4f6f8 0%, #e7ecf1 70%);
+    border-color: var(--line);
+  }
+  body.theme-light *::-webkit-scrollbar-thumb { background: #b8c3ce; }
+  body.theme-light *::-webkit-scrollbar-track { background: #e6ebf0; }
+  body.theme-light .compact-quickbar,
+  body.theme-light .quick-comment-panel {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: var(--line);
+    box-shadow: 0 14px 30px rgba(38, 54, 70, 0.18);
+  }
+  body.theme-light .compact-quickbar .quick-btn:not(.quick-capture):not(.quick-pause):not(.quick-exit) {
+    background: var(--panel-2);
+    color: var(--text);
+    border-color: var(--line);
+  }
+
   @media (max-width: 720px) {
     .compact-quickbar {
       left: 10px;
@@ -807,6 +870,7 @@
     <button class="theme-btn" data-theme="corporate" aria-pressed="false">Corporativo</button>
     <button class="theme-btn" data-theme="minimal" aria-pressed="false">Minimal</button>
     <span class="theme-divider" aria-hidden="true"></span>
+    <button class="theme-btn" id="darkModeBtn" type="button" aria-pressed="true" title="Activar o desactivar el modo oscuro">🌙 Modo oscuro: On</button>
     <button class="theme-btn presentation-btn" id="presentationModeBtn" aria-pressed="false" title="Alternar modo presentación (Alt+Shift+P)">Presentación: Off</button>
     <button class="theme-btn compact-btn" id="presentationCompactBtn" aria-pressed="false" title="Alternar vista compacta (Alt+Shift+C)" disabled>Compacta: Off</button>
   </div>
@@ -26114,10 +26178,42 @@ var __async = (__this, __arguments, generator) => {
   }
 
   const VISUAL_THEME_KEY = "visualTheme";
+  const DARK_MODE_KEY = "darkMode";
   const PRESENTATION_MODE_KEY = "presentationMode";
   const PRESENTATION_COMPACT_KEY = "presentationCompact";
   const CAPTURE_PAUSED_KEY = "capturePaused";
   const THEMES = ["aurora", "corporate", "minimal"];
+
+  function setDarkMode(enabled, options) {
+    options = options || {};
+    const active = !!enabled;
+    document.body.classList.toggle("theme-light", !active);
+
+    const btn = document.getElementById("darkModeBtn");
+    if (btn) {
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+      btn.textContent = active ? "🌙 Modo oscuro: On" : "☀️ Modo oscuro: Off";
+      btn.title = active ? "Desactivar modo oscuro" : "Activar modo oscuro";
+    }
+
+    if (options.announce) {
+      announceA11y(active ? "Modo oscuro activado." : "Modo oscuro desactivado.");
+    }
+  }
+
+  function initDarkModeToggle() {
+    const stored = localStorage.getItem(DARK_MODE_KEY);
+    setDarkMode(stored !== "0");
+
+    const btn = document.getElementById("darkModeBtn");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const next = document.body.classList.contains("theme-light");
+        setDarkMode(next, { announce: true });
+        localStorage.setItem(DARK_MODE_KEY, next ? "1" : "0");
+      });
+    }
+  }
 
   function applyVisualTheme(theme) {
     const body = document.body;
@@ -28260,6 +28356,7 @@ var __async = (__this, __arguments, generator) => {
   })();
 
   initVisualThemeSwitcher();
+  initDarkModeToggle();
   initPresentationModeToggle();
   initCompactQuickbar();
   initQuickCommentFab();
