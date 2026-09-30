@@ -957,6 +957,13 @@
   .dashboard-breadcrumb { min-width: 0; display: grid; gap: 2px; }
   .dashboard-breadcrumb small { color: var(--text-faint); font: 9px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
   .dashboard-breadcrumb strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .dashboard-edit-project-form { display: none; align-items: center; gap: 6px; min-width: 0; }
+  .dashboard-edit-project-form.open { display: flex; }
+  .dashboard-edit-project-form input {
+    width: min(230px, 28vw); min-width: 90px; padding: 8px 9px; border: 1px solid var(--line);
+    border-radius: 7px; background: var(--panel-2); color: var(--text); font: 11px var(--sans);
+  }
+  .dashboard-edit-project-form button { padding: 7px 9px; font-size: 10px; }
   .dashboard-topbar .dashboard-open-btn { margin-left: auto; white-space: nowrap; }
   .dashboard-content { width: min(1160px, 100%); margin: 0 auto; padding: 30px clamp(18px, 4vw, 46px) 50px; }
   .dashboard-page-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin: 0 0 20px; }
@@ -1068,6 +1075,11 @@
           <strong id="dashboardProjectName">Mis proyectos</strong>
         </div>
         <button class="btn-secondary" id="editProjectBtn" type="button" title="Editar nombre del proyecto">✏️ Editar</button>
+        <form id="editProjectForm" class="dashboard-edit-project-form" aria-label="Cambiar nombre del proyecto">
+          <input id="editProjectName" type="text" maxlength="60" aria-label="Nuevo nombre del proyecto" />
+          <button class="btn-primary" type="submit">Guardar</button>
+          <button class="btn-secondary" id="cancelEditProjectBtn" type="button">Cancelar</button>
+        </form>
         <button class="btn-primary dashboard-open-btn" id="openDocumenterBtn" type="button">📂 Abrir documentador</button>
       </header>
       <main class="dashboard-content">
@@ -28705,13 +28717,27 @@ var __async = (__this, __arguments, generator) => {
       event.preventDefault();
       await createDashboardProject(document.getElementById("newProjectName").value);
     });
-    document.getElementById("editProjectBtn").addEventListener("click", async () => {
+    const editForm = document.getElementById("editProjectForm");
+    const editInput = document.getElementById("editProjectName");
+    document.getElementById("editProjectBtn").addEventListener("click", () => {
       const project = projects.find((item) => item.id === activeProjectId);
       if (!project) return;
-      const nextName = window.prompt("Nombre del proyecto:", project.name);
-      if (!nextName || !nextName.trim()) return;
-      project.name = nextName.trim();
+      editInput.value = project.name;
+      editForm.classList.add("open");
+      editInput.focus();
+      editInput.select();
+    });
+    document.getElementById("cancelEditProjectBtn").addEventListener("click", () => {
+      editForm.classList.remove("open");
+    });
+    editForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const project = projects.find((item) => item.id === activeProjectId);
+      const nextName = editInput.value.trim();
+      if (!project || !nextName) return;
+      project.name = nextName;
       await saveProjectsToDB();
+      editForm.classList.remove("open");
       renderDashboard();
     });
     document.getElementById("caseProjectSelect").addEventListener("change", () => {
@@ -28922,6 +28948,7 @@ var __async = (__this, __arguments, generator) => {
   initQuickCommentFab();
   initDashboardNavigation();
   dashboardReady = initializeDashboard();
+  dashboardReady.then(() => recoverSavedCaseIfNeeded());
   updateHistoryButtons();
 
   document.getElementById("resetBtn").addEventListener("click", async () => {
@@ -28940,7 +28967,13 @@ var __async = (__this, __arguments, generator) => {
     if (caseRecoveryChecked) return;
     caseRecoveryChecked = true;
     const saved = await loadStateFromDB();
-    if (!saved || (!saved.steps || saved.steps.length === 0) && !saved.caseId && !saved.description) return;
+    if (!saved) return;
+    const hasSavedContent = (saved.steps || []).length > 0
+      || [saved.caseId, saved.description, saved.team, saved.tester, saved.documentNotes]
+        .some((value) => String(value || "").trim())
+      || Object.values(saved.qaContext || {}).some((value) => String(value || "").trim())
+      || !!saved.previewEditedHtml;
+    if (!hasSavedContent) return;
 
     const fechaGuardado = new Date(saved.savedAt).toLocaleString("es-CO");
     const recuperar = await showAppConfirm(
@@ -28961,6 +28994,7 @@ var __async = (__this, __arguments, generator) => {
     setQaContext(savedDefectContext);
     savedDocumentPreviewHtml = saved.previewEditedHtml || "";
     setDocumentNotesValue(saved.documentNotes || "");
+    setSelectedProjectId(saved.projectId || activeProjectId);
 
     steps = saved.steps.map((s) => ({
       id: s.id,
@@ -28982,6 +29016,8 @@ var __async = (__this, __arguments, generator) => {
     redoStack.length = 0;
     updateHistoryButtons();
     autosaveStatus.textContent = "✅ Caso recuperado del guardado automático.";
+    document.body.classList.remove("dashboard-view");
+    document.body.classList.add("documenter-view");
   }
 </script>
 </body>
