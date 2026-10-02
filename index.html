@@ -730,6 +730,13 @@
     margin-top: 8px;
     resize: vertical;
   }
+  .dictation-controls { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .dictation-btn { flex: 0 0 auto; padding: 6px 9px; font-size: 11px; }
+  .dictation-btn.is-listening { border-color: #c83d32; color: #c83d32; background: rgba(200,61,50,.1); }
+  .dictation-btn:disabled { cursor: not-allowed; opacity: .48; }
+  .dictation-status { min-width: 0; color: var(--text-faint); font-size: 10px; }
+  .dictation-status.is-error { color: var(--red); }
+  .comment-block.collapsed .dictation-controls { display: none; }
   .quick-comment-actions {
     display: flex;
     gap: 7px;
@@ -1240,6 +1247,10 @@
     </div>
     <select id="quickCommentStepSelect" aria-label="Seleccionar paso"></select>
     <textarea id="quickCommentInput" placeholder="Escribe comentario para el paso seleccionado..."></textarea>
+    <div class="dictation-controls">
+      <button class="btn-secondary dictation-btn" id="quickCommentDictationBtn" type="button" aria-pressed="false">🎙️ Dictar</button>
+      <span class="dictation-status" id="quickCommentDictationStatus" role="status" aria-live="polite"></span>
+    </div>
     <div class="quick-comment-actions">
       <button class="btn-secondary" id="quickCommentLoadBtn" type="button">Cargar actual</button>
       <button class="btn-primary" id="quickCommentSaveBtn" type="button">Guardar</button>
@@ -24600,6 +24611,8 @@ var __async = (__this, __arguments, generator) => {
     let isCapturePaused = false;
     let pipWindow = null;
     let pipPauseButton = null;
+    let activeDictation = null;
+    let pendingDictation = null;
 
     const caseUtils = window.caseUtils || {};
     const normalizeStepStatus = caseUtils.normalizeStepStatus || ((value) => {
@@ -26863,6 +26876,7 @@ var __async = (__this, __arguments, generator) => {
   function refreshQuickCommentTargets(preferredStepId) {
     const stepSelect = document.getElementById("quickCommentStepSelect");
     const quickInput = document.getElementById("quickCommentInput");
+    const dictationBtn = document.getElementById("quickCommentDictationBtn");
     const saveBtn = document.getElementById("quickCommentSaveBtn");
     const loadBtn = document.getElementById("quickCommentLoadBtn");
     if (!stepSelect || !quickInput || !saveBtn || !loadBtn) return;
@@ -26878,6 +26892,7 @@ var __async = (__this, __arguments, generator) => {
       stepSelect.appendChild(opt);
       stepSelect.disabled = true;
       quickInput.disabled = true;
+      if (dictationBtn) dictationBtn.disabled = true;
       quickInput.value = "";
       saveBtn.disabled = true;
       loadBtn.disabled = true;
@@ -26896,6 +26911,7 @@ var __async = (__this, __arguments, generator) => {
     stepSelect.value = hasPrevious ? previous : String(steps[steps.length - 1].id);
     stepSelect.disabled = false;
     quickInput.disabled = false;
+    if (dictationBtn) dictationBtn.disabled = !getSpeechRecognitionConstructor();
     saveBtn.disabled = false;
     loadBtn.disabled = false;
   }
@@ -26916,6 +26932,10 @@ var __async = (__this, __arguments, generator) => {
   function closeQuickCommentPanel() {
     const panel = document.getElementById("quickCommentPanel");
     if (!panel) return;
+    const quickInput = document.getElementById("quickCommentInput");
+    if (activeDictation && activeDictation.textarea === quickInput) {
+      try { activeDictation.recognition.stop(); } catch (error) {}
+    }
     panel.classList.remove("open");
   }
 
@@ -26960,6 +26980,124 @@ var __async = (__this, __arguments, generator) => {
     announceA11y("Comentario guardado.");
   }
 
+  function getSpeechRecognitionConstructor() {
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  }
+
+  function setDictationUi(button, status, listening, message, isError) {
+    if (button) {
+      button.classList.toggle("is-listening", listening);
+      button.setAttribute("aria-pressed", listening ? "true" : "false");
+      button.textContent = listening ? "⏹ Detener" : "🎙️ Dictar";
+      button.title = listening ? "Detener dictado" : "Iniciar dictado en español";
+    }
+    if (status) {
+      status.textContent = message || "";
+      status.classList.toggle("is-error", !!isError);
+    }
+  }
+
+  function beginDictation(textarea, button, status) {
+    const Recognition = getSpeechRecognitionConstructor();
+    if (!Recognition) {
+      setDictationUi(button, status, false, "Este navegador no admite dictado por voz.", true);
+      return;
+    }
+
+    let recognition;
+    try {
+      recognition = new Recognition();
+    } catch (error) {
+      setDictationUi(button, status, false, "No se pudo iniciar el dictado.", true);
+      return;
+    }
+
+    const baseText = textarea.value.trim();
+    let finalTranscript = "";
+    let endMessage = "";
+    let endIsError = false;
+    activeDictation = { recognition, textarea, button, status };
+    setDictationUi(button, status, true, "Escuchando… habla ahora.", false);
+
+    recognition.lang = "es-CO";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event) => {
+      let interimTranscript = "";
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const transcript = event.results[index][0].transcript.trim();
+        if (event.results[index].isFinal) {
+          finalTranscript += `${finalTranscript ? " " : ""}${transcript}`;
+        } else {
+          interimTranscript += `${interimTranscript ? " " : ""}${transcript}`;
+        }
+      }
+      const separator = baseText && finalTranscript ? " " : "";
+      textarea.value = `${baseText}${separator}${finalTranscript}`;
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      if (interimTranscript) {
+        setDictationUi(button, status, true, `Escuchando: ${interimTranscript}`, false);
+      } else if (finalTranscript) {
+        setDictationUi(button, status, true, "Dictado agregado; puedes seguir hablando.", false);
+      }
+    };
+    recognition.onerror = (event) => {
+      const messages = {
+        "not-allowed": "Permite el acceso al micrófono para dictar.",
+        "service-not-allowed": "El navegador bloqueó el servicio de reconocimiento de voz.",
+        "no-speech": "No se detectó voz. Inténtalo de nuevo.",
+        network: "El dictado necesita conexión de red en este navegador.",
+      };
+      const message = messages[event.error] || `Error de dictado: ${event.error || "desconocido"}.`;
+      endMessage = message;
+      endIsError = true;
+      setDictationUi(button, status, false, message, true);
+    };
+    recognition.onend = () => {
+      const wasActive = activeDictation && activeDictation.recognition === recognition;
+      if (wasActive) activeDictation = null;
+      setDictationUi(button, status, false, endMessage || (finalTranscript ? "Dictado listo; revisa el texto y guarda el comentario." : "Dictado detenido."), endIsError);
+      const pending = pendingDictation;
+      pendingDictation = null;
+      if (pending) beginDictation(pending.textarea, pending.button, pending.status);
+    };
+    try {
+      recognition.start();
+    } catch (error) {
+      activeDictation = null;
+      setDictationUi(button, status, false, "No se pudo iniciar. Espera un momento e inténtalo otra vez.", true);
+    }
+  }
+
+  function toggleDictation(textarea, button, status) {
+    if (activeDictation && activeDictation.textarea === textarea) {
+      try { activeDictation.recognition.stop(); } catch (error) {}
+      return;
+    }
+    if (activeDictation) {
+      pendingDictation = { textarea, button, status };
+      try { activeDictation.recognition.stop(); } catch (error) {
+        activeDictation = null;
+        const pending = pendingDictation;
+        pendingDictation = null;
+        beginDictation(pending.textarea, pending.button, pending.status);
+      }
+      return;
+    }
+    beginDictation(textarea, button, status);
+  }
+
+  function initDictationControl(textarea, button, status) {
+    if (!textarea || !button) return;
+    if (!getSpeechRecognitionConstructor()) {
+      button.disabled = true;
+      button.title = "El reconocimiento de voz no está disponible en este navegador";
+      if (status) status.textContent = "Dictado no compatible en este navegador.";
+      return;
+    }
+    button.addEventListener("click", () => toggleDictation(textarea, button, status));
+  }
+
   function initQuickCommentFab() {
     const fab = document.getElementById("quickCommentFab");
     const panel = document.getElementById("quickCommentPanel");
@@ -26968,13 +27106,21 @@ var __async = (__this, __arguments, generator) => {
     const loadBtn = document.getElementById("quickCommentLoadBtn");
     const stepSelect = document.getElementById("quickCommentStepSelect");
     const quickInput = document.getElementById("quickCommentInput");
+    const dictationBtn = document.getElementById("quickCommentDictationBtn");
+    const dictationStatus = document.getElementById("quickCommentDictationStatus");
     if (!fab || !panel || !closeBtn || !saveBtn || !loadBtn || !stepSelect || !quickInput) return;
 
     fab.addEventListener("click", () => toggleQuickCommentPanel());
     closeBtn.addEventListener("click", () => closeQuickCommentPanel());
     saveBtn.addEventListener("click", () => saveQuickComment());
     loadBtn.addEventListener("click", () => loadQuickCommentFromStep());
-    stepSelect.addEventListener("change", () => loadQuickCommentFromStep());
+    stepSelect.addEventListener("change", () => {
+      if (activeDictation && activeDictation.textarea === quickInput) {
+        try { activeDictation.recognition.stop(); } catch (error) {}
+      }
+      loadQuickCommentFromStep();
+    });
+    initDictationControl(quickInput, dictationBtn, dictationStatus);
 
     quickInput.addEventListener("keydown", (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -27262,6 +27408,10 @@ var __async = (__this, __arguments, generator) => {
           <span class="comment-label">Comentario</span>
         </div>
         <textarea placeholder="Comentario del paso...">${step.comment}</textarea>
+        <div class="dictation-controls">
+          <button class="btn-secondary dictation-btn step-dictation-btn" type="button" aria-pressed="false">🎙️ Dictar</button>
+          <span class="dictation-status step-dictation-status" role="status" aria-live="polite"></span>
+        </div>
       </div>
       <div class="comment-anchor comment-bottom-anchor" data-comment-anchor="bottom">Soltar comentario abajo</div>
       <div class="status-row">
@@ -27462,12 +27612,18 @@ var __async = (__this, __arguments, generator) => {
       announceA11y("Comentario movido al " + positionLabel(step.commentPosition) + ".");
       saveStateToDB();
     });
-    card.querySelector("textarea").addEventListener("input", (e) => {
+    const stepCommentInput = card.querySelector("textarea");
+    stepCommentInput.addEventListener("input", (e) => {
       step.comment = e.target.value;
       invalidateSavedPreview();
       autosave();
       applyStepsFilter();
     });
+    initDictationControl(
+      stepCommentInput,
+      card.querySelector(".step-dictation-btn"),
+      card.querySelector(".step-dictation-status")
+    );
     const statusSelect = card.querySelector(".step-status-select");
     statusSelect.addEventListener("change", () => {
       pushUndoCheckpoint();
