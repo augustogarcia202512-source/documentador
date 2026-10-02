@@ -231,8 +231,25 @@
   .step-card.sev-alta { background: var(--red-dim); border-left-color: var(--red); border-color: rgba(224,82,74,0.25); }
   .step-card.sev-media { background: var(--amber-dim); border-left-color: var(--amber); border-color: rgba(232,163,61,0.25); }
   .step-card.sev-baja { background: rgba(79,181,168,0.12); border-left-color: var(--teal); border-color: rgba(79,181,168,0.25); }
-  .step-card img { width: 100%; border-radius: 4px; border: 1px solid var(--line); margin-bottom: 8px; cursor: zoom-in; }
-  .step-card canvas { width: 100%; border-radius: 4px; border: 1px solid var(--line); margin-bottom: 8px; cursor: crosshair; display: block; }
+  .step-evidence-media { position: relative; width: 100%; margin-bottom: 8px; }
+  .step-evidence-media img { width: 100%; border-radius: 4px; border: 1px solid var(--line); margin: 0; cursor: zoom-in; display: block; }
+  .step-evidence-media canvas { width: 100%; border-radius: 4px; border: 1px solid var(--line); margin: 0; cursor: crosshair; display: block; }
+  .step-evidence-media.pin-mode img { cursor: crosshair; }
+  .step-pin-layer { position: absolute; inset: 0; pointer-events: none; }
+  .step-pin-marker {
+    position: absolute; z-index: 2; display: grid; place-items: center;
+    width: 25px; height: 25px; padding: 0; transform: translate(-50%, -50%);
+    border: 2px solid #fff; border-radius: 50%; background: #c83d32; color: #fff;
+    font-size: 11px; font-weight: 800; box-shadow: 0 2px 8px rgba(0,0,0,.45);
+    pointer-events: auto;
+  }
+  .step-pin-marker:hover { filter: brightness(1.15); transform: translate(-50%, -50%) scale(1.1); }
+  .step-pin-notes { display: grid; gap: 7px; margin: 0 0 8px; }
+  .step-pin-note-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 7px; align-items: start; }
+  .step-pin-note-number { display: grid; place-items: center; width: 24px; height: 24px; margin-top: 4px; border-radius: 50%; background: #c83d32; color: #fff; font-size: 10px; font-weight: 800; }
+  .step-pin-note-row textarea { min-height: 38px; margin: 0; font-size: 11px; }
+  .step-pin-delete { padding: 5px 7px; color: var(--red); background: transparent; border-color: var(--line); font-size: 10px; }
+  .step-pin-mode-btn.active { border-color: #c83d32; color: #c83d32; background: rgba(200,61,50,.1); }
   #screenSelectionOverlay { display:none; position:fixed; inset:0; z-index:1400; background:rgba(5,8,12,.92); color:#fff; }
   #screenSelectionStage { position:relative; width:100vw; height:100vh; overflow:hidden; touch-action:none; cursor:crosshair; }
   #screenSelectionCanvas { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
@@ -256,6 +273,13 @@
   #screenSelectionTools button:hover, #screenSelectionTools button.active { background:#dbeafe; color:#1255a0; }
   #screenSelectionTools .tool-divider { height:1px; margin:2px 0; background:#d0d0d0; }
   #screenSelectionActions { position:fixed; display:none; gap:5px; align-items:center; z-index:3; padding:6px 8px; border:1px solid rgba(255,255,255,.22); border-radius:6px; background:#f7f7f7; box-shadow:0 4px 16px rgba(0,0,0,.45); }
+  #screenSelectionQuality {
+    position:absolute; left:0; bottom:calc(100% + 6px); display:none; max-width:min(420px, calc(100vw - 24px));
+    padding:6px 9px; border:1px solid rgba(255,255,255,.18); border-radius:6px;
+    background:rgba(18,23,31,.96); color:#e7ebf0; box-shadow:0 4px 14px rgba(0,0,0,.28);
+    font-size:11px; line-height:1.35; white-space:normal;
+  }
+  #screenSelectionQuality.low-resolution { border-color:#ef9b38; color:#ffe0ae; }
   #screenSelectionActions button { width:34px; height:32px; padding:0; border:0; border-radius:4px; background:#f7f7f7; color:#333; font-size:18px; cursor:pointer; }
   #screenSelectionActions button:hover { background:#dbeafe; color:#1255a0; }
   #screenSelectionActions .selection-action-primary { width:auto; padding:0 10px; font-size:12px; font-weight:700; }
@@ -940,6 +964,31 @@
     color: #d9dade; background: #28292e; border-color: #414248; font-size: 11.5px;
   }
   .dashboard-local-note { color: #85878e; font-size: 10px; text-align: center; }
+
+  /* Controles compactos copiados a la ventana flotante Picture-in-Picture. */
+  .pip-controls-root {
+    min-width: 290px;
+    padding: 12px;
+    background: var(--bg-soft);
+    color: var(--text);
+    font-family: var(--sans);
+  }
+  .pip-controls-title {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 9px; color: var(--text); font-size: 12px; font-weight: 800;
+  }
+  .pip-controls-caption { color: var(--text-faint); font-size: 10px; font-weight: 500; }
+  .pip-video-slot { min-height: 90px; }
+  .pip-video-slot video { width: 100%; max-height: 155px; object-fit: contain; border-radius: 7px; background: #090b0f; }
+  .pip-action-group { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 8px; }
+  .pip-action-group .btn-primary { grid-column: 1 / -1; }
+  .pip-controls-root button { width: 100%; min-height: 36px; padding: 8px; font-size: 11px; }
+  .pip-controls-root button.quick-pause.active { background: linear-gradient(180deg, #ffd9b1, #f3a24f); color: #2f1700; border-color: rgba(190,105,25,.45); }
+  .pip-controls-hint { margin-top: 8px; color: var(--text-faint); font-size: 9px; text-align: center; }
+  .pip-selection-notice {
+    margin-top: 8px; padding: 7px 8px; border: 1px solid var(--line);
+    border-radius: 6px; color: var(--text-muted); font-size: 10px; text-align: center;
+  }
   .dashboard-main { min-width: 0; }
   .dashboard-topbar {
     position: sticky; top: 0; z-index: 4; min-height: 70px; display: flex;
@@ -1291,6 +1340,7 @@
       <button type="button" data-selection-tool="color" title="Color">●</button>
     </div>
     <div id="screenSelectionActions" aria-label="Acciones de selección">
+      <div id="screenSelectionQuality" role="status" aria-live="polite"></div>
       <button type="button" id="selectionUndoBtn" title="Deshacer">↶</button>
       <button type="button" id="selectionRedoBtn" title="Rehacer">↷</button>
       <button type="button" id="selectionDeleteBtn" title="Eliminar anotación">🗑️</button>
@@ -24549,6 +24599,7 @@ var __async = (__this, __arguments, generator) => {
     let editingProjectId = null;
     let isCapturePaused = false;
     let pipWindow = null;
+    let pipPauseButton = null;
 
     const caseUtils = window.caseUtils || {};
     const normalizeStepStatus = caseUtils.normalizeStepStatus || ((value) => {
@@ -24679,6 +24730,7 @@ var __async = (__this, __arguments, generator) => {
         severity: s.severity,
         boxes: s.boxes,
         color: s.color,
+        pins: Array.isArray(s.pins) ? s.pins : [],
       }));
       const payload = {
         projectId: getSelectedProjectId(),
@@ -24762,6 +24814,7 @@ var __async = (__this, __arguments, generator) => {
       severity: s.severity !== undefined ? s.severity : (s.novedad ? "alta" : null),
       boxes: s.boxes || [],
       color: s.color || "#e02424",
+      pins: Array.isArray(s.pins) ? s.pins : [],
     };
   }
 
@@ -25142,6 +25195,10 @@ var __async = (__this, __arguments, generator) => {
   async function copyStepEvidenceToClipboard(step, stepIndexLabel) {
     const sourceUrl = step && (step.renderedDataUrl || step.dataUrl);
     const documentNotes = buildDocumentNotesLines(getDocumentNotesValue());
+    const anchoredPins = Array.isArray(step && step.pins) ? step.pins : [];
+    const anchoredPinText = anchoredPins.map((pin, index) =>
+      `Nota ${index + 1}: ${String(pin.text || "Sin comentario").trim()}`
+    );
     const snippetParts = [
       stepIndexLabel || "Evidencia",
       (step && step.comment ? String(step.comment).trim() : "").trim() || "Sin comentario",
@@ -25149,6 +25206,7 @@ var __async = (__this, __arguments, generator) => {
     if (documentNotes.length > 0) {
       snippetParts.push("Notas:\n" + documentNotes.join("\n"));
     }
+    if (anchoredPinText.length > 0) snippetParts.push("Notas ubicadas en la imagen:\n" + anchoredPinText.join("\n"));
     const snippet = snippetParts.join("\n");
 
     try {
@@ -25167,6 +25225,7 @@ var __async = (__this, __arguments, generator) => {
           <p style="margin: 0 0 8px 0; font-weight: 700;">${escapeHtml(stepIndexLabel || "Evidencia")}</p>
           <p style="margin: 0 0 10px 0; white-space: pre-wrap;">${escapeHtml((step && step.comment ? String(step.comment).trim() : "") || "Sin comentario")}</p>
           ${documentNotes.length > 0 ? `<p style="margin: 0 0 10px 0; white-space: pre-wrap;"><strong>Notas:</strong><br>${escapeHtml(documentNotes.join("\n"))}</p>` : ""}
+          ${anchoredPinText.length > 0 ? `<p style="margin: 0 0 10px 0;"><strong>Notas ubicadas en la imagen:</strong></p><ol>${anchoredPinText.map((text) => `<li>${escapeHtml(text)}</li>`).join("")}</ol>` : ""}
           <img src="${sourceUrl}" style="max-width: 100%; border: 1px solid #ccc;" />
         </div>
       `;
@@ -25261,6 +25320,7 @@ var __async = (__this, __arguments, generator) => {
       <figure style="margin:14px 0;text-align:center;">
         <figcaption data-defect-preview-editable="true" style="font-weight:700;text-align:left;margin-bottom:6px;">${escapeHtml(defectPreviewCustomLabels[index] || `Evidencia ${index + 1} · Paso ${steps.findIndex((item) => item.id === step.id) + 1}`)}</figcaption>
         <img src="${step.renderedDataUrl || step.dataUrl}" alt="Evidencia ${index + 1}" style="max-width:100%;border:1px solid #ccc;" />
+        ${(Array.isArray(step.pins) && step.pins.length) ? `<ol style="text-align:left;font-size:12px;">${step.pins.map((pin, pinIndex) => `<li><b>Nota ${pinIndex + 1}:</b> ${escapeHtml(pin.text || "Sin comentario")}</li>`).join("")}</ol>` : ""}
       </figure>`).join("");
     return `<div><h2 style="margin-top:0;color:#2b579a;">Reporte de defecto</h2><div data-defect-preview-text style="white-space:pre-wrap;line-height:1.5;">${escapeHtml(text)}</div>${evidenceHtml}</div>`;
   }
@@ -25335,7 +25395,10 @@ var __async = (__this, __arguments, generator) => {
     const evidenceSteps = selectedSteps && selectedSteps.length ? selectedSteps : [step];
     const reproductionSteps = evidenceSteps.map((item) => {
       const index = steps.findIndex((candidate) => candidate.id === item.id) + 1;
-      return `Paso ${index}: ${String(item.comment || "Sin detalle registrado.").trim()}`;
+      const pinNotes = (Array.isArray(item.pins) ? item.pins : []).map((pin, pinIndex) =>
+        `  Nota ${pinIndex + 1}: ${String(pin.text || "Sin comentario").trim()}`
+      );
+      return [`Paso ${index}: ${String(item.comment || "Sin detalle registrado.").trim()}`, ...pinNotes].join("\n");
     }).join("\n");
     return [
       `Título: ${qaContext.requirement || "Incidencia detectada"} - ${evidenceSteps.length} evidencia${evidenceSteps.length === 1 ? "" : "s"}`,
@@ -25606,7 +25669,7 @@ var __async = (__this, __arguments, generator) => {
     canvas.height = naturalH * scale;
     canvas.getContext("2d").drawImage(sourceEl, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.98); // alta nitidez con compatibilidad amplia
-    const step = { id: Date.now(), dataUrl, comment: "", commentPosition: "top", stepStatus: "pendiente", novedad: false, severity: null, boxes: [], color: "#e02424" };
+    const step = { id: Date.now(), dataUrl, comment: "", commentPosition: "top", stepStatus: "pendiente", novedad: false, severity: null, boxes: [], pins: [], color: "#e02424" };
     steps.push(step);
     addStepCard(step);
     maybeWarnLargeSession();
@@ -25628,6 +25691,14 @@ var __async = (__this, __arguments, generator) => {
     const captureBtn = document.getElementById("captureBtn");
     if (captureBtn) {
       captureBtn.textContent = isCapturePaused ? "⏸️ Captura pausada" : "📸 Capturar ahora (Ctrl+Shift+Y)";
+    }
+
+    if (pipPauseButton) {
+      pipPauseButton.textContent = isCapturePaused ? "▶ Reanudar" : "⏸ Pausar";
+      pipPauseButton.title = isCapturePaused ? "Reanudar capturas" : "Pausar capturas";
+      pipPauseButton.setAttribute("aria-pressed", isCapturePaused ? "true" : "false");
+      pipPauseButton.classList.toggle("quick-pause", isCapturePaused);
+      pipPauseButton.classList.toggle("active", isCapturePaused);
     }
 
     if (options.announce) {
@@ -25657,6 +25728,7 @@ var __async = (__this, __arguments, generator) => {
     const markBtn = document.getElementById("markScreenSelectionBtn");
     const tools = document.getElementById("screenSelectionTools");
     const actions = document.getElementById("screenSelectionActions");
+    const quality = document.getElementById("screenSelectionQuality");
     const topToolbar = document.getElementById("screenSelectionToolbar");
     if (overlay) overlay.style.display = "none";
     if (rect) rect.style.display = "none";
@@ -25664,6 +25736,11 @@ var __async = (__this, __arguments, generator) => {
     if (markBtn) markBtn.disabled = true;
     if (tools) tools.style.display = "none";
     if (actions) actions.style.display = "none";
+    if (quality) {
+      quality.style.display = "none";
+      quality.textContent = "";
+      quality.classList.remove("low-resolution");
+    }
     if (topToolbar) topToolbar.style.display = "flex";
     setScreenAnnotationPointerMode(false);
     setSelectionHistoryButtons(false, false);
@@ -25801,6 +25878,40 @@ var __async = (__this, __arguments, generator) => {
     return { left: (stageWidth - width) / 2, top: (stageHeight - height) / 2, width, height, scale };
   }
 
+  function getScreenSelectionPixelSize(selection) {
+    if (!screenSelectionState || !selection) return null;
+    const source = screenSelectionState.sourceCanvas;
+    const imageRect = screenSelectionState.imageRect;
+    const left = Math.max(selection.left, imageRect.left);
+    const top = Math.max(selection.top, imageRect.top);
+    const right = Math.min(selection.left + selection.width, imageRect.left + imageRect.width);
+    const bottom = Math.min(selection.top + selection.height, imageRect.top + imageRect.height);
+    if (right <= left || bottom <= top) return null;
+    return {
+      width: Math.max(1, Math.min(source.width, Math.round((right - left) / imageRect.scale))),
+      height: Math.max(1, Math.min(source.height, Math.round((bottom - top) / imageRect.scale))),
+    };
+  }
+
+  function updateScreenSelectionQuality(selection) {
+    const indicator = document.getElementById("screenSelectionQuality");
+    if (!indicator) return;
+    const dimensions = getScreenSelectionPixelSize(selection);
+    if (!dimensions) {
+      indicator.style.display = "none";
+      indicator.textContent = "";
+      indicator.classList.remove("low-resolution");
+      return;
+    }
+    const pixelCount = dimensions.width * dimensions.height;
+    const isLowResolution = pixelCount < 640 * 360 || dimensions.width < 240 || dimensions.height < 240;
+    indicator.style.display = "block";
+    indicator.classList.toggle("low-resolution", isLowResolution);
+    indicator.textContent = isLowResolution
+      ? `Tamaño real: ${dimensions.width} × ${dimensions.height} px · ⚠ Área pequeña; la evidencia podría verse poco nítida.`
+      : `Tamaño real: ${dimensions.width} × ${dimensions.height} px · Resolución adecuada para evidencia.`;
+  }
+
   function updateScreenSelectionRect(point) {
     const rectEl = document.getElementById("screenSelectionRect");
     if (!rectEl || !screenSelectionState) return;
@@ -25818,6 +25929,7 @@ var __async = (__this, __arguments, generator) => {
     const valid = width >= 8 && height >= 8;
     document.getElementById("confirmScreenSelectionBtn").disabled = !valid;
     document.getElementById("markScreenSelectionBtn").disabled = !valid;
+    updateScreenSelectionQuality(screenSelectionState.rect);
     positionScreenSelectionMenus();
   }
 
@@ -25847,6 +25959,7 @@ var __async = (__this, __arguments, generator) => {
     rectEl.style.height = `${next.height}px`;
     document.getElementById("confirmScreenSelectionBtn").disabled = false;
     document.getElementById("markScreenSelectionBtn").disabled = false;
+    updateScreenSelectionQuality(next);
     positionScreenSelectionMenus();
   }
 
@@ -25896,6 +26009,10 @@ var __async = (__this, __arguments, generator) => {
       actions.style.display = "flex";
     }
     if (topToolbar) topToolbar.style.display = "none";
+    const preferredButton = screenSelectionState.preferredAction === "mark"
+      ? document.getElementById("selectionMarkBtn")
+      : document.getElementById("selectionSaveBtn");
+    if (preferredButton) preferredButton.focus();
   }
 
   function pointFromSelectionEvent(event) {
@@ -25976,7 +26093,8 @@ var __async = (__this, __arguments, generator) => {
     }
   }
 
-  function openScreenSelection() {
+  function openScreenSelection(options) {
+    options = options || {};
     if (isCapturePaused) {
       shareStatus.textContent = "⏸️ Captura pausada. Reanuda para seleccionar un área.";
       return;
@@ -26000,7 +26118,7 @@ var __async = (__this, __arguments, generator) => {
     annotationCanvas.height = overlay.clientHeight;
     annotationCanvas.getContext("2d").clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
     setScreenAnnotationPointerMode(false);
-    screenSelectionState = { sourceCanvas: canvas, imageRect, start: null, rect: null, drawing: false, annotations: [], annotationRedo: [], tool: null, color: SCREEN_SELECTION_COLORS[0], annotationLastPoint: null };
+    screenSelectionState = { sourceCanvas: canvas, imageRect, start: null, rect: null, drawing: false, annotations: [], annotationRedo: [], tool: null, color: SCREEN_SELECTION_COLORS[0], annotationLastPoint: null, preferredAction: options.preferredAction || "capture", autoMarkAfterSelect: !!options.autoMarkAfterSelect };
     updateSelectionHistoryButtons();
   }
 
@@ -26042,6 +26160,10 @@ var __async = (__this, __arguments, generator) => {
     if (!screenSelectionState || screenSelectionState.tool) return;
     screenSelectionState.drawing = false;
     updateScreenSelectionRect(pointFromSelectionEvent(event));
+    if (screenSelectionState.autoMarkAfterSelect && screenSelectionState.rect
+      && screenSelectionState.rect.width >= 8 && screenSelectionState.rect.height >= 8) {
+      confirmScreenSelection(true);
+    }
   });
 
   const annotationCanvas = document.getElementById("screenSelectionAnnotationCanvas");
@@ -26318,7 +26440,7 @@ var __async = (__this, __arguments, generator) => {
     }
 
     try {
-      pipWindow = await documentPictureInPicture.requestWindow({ width: 260, height: 240 });
+      pipWindow = await documentPictureInPicture.requestWindow({ width: 340, height: 370 });
     } catch (err) {
       pipWindow = null;
       await showAppAlert("No se pudo abrir la ventana flotante. Cierra cualquier ventana flotante anterior e inténtalo de nuevo.", document.getElementById("pipBtn"));
@@ -26333,30 +26455,66 @@ var __async = (__this, __arguments, generator) => {
         pipWindow.document.head.appendChild(style);
       } catch (e) {}
     });
-    const btn = document.createElement("button");
-    pipWindow.document.body.appendChild(preview); // mueve el video real, sigue reproduciendo
-    btn.textContent = "📸 Capturar paso";
-    btn.className = "btn-primary btn-full";
-    btn.style.marginTop = "8px";
-    btn.addEventListener("click", () => {
-      captureFrame();
-    });
-    pipWindow.document.body.appendChild(btn);
-    const selectBtn = document.createElement("button");
-    selectBtn.textContent = "✂️ Seleccionar área";
-    selectBtn.className = "btn-secondary btn-full";
-    selectBtn.style.marginTop = "8px";
+    pipWindow.document.body.className = "pip-controls-root";
+    const title = pipWindow.document.createElement("div");
+    title.className = "pip-controls-title";
+    title.innerHTML = '<span>📋 Documentador</span><span class="pip-controls-caption">Captura de evidencia</span>';
+    pipWindow.document.body.appendChild(title);
+
+    const videoSlot = pipWindow.document.createElement("div");
+    videoSlot.className = "pip-video-slot";
+    pipWindow.document.body.appendChild(videoSlot);
+    videoSlot.appendChild(preview); // mueve el video real; sigue reproduciendo
+
+    const actionGroup = pipWindow.document.createElement("div");
+    actionGroup.className = "pip-action-group";
+    pipWindow.document.body.appendChild(actionGroup);
+    const captureBtn = pipWindow.document.createElement("button");
+    captureBtn.textContent = "📸 Capturar pantalla";
+    captureBtn.className = "btn-primary";
+    captureBtn.type = "button";
+    captureBtn.addEventListener("click", () => captureFrame());
+    actionGroup.appendChild(captureBtn);
+
+    const selectBtn = pipWindow.document.createElement("button");
+    selectBtn.textContent = "✂️ Área → capturar";
+    selectBtn.className = "btn-secondary";
+    selectBtn.type = "button";
+    selectBtn.title = "Dibuja el área; después puedes ajustar, anotar o confirmar la captura";
     selectBtn.addEventListener("click", () => {
-      openScreenSelection();
+      window.focus();
+      openScreenSelection({ preferredAction: "capture" });
+      announceA11y("Selecciona el área de la pantalla. Luego confirma la captura en la barra de selección.");
     });
-    pipWindow.document.body.appendChild(selectBtn);
+    actionGroup.appendChild(selectBtn);
+
+    pipPauseButton = pipWindow.document.createElement("button");
+    pipPauseButton.textContent = isCapturePaused ? "▶ Reanudar" : "⏸ Pausar";
+    pipPauseButton.className = "btn-secondary";
+    pipPauseButton.type = "button";
+    pipPauseButton.title = isCapturePaused ? "Reanudar capturas" : "Pausar capturas";
+    pipPauseButton.classList.toggle("quick-pause", isCapturePaused);
+    pipPauseButton.classList.toggle("active", isCapturePaused);
+    pipPauseButton.setAttribute("aria-pressed", isCapturePaused ? "true" : "false");
+    pipPauseButton.addEventListener("click", () => {
+      const next = !isCapturePaused;
+      setCapturePaused(next, { announce: true });
+      localStorage.setItem(CAPTURE_PAUSED_KEY, next ? "1" : "0");
+    });
+    actionGroup.appendChild(pipPauseButton);
+
+    const selectionNotice = pipWindow.document.createElement("div");
+    selectionNotice.className = "pip-selection-notice";
+    selectionNotice.textContent = "Selecciona un área para ajustar el recorte y usar las herramientas de anotación antes de capturar.";
+    pipWindow.document.body.appendChild(selectionNotice);
+
     pipWindow.document.addEventListener("keydown", handleCaptureShortcut);
     pipWindow.document.addEventListener("paste", handlePasteEvent);
     preview.play().catch(() => {});
 
-    const hint = document.createElement("div");
-    hint.textContent = "Atajo: Ctrl+Shift+Y";
-    hint.style.cssText = "font-size:10px;color:#8b95a3;text-align:center;margin-top:6px;font-family:ui-monospace,monospace;";
+    const hint = pipWindow.document.createElement("div");
+    hint.className = "pip-controls-hint";
+    hint.textContent = "Atajos: Ctrl+Shift+Y captura · F2 inicia captura";
     pipWindow.document.body.appendChild(hint);
 
     placeholder.style.display = "block";
@@ -26365,6 +26523,7 @@ var __async = (__this, __arguments, generator) => {
       placeholder.parentElement.insertBefore(preview, placeholder);
       placeholder.style.display = "none";
       pipWindow = null;
+      pipPauseButton = null;
       preview.play().catch(() => {});
     });
   });
@@ -26944,11 +27103,107 @@ var __async = (__this, __arguments, generator) => {
 
   let editingId = null; // solo un paso puede estar "en edición" (con canvas activo) a la vez
 
+  function focusStepPinNote(card, pinId) {
+    const input = card.querySelector(`textarea[data-pin-id="${pinId}"]`);
+    if (input) {
+      input.focus();
+      input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  function renderStepPins(step, card) {
+    const layer = card.querySelector(".step-pin-layer");
+    const notes = card.querySelector(".step-pin-notes");
+    const addButton = card.querySelector(".step-pin-mode-btn");
+    if (!layer || !notes || !addButton) return;
+
+    layer.innerHTML = "";
+    notes.innerHTML = "";
+    const hasPins = step.pins.length > 0;
+    notes.style.display = hasPins ? "grid" : "none";
+    addButton.classList.toggle("active", !!step.addingPin);
+    addButton.textContent = step.addingPin ? "✕ Cancelar nota" : "📍 Nota en imagen";
+    addButton.setAttribute("aria-pressed", step.addingPin ? "true" : "false");
+    card.querySelector(".step-evidence-media").classList.toggle("pin-mode", !!step.addingPin);
+
+    step.pins.forEach((pin, index) => {
+      const marker = document.createElement("button");
+      marker.type = "button";
+      marker.className = "step-pin-marker";
+      marker.textContent = String(index + 1);
+      marker.style.left = `${Math.max(0, Math.min(100, Number(pin.x) || 0))}%`;
+      marker.style.top = `${Math.max(0, Math.min(100, Number(pin.y) || 0))}%`;
+      marker.title = pin.text ? `Nota ${index + 1}: ${pin.text}` : `Editar nota anclada ${index + 1}`;
+      marker.setAttribute("aria-label", `Ir a la nota anclada ${index + 1}`);
+      marker.addEventListener("click", (event) => {
+        event.stopPropagation();
+        focusStepPinNote(card, pin.id);
+      });
+      layer.appendChild(marker);
+
+      const row = document.createElement("div");
+      row.className = "step-pin-note-row";
+      const number = document.createElement("span");
+      number.className = "step-pin-note-number";
+      number.textContent = String(index + 1);
+      number.title = `Comentario vinculado al marcador ${index + 1}`;
+      const textarea = document.createElement("textarea");
+      textarea.value = pin.text || "";
+      textarea.placeholder = `Nota sobre el punto ${index + 1}...`;
+      textarea.setAttribute("aria-label", `Comentario anclado ${index + 1}`);
+      textarea.dataset.pinId = pin.id;
+      textarea.addEventListener("input", () => {
+        pin.text = textarea.value;
+        marker.title = pin.text ? `Nota ${index + 1}: ${pin.text}` : `Editar nota anclada ${index + 1}`;
+        invalidateSavedPreview();
+        autosave();
+      });
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "step-pin-delete";
+      remove.textContent = "Quitar";
+      remove.setAttribute("aria-label", `Quitar nota anclada ${index + 1}`);
+      remove.addEventListener("click", () => {
+        pushUndoCheckpoint();
+        step.pins = step.pins.filter((item) => item.id !== pin.id);
+        invalidateSavedPreview();
+        renderStepPins(step, card);
+        saveStateToDB();
+        announceA11y(`Nota anclada ${index + 1} eliminada.`);
+      });
+      row.append(number, textarea, remove);
+      notes.appendChild(row);
+    });
+  }
+
+  function addStepPinAtPoint(step, card, event) {
+    const image = card.querySelector(".step-img");
+    const bounds = image.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    const x = Math.max(0, Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100));
+    const y = Math.max(0, Math.min(100, ((event.clientY - bounds.top) / bounds.height) * 100));
+    addStepPinAtCoordinates(step, card, x, y);
+  }
+
+  function addStepPinAtCoordinates(step, card, x, y) {
+    pushUndoCheckpoint();
+    const pin = { id: `pin-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, x, y, text: "" };
+    step.pins.push(pin);
+    step.addingPin = false;
+    invalidateSavedPreview();
+    renderStepPins(step, card);
+    focusStepPinNote(card, pin.id);
+    saveStateToDB();
+    announceA11y(`Marcador ${step.pins.length} colocado en la imagen. Escribe su comentario.`);
+  }
+
   // Construye UNA tarjeta nueva y la agrega al final, sin tocar las demás (evita
   // volver a decodificar 60 imágenes cada vez que se agrega un paso)
   function addStepCard(step) {
     step.commentPosition = ["top", "middle", "bottom"].includes(step.commentPosition) ? step.commentPosition : "top";
     step.stepStatus = normalizeStepStatus(step.stepStatus || step.status);
+    step.pins = Array.isArray(step.pins) ? step.pins : [];
+    step.addingPin = false;
 
     if (stepsContainer.querySelector(".empty-msg")) stepsContainer.innerHTML = "";
     const idx = steps.length; // número de paso al momento de crearlo
@@ -26985,11 +27240,16 @@ var __async = (__this, __arguments, generator) => {
         </div>
       </div>
       <p class="edit-only mode-help" style="display:none;font-size:11px;color:var(--text-muted);margin:0 0 4px 0;">"Ocultar" tapa por completo la zona (útil para datos sensibles); "Resaltar" solo dibuja un recuadro.</p>
-      <img class="step-img" src="${step.renderedDataUrl || step.dataUrl}" role="button" tabindex="0" aria-label="Abrir imagen ampliada del paso ${idx}" />
+      <div class="step-evidence-media">
+        <img class="step-img" src="${step.renderedDataUrl || step.dataUrl}" role="button" tabindex="0" aria-label="Abrir imagen ampliada del paso ${idx}" />
+        <div class="step-pin-layer" aria-label="Marcadores de notas sobre la imagen"></div>
+      </div>
+      <div class="step-pin-notes" aria-label="Notas ancladas a la imagen"></div>
       <div class="btn-row" style="margin-top:8px;">
         <button class="btn-secondary copy-image-btn" type="button" style="flex:1;">📋 Copiar evidencia</button>
         <button class="btn-secondary defect-btn" type="button" style="flex:1;">🐞 Generar defecto</button>
         <button class="btn-secondary mark-btn" type="button" style="flex:1;">✏️ Marcar zona</button>
+        <button class="btn-secondary step-pin-mode-btn" type="button" style="flex:1;" title="Coloca una nota en un punto de la imagen">📍 Nota en imagen</button>
       </div>
       <div class="comment-anchor comment-middle-anchor" data-comment-anchor="middle">Soltar comentario al centro</div>
       <div class="comment-controls">
@@ -27021,6 +27281,7 @@ var __async = (__this, __arguments, generator) => {
       </div>`;
     stepsContainer.appendChild(card);
     applyStepsFilter();
+    renderStepPins(step, card);
 
     function positionLabel(pos) {
       if (pos === "top") return "arriba";
@@ -27082,12 +27343,33 @@ var __async = (__this, __arguments, generator) => {
     });
 
     card.querySelector(".step-img").addEventListener("click", (e) => {
+      if (step.addingPin) {
+        addStepPinAtPoint(step, card, e);
+        return;
+      }
       openZoom(step.renderedDataUrl || step.dataUrl, e.currentTarget);
     });
     card.querySelector(".step-img").addEventListener("keydown", (e) => {
       if (e.key !== "Enter" && e.key !== " ") return;
       e.preventDefault();
+      if (step.addingPin) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        addStepPinAtPoint(step, card, { clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 });
+        return;
+      }
       openZoom(step.renderedDataUrl || step.dataUrl, e.currentTarget);
+    });
+
+    card.querySelector(".step-pin-mode-btn").addEventListener("click", () => {
+      step.addingPin = !step.addingPin;
+      renderStepPins(step, card);
+      if (step.addingPin) {
+        const imageOrCanvas = editingId === step.id ? card.querySelector("canvas") : card.querySelector(".step-img");
+        if (imageOrCanvas) imageOrCanvas.focus();
+        announceA11y("Modo de nota anclada activo. Haz clic sobre el punto de la imagen que quieres comentar.");
+      } else {
+        announceA11y("Modo de nota anclada cancelado.");
+      }
     });
 
     card.querySelector(".move-up").addEventListener("click", () => {
@@ -27312,6 +27594,8 @@ var __async = (__this, __arguments, generator) => {
     updateCropButtonState(step, card);
 
     const canvas = document.createElement("canvas");
+    canvas.tabIndex = 0;
+    canvas.setAttribute("aria-label", `Evidencia editable del paso ${steps.indexOf(step) + 1}`);
     img.insertAdjacentElement("afterend", canvas);
     step._editImg = new Image();
     step._editImg.onload = () => redrawStep(step, canvas);
@@ -27324,6 +27608,7 @@ var __async = (__this, __arguments, generator) => {
   // Apaga el lienzo y libera su memoria; deja solo la imagen final como <img>
   function exitEditMode(step, card) {
     editingId = null;
+    step.addingPin = false;
     // si había un recorte sin confirmar, se descarta al salir (no se aplica a medias)
     step.pendingCrop = null;
     const canvas = card.querySelector("canvas");
@@ -27334,6 +27619,7 @@ var __async = (__this, __arguments, generator) => {
     }
     img.style.display = "block";
     card.querySelectorAll(".edit-only").forEach((el) => (el.style.display = "none"));
+    renderStepPins(step, card);
     card.querySelector(".mark-btn").textContent = "✏️ Marcar zona";
     step._editImg = null; // libera la imagen decodida en memoria
     saveStateToDB();
@@ -27417,6 +27703,19 @@ var __async = (__this, __arguments, generator) => {
       srcCanvas, crop.x, crop.y, crop.w, crop.h, 0, 0, cropCanvas.width, cropCanvas.height
     );
 
+    step.pins = (step.pins || []).flatMap((pin) => {
+      const pinX = (Number(pin.x) / 100) * srcCanvas.width;
+      const pinY = (Number(pin.y) / 100) * srcCanvas.height;
+      if (pinX < crop.x || pinX > crop.x + crop.w || pinY < crop.y || pinY > crop.y + crop.h) return [];
+      return [{
+        ...pin,
+        x: Math.max(0, Math.min(100, ((pinX - crop.x) / crop.w) * 100)),
+        y: Math.max(0, Math.min(100, ((pinY - crop.y) / crop.h) * 100)),
+      }];
+    });
+    invalidateSavedPreview();
+    renderStepPins(step, card);
+
     step.dataUrl = cropCanvas.toDataURL("image/jpeg", 0.98);
     step.renderedDataUrl = null;
     step.boxes = [];
@@ -27475,6 +27774,17 @@ var __async = (__this, __arguments, generator) => {
       };
     }
     function onDown(evt) {
+      if (step.addingPin) {
+        evt.preventDefault();
+        const point = getPt(evt);
+        addStepPinAtCoordinates(
+          step,
+          card,
+          Math.max(0, Math.min(100, (point.x / canvas.width) * 100)),
+          Math.max(0, Math.min(100, (point.y / canvas.height) * 100))
+        );
+        return;
+      }
       dragging = true;
       startPt = getPt(evt);
     }
@@ -27573,6 +27883,15 @@ var __async = (__this, __arguments, generator) => {
     const summaryListHtml = summary.stepSummaries
       .map((item) => `<li><b>Paso ${item.index}:</b> ${getStepStatusLabel(item.status)} • ${item.severityLabel} • ${escapeHtml(item.comment)}</li>`)
       .join("");
+    function buildAnchoredNotesHtml(pins) {
+      if (!Array.isArray(pins) || pins.length === 0) return "";
+      return `<div style="margin:6px auto 10px;max-width:600px;padding:8px 10px;border:1px solid #f0d3cf;background:#fff8f7;border-radius:6px;font-size:12px;"><b>Notas ancladas a la imagen</b><ol style="margin:5px 0 0;padding-left:22px;">${pins.map((pin, index) => `<li><b>Nota ${index + 1}:</b> ${escapeHtml(pin.text || "Sin comentario")}</li>`).join("")}</ol></div>`;
+    }
+    function buildAnnotatedImageHtml(step) {
+      const pins = Array.isArray(step.pins) ? step.pins : [];
+      const markers = pins.map((pin, index) => `<span style="position:absolute;left:${Math.max(0, Math.min(100, Number(pin.x) || 0))}%;top:${Math.max(0, Math.min(100, Number(pin.y) || 0))}%;transform:translate(-50%,-50%);display:grid;place-items:center;width:24px;height:24px;border:2px solid #fff;border-radius:50%;background:#c83d32;color:#fff;font:bold 12px Arial;box-shadow:0 1px 5px #333;">${index + 1}</span>`).join("");
+      return `<div style="position:relative;display:table;margin:8px auto;max-width:600px;"><img src="${step.renderedDataUrl || step.dataUrl}" style="max-width:600px;width:100%;border:1px solid #ccc;display:block;" />${markers}</div>${buildAnchoredNotesHtml(pins)}`;
+    }
     const emptyStateHtml = steps.length === 0
       ? `<div style="margin:12px 0;padding:12px 14px;border:1px dashed #9bb7d6;background:#eef5fb;border-radius:8px;color:#35506b;"><b>Vista previa vacía:</b> todavía no hay pasos capturados. Cuando agregues evidencia, aquí verás el documento completo.</div>`
       : "";
@@ -27591,7 +27910,7 @@ var __async = (__this, __arguments, generator) => {
       .map((s, i) => {
         const commentPosition = s.commentPosition || "top";
         const commentHtml = `<p data-preview-step-comment="${s.id}"><b>Comentario:</b> ${escapeHtml(s.comment || "")}</p>`;
-        const imageHtml = `<div style="text-align:center;margin:8px 0;"><img src="${s.renderedDataUrl || s.dataUrl}" style="max-width:600px;border:1px solid #ccc;display:inline-block;" /></div>`;
+        const imageHtml = buildAnnotatedImageHtml(s);
         const content = commentPosition === "top"
           ? `${commentHtml}${imageHtml}`
           : `${imageHtml}${commentHtml}`;
@@ -27612,7 +27931,7 @@ var __async = (__this, __arguments, generator) => {
             const sevLabel = SEVERITY_LABEL[n.severity] || "";
             const commentPosition = n.commentPosition || "top";
             const commentHtml = `<p>${escapeHtml(n.comment || "")}</p>`;
-            const imageHtml = `<div style="text-align:center;margin:8px 0;"><img src="${n.renderedDataUrl || n.dataUrl}" style="max-width:600px;border:1px solid #ccc;display:inline-block;" /></div>`;
+            const imageHtml = buildAnnotatedImageHtml(n);
             const content = commentPosition === "top"
               ? `${commentHtml}${imageHtml}`
               : `${imageHtml}${commentHtml}`;
@@ -27663,13 +27982,57 @@ var __async = (__this, __arguments, generator) => {
     return bytes;
   }
 
-  function loadImageDims(dataUrl) {
-    return new Promise((resolve) => {
+  async function buildWordEvidenceImage(dataUrl, pins) {
+    const notes = Array.isArray(pins) ? pins : [];
+    const image = await new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve({ width: img.width, height: img.height });
-      img.onerror = () => resolve({ width: 500, height: 300 });
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("No se pudo preparar una imagen de evidencia para Word."));
       img.src = dataUrl;
     });
+    if (notes.length === 0) {
+      return { data: dataUrlToUint8Array(dataUrl), width: image.naturalWidth, height: image.naturalHeight };
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d");
+    context.drawImage(image, 0, 0);
+
+    const radius = Math.max(12, Math.min(30, Math.round(Math.min(canvas.width, canvas.height) * 0.025)));
+    const lineWidth = Math.max(2, Math.round(radius * 0.14));
+    const fontSize = Math.max(12, Math.round(radius * 1.12));
+    notes.forEach((pin, index) => {
+      const xPercent = Math.max(0, Math.min(100, Number(pin.x) || 0));
+      const yPercent = Math.max(0, Math.min(100, Number(pin.y) || 0));
+      const x = Math.max(radius + lineWidth, Math.min(canvas.width - radius - lineWidth, (xPercent / 100) * canvas.width));
+      const y = Math.max(radius + lineWidth, Math.min(canvas.height - radius - lineWidth, (yPercent / 100) * canvas.height));
+
+      context.save();
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fillStyle = "#c83d32";
+      context.shadowColor = "rgba(0,0,0,.55)";
+      context.shadowBlur = Math.max(3, radius * 0.28);
+      context.fill();
+      context.shadowBlur = 0;
+      context.lineWidth = lineWidth;
+      context.strokeStyle = "#ffffff";
+      context.stroke();
+      context.fillStyle = "#ffffff";
+      context.font = `bold ${fontSize}px Arial, sans-serif`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(String(index + 1), x, y + 0.5);
+      context.restore();
+    });
+
+    return {
+      data: dataUrlToUint8Array(canvas.toDataURL("image/jpeg", 0.98)),
+      width: canvas.width,
+      height: canvas.height,
+    };
   }
 
   // calcula el tamaño de la imagen en el Word, sin pasarse del ancho de la página
@@ -27883,13 +28246,17 @@ var __async = (__this, __arguments, generator) => {
         const s = caseSteps[i];
         if (onProgress) onProgress(i + 1, caseSteps.length);
         const src = s.renderedDataUrl || s.dataUrl;
-        const dims = await loadImageDims(src);
-        const fitted = fitToPage(dims.width, dims.height, MAX_W);
+        const evidenceImage = await buildWordEvidenceImage(src, s.pins);
+        const fitted = fitToPage(evidenceImage.width, evidenceImage.height, MAX_W);
         const commentParagraph = new Paragraph({ children: [panamLabelRun("Comentario: "), panamValueRun(s.comment || "")] });
+        const pinNoteParagraphs = (Array.isArray(s.pins) ? s.pins : []).map((pin, pinIndex) => new Paragraph({
+          children: [new TextRun({ text: `Nota anclada ${pinIndex + 1}: ${pin.text || "Sin comentario"}`, font: "Arial", size: 18 })],
+        }));
         evidenceParas.push(new Paragraph({ children: [panamLabelRun("Paso " + (i + 1))] }));
         if ((s.commentPosition || "top") === "top") evidenceParas.push(commentParagraph);
-        evidenceParas.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new ImageRun({ data: dataUrlToUint8Array(src), transformation: fitted, type: "jpg" })] }));
+        evidenceParas.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new ImageRun({ data: evidenceImage.data, transformation: fitted, type: "jpg" })] }));
         if ((s.commentPosition || "top") !== "top") evidenceParas.push(commentParagraph);
+        evidenceParas.push(...pinNoteParagraphs);
         evidenceParas.push(new Paragraph(""));
       }
     }
@@ -27901,15 +28268,19 @@ var __async = (__this, __arguments, generator) => {
         const n = novedades[i];
         if (onlyNovedades && onProgress) onProgress(i + 1, novedades.length);
         const src = n.renderedDataUrl || n.dataUrl;
-        const dims = await loadImageDims(src);
-        const fitted = fitToPage(dims.width, dims.height, MAX_W);
+        const evidenceImage = await buildWordEvidenceImage(src, n.pins);
+        const fitted = fitToPage(evidenceImage.width, evidenceImage.height, MAX_W);
         const sevColor = SEVERITY_DOCX_COLOR[n.severity] || "C00000";
         const sevLabel = SEVERITY_LABEL[n.severity] || "";
         const commentParagraph = new Paragraph({ children: [panamValueRun(n.comment || "")] });
+        const pinNoteParagraphs = (Array.isArray(n.pins) ? n.pins : []).map((pin, pinIndex) => new Paragraph({
+          children: [new TextRun({ text: `Nota anclada ${pinIndex + 1}: ${pin.text || "Sin comentario"}`, font: "Arial", size: 18 })],
+        }));
         evidenceParas.push(new Paragraph({ children: [new TextRun({ text: "Novedad " + (i + 1) + (sevLabel ? " — " + sevLabel : ""), bold: true, color: sevColor, font: "Arial", size: 20 })] }));
         if ((n.commentPosition || "top") === "top") evidenceParas.push(commentParagraph);
-        evidenceParas.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new ImageRun({ data: dataUrlToUint8Array(src), transformation: fitted, type: "jpg" })] }));
+        evidenceParas.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new ImageRun({ data: evidenceImage.data, transformation: fitted, type: "jpg" })] }));
         if ((n.commentPosition || "top") !== "top") evidenceParas.push(commentParagraph);
+        evidenceParas.push(...pinNoteParagraphs);
         evidenceParas.push(new Paragraph(""));
       }
     }
@@ -29008,6 +29379,7 @@ var __async = (__this, __arguments, generator) => {
       // "novedad: true/false" — esas se recuperan como severidad "alta" por defecto
       severity: s.severity !== undefined ? s.severity : (s.novedad ? "alta" : null),
       boxes: s.boxes || [],
+      pins: Array.isArray(s.pins) ? s.pins : [],
       color: s.color || "#e02424",
     }));
     steps.forEach((s) => addStepCard(s));
