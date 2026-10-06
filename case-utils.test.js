@@ -9,6 +9,8 @@ const {
   getCaseTemplate,
   buildExecutiveSummary,
   getClipboardFallbackMessage,
+  dualCaseRecord,
+  buildCaseRecordTitle,
 } = require('./case-utils.js');
 
 test('normalizeStepStatus returns a valid fallback', () => {
@@ -94,4 +96,28 @@ test('getClipboardFallbackMessage offers a helpful browser fallback without fals
   assert.match(getClipboardFallbackMessage('Paso 1'), /Este navegador no permite copiar imágenes/i);
   assert.match(getClipboardFallbackMessage('Paso 1'), /abrirla/i);
   assert.match(getClipboardFallbackMessage(), /imágenes|imagen/i);
+});
+
+test('dualCaseRecord duplicates the record without sharing mutable data', () => {
+  const source = {
+    caseId: 'CP-001',
+    description: 'Validar login',
+    steps: [{ comment: 'Primera evidencia', boxes: [{ x: 1 }] }],
+    qaContext: { requirement: 'HU-1' },
+  };
+
+  const copy = dualCaseRecord(source, 'CP-001 copia');
+
+  assert.notStrictEqual(copy, source);
+  assert.deepEqual(copy.steps, source.steps);
+  assert.notStrictEqual(copy.steps, source.steps);
+  assert.equal(copy.caseId, 'CP-001 copia');
+  assert.equal(copy.qaContext.requirement, 'HU-1');
+  assert.notStrictEqual(copy.qaContext, source.qaContext);
+});
+
+test('buildCaseRecordTitle keeps the label readable with and without an ID', () => {
+  assert.equal(buildCaseRecordTitle({ caseId: 'CP-001', description: 'Validar login' }), 'CP-001 · Validar login');
+  assert.equal(buildCaseRecordTitle({ description: 'Validar login' }), 'Validar login');
+  assert.equal(buildCaseRecordTitle({}), 'Caso sin ID');
 });

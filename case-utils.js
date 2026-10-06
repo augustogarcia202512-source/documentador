@@ -229,6 +229,30 @@
     return `Este navegador no permite copiar imágenes al portapapeles${label}. Puedes abrirla y usar Ctrl+C para copiarla manualmente.`;
   }
 
+  function deepCloneCase(value) {
+    return JSON.parse(JSON.stringify(value || {}));
+  }
+
+  function dualCaseRecord(source = {}, nextCaseId) {
+    const origin = deepCloneCase(source);
+    const timestamp = Date.now();
+    return {
+      ...origin,
+      caseId: String(nextCaseId || origin.caseId || "Caso sin ID").trim(),
+      savedAt: timestamp,
+      fecha: new Date(timestamp).toLocaleDateString("es-CO"),
+      steps: Array.isArray(origin.steps) ? origin.steps.map((step) => deepCloneCase(step)) : [],
+      qaContext: deepCloneCase(origin.qaContext),
+    };
+  }
+
+  function buildCaseRecordTitle(record = {}) {
+    const id = String(record.caseId || "").trim();
+    const description = String(record.description || "").trim();
+    const parts = [id, description].filter(Boolean);
+    return parts.length ? parts.join(" · ") : "Caso sin ID";
+  }
+
   const api = {
     CASE_TEMPLATES,
     STEP_STATUS_VALUES,
@@ -242,6 +266,8 @@
     buildCaseSummary,
     buildExecutiveSummary,
     getClipboardFallbackMessage,
+    dualCaseRecord,
+    buildCaseRecordTitle,
   };
 
   if (typeof module !== "undefined" && module.exports) {

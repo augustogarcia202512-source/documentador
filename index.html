@@ -51,6 +51,7 @@
   *::-webkit-scrollbar-track { background: #1a212b; }
 
   .app-header { display: flex; align-items: center; gap: 12px; margin-bottom: 2px; }
+  .app-header .backup-header-btn { flex: 0 0 auto; padding: 7px 9px; font-size: 11px; }
   .live-dot {
     width: 10px; height: 10px; border-radius: 50%; background: var(--text-faint);
     box-shadow: none; flex-shrink: 0; transition: all .25s ease;
@@ -1026,6 +1027,391 @@
   .dashboard-page-heading h1 { margin: 0; font-size: clamp(24px, 3vw, 32px); letter-spacing: -.04em; }
   .dashboard-page-heading p { margin: 6px 0 0; color: var(--text-muted); font-size: 12px; }
   .dashboard-date { color: var(--text-faint); font: 10px var(--mono); white-space: nowrap; }
+
+  .qa-panel {
+    background: rgba(244, 246, 249, 0.76);
+    border: 1px solid #dfe6ee;
+    border-radius: 14px;
+    box-shadow: 0 12px 24px rgba(38, 54, 70, 0.08);
+    overflow: hidden;
+    margin: 18px 0 20px;
+  }
+  .qa-panel-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(120deg, #252a32 0%, #34343b 68%, #493239 100%);
+    box-shadow: inset 0 -3px 0 rgba(200, 61, 50, 0.9);
+    padding: 14px 18px 12px;
+    min-height: 64px;
+  }
+  .qa-panel-title {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -.04em;
+    text-transform: uppercase;
+  }
+  .qa-panel-summary {
+    color: rgba(255,255,255,0.95);
+    font-size: 14px;
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .qa-panel-status-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid rgba(111, 126, 147, 0.16);
+  }
+  .qa-panel-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(18, 24, 39, 0.03);
+    border: 1px solid #d9e0e8;
+    color: #2d3748;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .qa-chip-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    display: inline-block;
+    background: #8e9bb1;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12);
+  }
+  .status-pass .qa-chip-dot { background: #18a857; }
+  .status-not-executed .qa-chip-dot { background: #bdc7d6; }
+  .status-in-progress .qa-chip-dot { background: #f5b942; }
+  .status-failed .qa-chip-dot { background: #d93936; }
+  .status-blocked .qa-chip-dot { background: #7a3cb8; }
+
+  .qa-panel-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 16px 18px 18px;
+    border: 1px solid #dfe6ee;
+    background: #f3f6f9;
+    border-radius: 8px;
+    height: 42px;
+    padding: 0 12px;
+    color: #6b7280;
+  }
+  .qa-search-slash {
+    font: 700 15px/1 var(--mono);
+    color: #7d8da3;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: rgba(135, 146, 162, 0.08);
+  }
+  .qa-panel-search input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: #2d3748;
+    font-size: 14px;
+    outline: none;
+  }
+  .qa-panel-search input::placeholder { color: #7d8da3; }
+
+  .qa-suite-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 0 18px 0;
+  }
+  .qa-suite-item {
+    min-height: 112px;
+    background: rgba(255,255,255,0.35);
+    border: 1px solid #dce4ed;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px 12px;
+  }
+  .qa-suite-title {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -.04em;
+    color: #1f2937;
+    margin-bottom: 8px;
+  }
+  .qa-suite-meta {
+    font-size: 14px;
+    color: #475569;
+    font-weight: 600;
+  }
+
+  .qa-panel-add {
+    width: calc(100% - 36px);
+    margin: 18px 18px 0;
+    min-height: 60px;
+    border: 1px dashed #c8d2de;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.18);
+    color: #2d3748;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .qa-panel-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 18px;
+  }
+  .qa-panel-action {
+    min-height: 50px;
+    border: 1px solid #d9e0e8;
+    background: rgba(255,255,255,0.48);
+    border-radius: 10px;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 800;
+  }
+  .qa-suite-item {
+    width: 100%;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .qa-suite-item:hover,
+  .qa-suite-item:focus-visible {
+    border-color: #8fb9e8;
+    background: #fff;
+  }
+  .qa-suite-detail { padding: 0 18px; }
+  .qa-suite-detail[hidden],
+  .qa-suite-grid[hidden],
+  .qa-suite-create-form[hidden],
+  .qa-suite-edit-form[hidden] { display: none; }
+  .qa-suite-detail-nav {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 10px;
+    color: #475569;
+    font-size: 13px;
+  }
+  .qa-suite-back {
+    width: 42px;
+    min-height: 40px;
+    padding: 7px;
+    background: #287bdc;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 17px;
+  }
+  .qa-suite-case-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin: 0 0 10px;
+  }
+  .qa-suite-case-actions button {
+    min-height: 45px;
+    border: 1px solid #d9e0e8;
+    background: rgba(255,255,255,0.62);
+    color: #1f2937;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .qa-suite-case-list { display: grid; gap: 8px; }
+  .qa-suite-case-item {
+    width: 100%;
+    text-align: left;
+    font-family: var(--sans);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 60px;
+    padding: 10px 12px;
+    border: 1px solid #d9e0e8;
+    border-left: 5px solid #8e9bb1;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.72);
+    color: #263445;
+    cursor: pointer;
+  }
+  .qa-suite-case-item:hover,
+  .qa-suite-case-item:focus-visible { border-color: #a9c2de; background: #fff; }
+  .qa-suite-case-item.status-pass { border-left-color: #18a857; }
+  .qa-suite-case-item.status-in-progress { border-left-color: #287bdc; }
+  .qa-suite-case-item.status-failed { border-left-color: #d93936; }
+  .qa-suite-case-item.status-blocked { border-left-color: #8150d5; }
+  .qa-suite-case-copy { min-width: 0; display: grid; gap: 2px; }
+  .qa-suite-case-id { color: #52657c; font-size: 12px; }
+  .qa-suite-case-name { overflow-wrap: anywhere; font-size: 14px; }
+  .qa-suite-case-status { flex: 0 0 auto; color: #758397; font-size: 11px; font-weight: 700; }
+  .qa-case-context {
+    margin: 0 0 12px;
+    padding: 8px 10px;
+    border: 1px solid rgba(40, 123, 220, .24);
+    border-radius: 7px;
+    background: rgba(40, 123, 220, .08);
+    color: #3d648f;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .qa-suite-empty {
+    padding: 18px 10px;
+    color: #758397;
+    font-size: 12px;
+    text-align: center;
+  }
+  .qa-suite-create-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 0 18px 12px;
+  }
+  .qa-suite-edit-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 0 0 12px;
+  }
+  .qa-suite-create-form input,
+  .qa-suite-edit-form input {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 8px 10px;
+    border: 1px solid #d9e0e8;
+    border-radius: 7px;
+    background: #fff;
+    color: #263445;
+    font: 13px var(--sans);
+  }
+  .qa-suite-create-form button,
+  .qa-suite-edit-form button { min-height: 40px; }
+  #qaExecutionOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(0,0,0,.5);
+  }
+  #qaNewCaseOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1301;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0 18px;
+    background: rgba(0,0,0,.5);
+  }
+  .qa-new-case-panel {
+    width: min(710px, 100%);
+    max-height: min(88vh, 680px);
+    overflow: auto;
+    padding: 16px;
+    border: 1px solid #d9e0e8;
+    border-radius: 16px 16px 0 0;
+    background: #f4f6f9;
+    color: #253244;
+    box-shadow: 0 -8px 30px rgba(14, 24, 38, .2);
+  }
+  .qa-new-case-title { margin: 0; font-size: 18px; font-weight: 800; }
+  .qa-new-case-help { margin: 3px 0 12px; color: #718096; font-size: 12px; }
+  .qa-new-case-form { display: grid; gap: 8px; }
+  .qa-new-case-form input {
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 10px;
+    border: 1px solid #d9e0e8;
+    border-radius: 8px;
+    background: #fff;
+    color: #253244;
+    font: 13px var(--sans);
+  }
+  .qa-new-case-error { min-height: 16px; margin: 0; color: #c33d3d; font-size: 11px; }
+  .qa-new-case-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+  .qa-new-case-actions button { min-height: 43px; border-radius: 8px; font-weight: 800; }
+  .qa-new-case-save { background: #198f52; color: #fff; border-color: #168149; }
+  .qa-new-case-save:disabled { opacity: .6; cursor: wait; }
+  @media (max-width: 560px) {
+    #qaNewCaseOverlay { padding: 0; }
+    .qa-new-case-panel { padding: 14px; }
+  }
+  .qa-execution-panel {
+    width: min(710px, 100%);
+    max-height: min(88vh, 700px);
+    overflow: auto;
+    padding: 16px;
+    border: 1px solid #d9e0e8;
+    border-radius: 16px 16px 0 0;
+    background: #f4f6f9;
+    color: #253244;
+    box-shadow: 0 -8px 30px rgba(14, 24, 38, .2);
+  }
+  .qa-execution-heading { margin: 0; font-size: 17px; font-weight: 800; }
+  .qa-execution-subtitle { margin: 3px 0 12px; color: #718096; font-size: 12px; }
+  .qa-execution-statuses {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .qa-execution-status {
+    min-height: 53px;
+    border: 2px solid currentColor;
+    border-radius: 10px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 800;
+  }
+  .qa-execution-status[data-status="pass"] { color: #159a53; }
+  .qa-execution-status[data-status="not-executed"] { color: #8994a3; }
+  .qa-execution-status[data-status="in-progress"] { color: #287be4; }
+  .qa-execution-status[data-status="failed"] { color: #dc3938; }
+  .qa-execution-status[data-status="blocked"] { color: #8150d5; }
+  .qa-execution-status[aria-pressed="true"] { background: currentColor; }
+  .qa-execution-status[aria-pressed="true"] span { color: #fff; }
+  .qa-execution-status span { color: inherit; }
+  .qa-execution-note {
+    width: 100%;
+    min-height: 42px;
+    margin-top: 10px;
+    padding: 9px 10px;
+    border: 1px solid #d9e0e8;
+    border-radius: 8px;
+    background: #fff;
+    color: #253244;
+    font: 13px var(--sans);
+  }
+  .qa-execution-history { min-height: 31px; margin: 10px 0; color: #718096; font-size: 11px; }
+  .qa-execution-history-item { margin-top: 5px; line-height: 1.4; }
+  .qa-execution-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .qa-execution-actions button {
+    min-height: 43px;
+    border: 1px solid #d9e0e8;
+    border-radius: 8px;
+    background: #fff;
+    color: #263445;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  @media (max-width: 560px) {
+    #qaExecutionOverlay { padding: 0; }
+    .qa-execution-panel { padding: 14px; }
+    .qa-execution-status { min-height: 48px; font-size: 12px; }
+  }
+
   .dashboard-callout {
     display: flex; align-items: center; justify-content: space-between; gap: 18px;
     padding: 15px 18px; margin-bottom: 20px; border: 1px solid rgba(200,61,50,.24);
@@ -1061,6 +1447,42 @@
   .dashboard-team-chip, .dashboard-recent-item {
     display: flex; align-items: center; gap: 10px; min-width: 0; padding: 9px 10px;
     border: 1px solid var(--line-soft); border-radius: 9px; background: var(--bg-soft);
+  }
+  .dashboard-case-toolbar { display: flex; align-items: center; gap: 8px; margin: 16px 0 10px; }
+  .dashboard-case-toolbar input { flex: 1; min-width: 0; }
+  .dashboard-case-toolbar.qa-panel-search { margin: 16px 0 10px; }
+  .dashboard-case-toolbar .btn-secondary {
+    flex: 0 0 auto;
+    min-height: 30px;
+    padding: 5px 9px;
+    border-color: rgba(125,141,163,.28);
+    background: rgba(125,141,163,.08);
+    color: #52657c;
+    font-size: 11px;
+  }
+  .dashboard-backup-actions { display: flex; justify-content: flex-end; gap: 8px; margin: 0 0 10px; }
+  .dashboard-backup-actions button { min-height: 30px; padding: 5px 9px; font-size: 10px; }
+  .dashboard-case-table { width: 100%; border-collapse: collapse; overflow: hidden; border: 1px solid var(--line-soft); border-radius: 11px; background: var(--panel); }
+  .dashboard-case-table th, .dashboard-case-table td { padding: 10px 11px; text-align: left; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  .dashboard-case-table th { color: var(--text-faint); font: 9px var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+  .dashboard-case-table tbody tr:last-child td { border-bottom: 0; }
+  .dashboard-case-table tbody tr:hover { background: rgba(255,255,255,.02); }
+  .dashboard-case-table .case-title { min-width: 180px; font-size: 11.5px; font-weight: 700; }
+  .dashboard-case-table .case-meta { display: block; margin-top: 3px; color: var(--text-faint); font-size: 9.5px; }
+  .dashboard-case-table .case-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .dashboard-case-table .case-actions button { padding: 6px 8px; font-size: 10px; }
+  .dashboard-case-table .status-pill { display: inline-block; padding: 4px 7px; border-radius: 999px; font: 9px var(--mono); font-weight: 700; background: var(--panel-3); color: var(--text-muted); }
+  .dashboard-case-table .status-pill.approved { background: rgba(29,155,95,.13); color: #7ce0a8; }
+  .dashboard-case-table .status-pill.failed { background: rgba(218,81,72,.13); color: #ffaba2; }
+  .dashboard-case-table .status-pill.pending { background: rgba(232,163,61,.12); color: #f7d497; }
+  .dashboard-case-table .status-pill.empty { background: rgba(135,146,162,.1); color: var(--text-faint); }
+  .dashboard-case-table .case-actions .danger-btn { color: #ff9d95; border-color: rgba(224,82,74,.35); background: rgba(224,82,74,.08); }
+  .dashboard-case-table-wrap { overflow: auto; }
+  .dashboard-case-empty { padding: 24px 12px; color: var(--text-faint); text-align: center; font-size: 11px; }
+  .dashboard-case-table td.muted { color: var(--text-faint); }
+  @media (max-width: 620px) {
+    .dashboard-case-table th:nth-child(3), .dashboard-case-table td:nth-child(3) { display: none; }
+    .dashboard-backup-actions { flex-wrap: wrap; }
   }
   .dashboard-avatar { display: grid; place-items: center; flex: 0 0 29px; height: 29px; border-radius: 50%; background: rgba(200,61,50,.12); color: #c83d32; font-size: 10px; font-weight: 800; }
   .dashboard-team-chip strong, .dashboard-recent-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; }
@@ -1176,6 +1598,63 @@
             <div class="dashboard-metric-hint">Marcados como fallo</div>
           </article>
         </section>
+
+        <section class="qa-panel" aria-label="Casos QA">
+          <div class="qa-panel-header">
+            <div class="qa-panel-title">QA CASOS</div>
+            <div class="qa-panel-summary" id="qaPanelSummary">0/0 ejecutados · 0% pasados</div>
+          </div>
+
+          <div class="qa-panel-status-group" aria-label="Estados">
+            <span class="qa-panel-chip status-pass"><span class="qa-chip-dot"></span>Pass <span id="qaPassCount">0</span></span>
+            <span class="qa-panel-chip status-not-executed"><span class="qa-chip-dot"></span>Not Executed <span id="qaNotExecutedCount">0</span></span>
+            <span class="qa-panel-chip status-in-progress"><span class="qa-chip-dot"></span>In Progress <span id="qaInProgressCount">0</span></span>
+            <span class="qa-panel-chip status-failed"><span class="qa-chip-dot"></span>Failed <span id="qaFailedCount">0</span></span>
+            <span class="qa-panel-chip status-blocked"><span class="qa-chip-dot"></span>Blocked <span id="qaBlockedCount">0</span></span>
+          </div>
+
+          <div class="qa-panel-search">
+            <input id="qaSuiteSearch" type="search" placeholder="Buscar suite" aria-label="Buscar suite" />
+          </div>
+
+          <div class="qa-suite-grid" id="qaSuiteGrid" aria-label="Suites de casos"></div>
+          <form class="qa-suite-create-form" id="qaSuiteCreateForm" hidden>
+            <input id="qaSuiteCreateName" type="text" maxlength="60" placeholder="Nombre de la suite" aria-label="Nombre de la suite" required />
+            <button class="btn-primary" type="submit">Crear</button>
+            <button class="qa-panel-action" id="qaSuiteCreateCancel" type="button">Cancelar</button>
+          </form>
+
+          <button class="qa-panel-add" id="qaSuiteCreateBtn" type="button">+ Nueva suite</button>
+
+          <section class="qa-suite-detail" id="qaSuiteDetail" aria-label="Detalle de suite" hidden>
+            <div class="qa-suite-detail-nav">
+              <button class="qa-suite-back" id="qaSuiteBackBtn" type="button" aria-label="Volver a las suites">←</button>
+              <span>/</span>
+              <strong id="qaSuiteDetailName"></strong>
+            </div>
+            <div class="qa-panel-search">
+              <span class="qa-search-slash">/</span>
+              <input id="qaCaseSearch" type="search" placeholder="Buscar caso por ID o nombre" aria-label="Buscar caso por ID o nombre" />
+            </div>
+            <form class="qa-suite-edit-form" id="qaSuiteEditForm" hidden>
+              <input id="qaSuiteEditName" type="text" maxlength="60" aria-label="Nuevo nombre de la suite" required />
+              <button class="btn-primary" type="submit">Guardar</button>
+              <button class="qa-panel-action" id="qaSuiteEditCancel" type="button">Cancelar</button>
+            </form>
+            <div class="qa-suite-case-actions">
+              <button id="qaAddCaseBtn" type="button">+ Caso</button>
+              <button id="qaEditSuiteBtn" type="button">Editar suite</button>
+            </div>
+            <div class="qa-suite-case-list" id="qaSuiteCaseList"></div>
+          </section>
+
+          <div class="qa-panel-actions">
+            <button class="qa-panel-action" type="button">Importar casos</button>
+            <button class="qa-panel-action" type="button">Copiar CSV</button>
+            <button class="qa-panel-action" type="button">Reiniciar estados</button>
+          </div>
+        </section>
+
         <div class="dashboard-grid-two">
           <section class="dashboard-card">
             <div class="dashboard-card-heading">
@@ -1213,7 +1692,71 @@
           </div>
           <div class="dashboard-recent-list" id="dashboardRecentList"></div>
         </section>
+        <section class="dashboard-card" style="margin-top:14px;" aria-labelledby="dashboardCasesTitle">
+          <div class="dashboard-card-heading">
+            <strong id="dashboardCasesTitle">Catálogo de casos</strong>
+            <span id="dashboardCatalogCount">0 casos</span>
+          </div>
+          <div class="dashboard-case-toolbar qa-panel-search">
+            <input id="dashboardCaseSearch" type="search" placeholder="Buscar por caso, descripción o resultado" aria-label="Buscar casos, descripción o resultado" />
+            <button class="btn-secondary" id="dashboardCaseClearBtn" type="button">Limpiar</button>
+          </div>
+          <div class="dashboard-backup-actions" aria-label="Transferir datos del documentador">
+            <button class="btn-secondary" id="downloadWorkspaceBackupBtn" type="button">⬇ Descargar respaldo</button>
+            <button class="btn-secondary" id="importWorkspaceBackupBtn" type="button">⬆ Importar respaldo</button>
+            <input id="workspaceBackupFileInput" type="file" accept=".json,application/json" hidden />
+          </div>
+          <div class="dashboard-case-table-wrap">
+            <table class="dashboard-case-table" aria-describedby="dashboardCasesTitle">
+              <thead>
+                <tr>
+                  <th>Casos</th>
+                  <th>Estado</th>
+                  <th>Pasos</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardCaseTableBody"></tbody>
+            </table>
+          </div>
+        </section>
       </main>
+    </div>
+    <div id="qaExecutionOverlay" role="dialog" aria-modal="true" aria-labelledby="qaExecutionTitle">
+      <section class="qa-execution-panel">
+        <h2 class="qa-execution-heading" id="qaExecutionTitle"></h2>
+        <p class="qa-execution-subtitle" id="qaExecutionSubtitle"></p>
+        <div class="qa-execution-statuses" role="group" aria-label="Seleccionar estado del caso">
+          <button class="qa-execution-status" type="button" data-status="pass" aria-pressed="false"><span>Pass</span></button>
+          <button class="qa-execution-status" type="button" data-status="not-executed" aria-pressed="false"><span>Not Executed</span></button>
+          <button class="qa-execution-status" type="button" data-status="in-progress" aria-pressed="false"><span>In Progress</span></button>
+          <button class="qa-execution-status" type="button" data-status="failed" aria-pressed="false"><span>Failed</span></button>
+          <button class="qa-execution-status" type="button" data-status="blocked" aria-pressed="false"><span>Blocked</span></button>
+        </div>
+        <input class="qa-execution-note" id="qaExecutionNote" type="text" maxlength="500" placeholder="Nota / ID del bug (opcional)" aria-label="Nota o ID del bug opcional" />
+        <div class="qa-execution-history" id="qaExecutionHistory" aria-live="polite"></div>
+        <div class="qa-execution-actions">
+          <button id="qaEditCaseBtn" type="button">Editar caso</button>
+          <button id="qaCloseExecutionBtn" type="button">Cerrar</button>
+        </div>
+      </section>
+    </div>
+    <div id="qaNewCaseOverlay" role="dialog" aria-modal="true" aria-labelledby="qaNewCaseTitle">
+      <section class="qa-new-case-panel">
+        <h2 class="qa-new-case-title" id="qaNewCaseTitle">Nuevo caso</h2>
+        <p class="qa-new-case-help">Usa una suite existente o escribe una nueva (ej.: Login, Pagos).</p>
+        <form class="qa-new-case-form" id="qaNewCaseForm">
+          <input id="qaNewCaseId" type="text" maxlength="80" placeholder="ID (ej.: TC-104)" aria-label="ID del caso" required />
+          <input id="qaNewCaseName" type="text" maxlength="240" placeholder="Nombre del caso" aria-label="Nombre del caso" required />
+          <input id="qaNewCaseSuite" type="text" maxlength="60" list="qaSuiteOptions" placeholder="Suite" aria-label="Suite del caso" required />
+          <datalist id="qaSuiteOptions"></datalist>
+          <p class="qa-new-case-error" id="qaNewCaseError" role="alert" aria-live="polite"></p>
+          <div class="qa-new-case-actions">
+            <button class="btn-secondary" id="qaNewCaseCancel" type="button">Cancelar</button>
+            <button class="qa-new-case-save" id="qaNewCaseSave" type="submit">Guardar</button>
+          </div>
+        </form>
+      </section>
     </div>
   </section>
   <div id="documenterApp">
@@ -1221,6 +1764,7 @@
   <div class="app-header">
     <span class="live-dot" id="liveDot"></span>
     <h1>Documentador de Casos de Prueba</h1>
+    <button class="btn-secondary backup-header-btn" id="downloadWorkspaceBackupFromDocumenterBtn" type="button" title="Descargar proyectos, casos e imágenes para abrirlos en otro equipo">📦 Respaldo</button>
     <button class="btn-secondary" id="backToDashboardBtn" type="button" style="margin-left:auto;">← Panel</button>
   </div>
   <div class="subtitle">No requiere instalación. Funciona compartiendo pantalla, igual que en Meet.</div>
@@ -1260,6 +1804,7 @@
   <div id="autosaveStatus" role="status" aria-live="polite"></div>
 
   <div class="card" id="exportCard">
+    <div class="qa-case-context" id="qaCaseSuiteContext" hidden></div>
     <label for="caseProjectSelect">Proyecto</label>
     <select id="caseProjectSelect" name="caseProjectSelect" style="width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:7px; font-size:13px; background:var(--panel-2); color:var(--text); font-family:var(--sans);"></select>
     <label for="caseId">ID / Tema</label>
@@ -24605,6 +25150,10 @@ var __async = (__this, __arguments, generator) => {
     let savedCases = [];
     let projects = [];
     let activeProjectId = "";
+    let activeSuiteId = "";
+    let currentSuiteId = "";
+    let selectedQaCaseIndex = null;
+    let editingCaseIndex = null;
     let dashboardReady = Promise.resolve();
     let caseRecoveryChecked = false;
     let editingProjectId = null;
@@ -24645,6 +25194,20 @@ var __async = (__this, __arguments, generator) => {
       novedadCount: Array.isArray(payload.steps) ? payload.steps.filter((s) => s && s.severity).length : 0,
       text: "Resumen ejecutivo no disponible.",
     }));
+  const dualCaseRecord = caseUtils.dualCaseRecord || ((source = {}, nextCaseId) => ({
+      ...JSON.parse(JSON.stringify(source || {})),
+      caseId: String(nextCaseId || source.caseId || "Caso sin ID").trim(),
+      savedAt: Date.now(),
+      fecha: new Date().toLocaleDateString("es-CO"),
+      steps: Array.isArray(source.steps) ? JSON.parse(JSON.stringify(source.steps)) : [],
+      qaContext: JSON.parse(JSON.stringify(source.qaContext || {})),
+    }));
+  const buildCaseRecordTitle = caseUtils.buildCaseRecordTitle || ((record = {}) => {
+      const id = String(record.caseId || "").trim();
+      const description = String(record.description || "").trim();
+      const parts = [id, description].filter(Boolean);
+      return parts.length ? parts.join(" · ") : "Caso sin ID";
+    });
     const DOCUMENT_NOTES_INPUT_ID = "documentNotesInput";
     const DEFAULT_TEMPLATE_KEY = "general";
 
@@ -24722,10 +25285,15 @@ var __async = (__this, __arguments, generator) => {
 
   function debounce(fn, delay) {
     let t;
-    return (...args) => {
+    const debounced = (...args) => {
       clearTimeout(t);
       t = setTimeout(() => fn(...args), delay);
     };
+    debounced.cancel = () => {
+      clearTimeout(t);
+      t = null;
+    };
+    return debounced;
   }
 
   async function saveStateToDB() {
@@ -24736,6 +25304,7 @@ var __async = (__this, __arguments, generator) => {
         id: s.id,
         dataUrl: s.dataUrl,
         renderedDataUrl: s.renderedDataUrl,
+        thumbnailDataUrl: s.thumbnailDataUrl,
         comment: s.comment,
         commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "top",
         stepStatus: normalizeStepStatus(s.stepStatus || s.status),
@@ -24792,8 +25361,8 @@ var __async = (__this, __arguments, generator) => {
       const tx = db.transaction(STORE_NAME, "readonly");
       return await new Promise((resolve) => {
         const req = tx.objectStore(STORE_NAME).get(STATE_KEY);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => resolve(null);
+        req.onsuccess = () => { db.close(); resolve(req.result || null); };
+        req.onerror = () => { db.close(); resolve(null); };
       });
     } catch (e) {
       return null;
@@ -24820,6 +25389,7 @@ var __async = (__this, __arguments, generator) => {
       id: s.id,
       dataUrl: s.dataUrl,
       renderedDataUrl: s.renderedDataUrl,
+      thumbnailDataUrl: s.thumbnailDataUrl || "",
       comment: s.comment || "",
       commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "top",
       stepStatus: normalizeStepStatus(s.stepStatus || s.status),
@@ -24841,7 +25411,15 @@ var __async = (__this, __arguments, generator) => {
       templateKey: getSelectedTemplateKey(),
       qaContext: { ...savedDefectContext },
       previewEditedHtml: savedDocumentPreviewHtml,
-      steps: JSON.parse(JSON.stringify(steps)),
+      steps: steps.map((step) => {
+        const snapshot = {
+          ...step,
+          boxes: Array.isArray(step.boxes) ? step.boxes.map((box) => ({ ...box })) : [],
+          pins: Array.isArray(step.pins) ? step.pins.map((pin) => ({ ...pin })) : [],
+        };
+        delete snapshot._editImg;
+        return snapshot;
+      }),
     };
   }
 
@@ -25675,14 +26253,17 @@ var __async = (__this, __arguments, generator) => {
   // mismo tratamiento de resolución/calidad sin importar el origen.
   function addCapturedStep(sourceEl, naturalW, naturalH) {
     pushUndoCheckpoint();
-    const MAX_WIDTH = 2560; // conserva más detalle en capturas de pantallas grandes
+    const MAX_WIDTH = 1920;
     const scale = Math.min(1, MAX_WIDTH / naturalW);
     const canvas = document.createElement("canvas");
     canvas.width = naturalW * scale;
     canvas.height = naturalH * scale;
     canvas.getContext("2d").drawImage(sourceEl, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.98); // alta nitidez con compatibilidad amplia
-    const step = { id: Date.now(), dataUrl, comment: "", commentPosition: "top", stepStatus: "pendiente", novedad: false, severity: null, boxes: [], pins: [], color: "#e02424" };
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    const thumbnailDataUrl = createStepThumbnail(canvas);
+    canvas.width = 0;
+    canvas.height = 0;
+    const step = { id: Date.now(), dataUrl, thumbnailDataUrl, comment: "", commentPosition: "top", stepStatus: "pendiente", novedad: false, severity: null, boxes: [], pins: [], color: "#e02424" };
     steps.push(step);
     addStepCard(step);
     maybeWarnLargeSession();
@@ -27387,7 +27968,7 @@ var __async = (__this, __arguments, generator) => {
       </div>
       <p class="edit-only mode-help" style="display:none;font-size:11px;color:var(--text-muted);margin:0 0 4px 0;">"Ocultar" tapa por completo la zona (útil para datos sensibles); "Resaltar" solo dibuja un recuadro.</p>
       <div class="step-evidence-media">
-        <img class="step-img" src="${step.renderedDataUrl || step.dataUrl}" role="button" tabindex="0" aria-label="Abrir imagen ampliada del paso ${idx}" />
+        <img class="step-img" role="button" tabindex="0" aria-label="Abrir imagen ampliada del paso ${idx}" />
         <div class="step-pin-layer" aria-label="Marcadores de notas sobre la imagen"></div>
       </div>
       <div class="step-pin-notes" aria-label="Notas ancladas a la imagen"></div>
@@ -27430,6 +28011,7 @@ var __async = (__this, __arguments, generator) => {
         <button class="sev-btn sev-btn-baja${step.severity === "baja" ? " selected" : ""}" data-sev="baja" aria-pressed="${step.severity === "baja" ? "true" : "false"}">🟡 Baja</button>
       </div>`;
     stepsContainer.appendChild(card);
+    displayStepImage(step, card.querySelector(".step-img"));
     applyStepsFilter();
     renderStepPins(step, card);
 
@@ -27770,7 +28352,8 @@ var __async = (__this, __arguments, generator) => {
     const canvas = card.querySelector("canvas");
     const img = card.querySelector(".step-img");
     if (canvas) {
-      img.src = step.renderedDataUrl || step.dataUrl;
+      step.thumbnailDataUrl = "";
+      displayStepImage(step, img);
       canvas.remove(); // libera el buffer de píxeles del lienzo
     }
     img.style.display = "block";
@@ -27833,7 +28416,8 @@ var __async = (__this, __arguments, generator) => {
     // mientras se muestra una vista previa (arrastre o recorte pendiente) NO se
     // guarda como versión final, para no hornear un estado a medias en el export
     if (!previewBox && !crop) {
-      step.renderedDataUrl = canvas.toDataURL("image/jpeg", 0.98);
+      step.renderedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      step.thumbnailDataUrl = "";
     }
   }
 
@@ -27872,10 +28456,15 @@ var __async = (__this, __arguments, generator) => {
     invalidateSavedPreview();
     renderStepPins(step, card);
 
-    step.dataUrl = cropCanvas.toDataURL("image/jpeg", 0.98);
+    step.dataUrl = cropCanvas.toDataURL("image/jpeg", 0.9);
+    step.thumbnailDataUrl = createStepThumbnail(cropCanvas);
     step.renderedDataUrl = null;
     step.boxes = [];
     step.pendingCrop = null;
+    srcCanvas.width = 0;
+    srcCanvas.height = 0;
+    cropCanvas.width = 0;
+    cropCanvas.height = 0;
 
     const canvas = card.querySelector("canvas");
     step._editImg = new Image();
@@ -29000,8 +29589,59 @@ var __async = (__this, __arguments, generator) => {
       const db = await openDB();
       const tx = db.transaction(STORE_NAME, "readwrite");
       tx.objectStore(STORE_NAME).put(savedCases, CASES_KEY);
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+        tx.onabort = () => { db.close(); reject(tx.error); };
+      });
+      return true;
     } catch (e) {
       console.error("No se pudo guardar el lote de casos:", e);
+      return false;
+    }
+  }
+  const autosaveCases = debounce(saveCasesToDB, 1000);
+
+  const STEP_THUMBNAIL_MAX_DIMENSION = 720;
+
+  function createStepThumbnail(source) {
+    const sourceWidth = source.naturalWidth || source.videoWidth || source.width;
+    const sourceHeight = source.naturalHeight || source.videoHeight || source.height;
+    if (!sourceWidth || !sourceHeight) return "";
+    const scale = Math.min(1, STEP_THUMBNAIL_MAX_DIMENSION / Math.max(sourceWidth, sourceHeight));
+    if (scale === 1) return "";
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+    canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+    try {
+      canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL("image/jpeg", 0.7);
+    } finally {
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+  }
+
+  function displayStepImage(step, image) {
+    image.loading = "lazy";
+    image.decoding = "async";
+    image.addEventListener("load", () => cacheStepThumbnail(step, image), { once: true });
+    image.src = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
+  }
+
+  function cacheStepThumbnail(step, image) {
+    if (step.thumbnailDataUrl || !image.naturalWidth) return;
+    const thumbnailDataUrl = createStepThumbnail(image);
+    if (!thumbnailDataUrl) return;
+    step.thumbnailDataUrl = thumbnailDataUrl;
+    image.src = thumbnailDataUrl;
+    autosave();
+    if (editingCaseIndex !== null) {
+      const savedStep = savedCases[editingCaseIndex]?.steps?.find((item) => String(item.id) === String(step.id));
+      if (savedStep) {
+        savedStep.thumbnailDataUrl = thumbnailDataUrl;
+        autosaveCases();
+      }
     }
   }
 
@@ -29017,6 +29657,18 @@ var __async = (__this, __arguments, generator) => {
     } catch (e) {
       return [];
     }
+  }
+
+  function createSuiteId() {
+    return `suite-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function createDefaultSuites() {
+    return ["Login", "Pagos", "Carrito", "Reportes"].map((name) => ({
+      id: createSuiteId(),
+      name,
+      createdAt: Date.now(),
+    }));
   }
 
   function createProjectId() {
@@ -29047,8 +29699,10 @@ var __async = (__this, __arguments, generator) => {
         tx.onerror = () => { db.close(); reject(tx.error); };
         tx.onabort = () => { db.close(); reject(tx.error); };
       });
+      return true;
     } catch (error) {
       console.error("No se pudieron guardar los proyectos:", error);
+      return false;
     }
   }
 
@@ -29066,8 +29720,383 @@ var __async = (__this, __arguments, generator) => {
     }
   }
 
+  const WORKSPACE_BACKUP_FORMAT = "documentador-casos-backup";
+  const WORKSPACE_BACKUP_VERSION = 1;
+  function validateWorkspaceBackup(backup) {
+    const validProject = (project) =>
+      project && typeof project === "object" &&
+      typeof project.id === "string" &&
+      typeof project.name === "string" &&
+      Array.isArray(project.suites);
+    const validCase = (caseRecord) =>
+      caseRecord && typeof caseRecord === "object" &&
+      (!("steps" in caseRecord) || Array.isArray(caseRecord.steps));
+    const validDraft = backup?.draft === null || (
+      backup?.draft &&
+      typeof backup.draft === "object" &&
+      Array.isArray(backup.draft.steps)
+    );
+
+    if (
+      !backup ||
+      backup.format !== WORKSPACE_BACKUP_FORMAT ||
+      backup.version !== WORKSPACE_BACKUP_VERSION ||
+      !Array.isArray(backup.projects) ||
+      !backup.projects.length ||
+      !backup.projects.every(validProject) ||
+      !Array.isArray(backup.cases) ||
+      !backup.cases.every(validCase) ||
+      !validDraft
+    ) {
+      throw new Error("El archivo no es un respaldo válido de este documentador.");
+    }
+    return backup;
+  }
+
+  async function downloadWorkspaceBackup(button) {
+    button.disabled = true;
+    try {
+      await dashboardReady;
+      if (!(await saveProjectsToDB()) || !(await saveCasesToDB()) || !(await saveStateToDB())) {
+        throw new Error("No se pudieron guardar todos los datos antes de crear el respaldo.");
+      }
+      const backup = {
+        format: WORKSPACE_BACKUP_FORMAT,
+        version: WORKSPACE_BACKUP_VERSION,
+        exportedAt: new Date().toISOString(),
+        activeProjectId,
+        projects,
+        cases: savedCases,
+        draft: await loadStateFromDB(),
+      };
+      const blob = new Blob([JSON.stringify(backup)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Respaldo_Documentador_${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showTransientStatus("✅ Respaldo descargado con proyectos, casos e imágenes.", 5000);
+    } catch (error) {
+      console.error("No se pudo crear el respaldo del documentador:", error);
+      await showAppAlert(`No se pudo crear el respaldo. ${error.message || "Inténtalo nuevamente."}`, button);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function replaceWorkspaceDataFromBackup(backup) {
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      store.put(backup.projects, PROJECTS_KEY);
+      store.put(backup.cases, CASES_KEY);
+      if (backup.draft) store.put(backup.draft, STATE_KEY);
+      else store.delete(STATE_KEY);
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onerror = () => { db.close(); reject(tx.error || new Error("Falló la importación del respaldo.")); };
+      tx.onabort = () => { db.close(); reject(tx.error || new Error("La importación del respaldo fue cancelada.")); };
+    });
+  }
+
+  async function importWorkspaceBackup(file, opener) {
+    if (!file) return;
+    try {
+      await dashboardReady;
+      const backup = validateWorkspaceBackup(JSON.parse(await file.text()));
+      const projectCount = backup.projects.length;
+      const caseCount = backup.cases.length;
+      const confirmed = await showAppConfirm(
+        `Se reemplazarán los datos guardados en este navegador por los del respaldo (${projectCount} proyecto${projectCount === 1 ? "" : "s"} y ${caseCount} caso${caseCount === 1 ? "" : "s"}). Esta acción no se puede deshacer.`,
+        opener,
+        "Importar respaldo"
+      );
+      if (!confirmed) return;
+
+      autosave.cancel();
+      await replaceWorkspaceDataFromBackup(backup);
+      const restoredProjectId = backup.projects.some((project) => project.id === backup.activeProjectId)
+        ? backup.activeProjectId
+        : backup.projects[0].id;
+      localStorage.setItem("activeDashboardProject", restoredProjectId);
+      await showAppAlert("Respaldo importado. El documentador se recargará para mostrar los datos y las imágenes.", opener);
+      window.location.reload();
+    } catch (error) {
+      console.error("No se pudo importar el respaldo del documentador:", error);
+      await showAppAlert(`No se pudo importar el respaldo. ${error.message || "Verifica que el archivo sea correcto."}`, opener);
+    }
+  }
+
   function getActiveProjectCases() {
     return savedCases.filter((item) => (item.projectId || projects[0]?.id) === activeProjectId);
+  }
+
+  function getCaseExecutionStatus(caseRecord) {
+    const savedStatus = ["pass", "not-executed", "in-progress", "failed", "blocked"];
+    if (savedStatus.includes(caseRecord.executionStatus)) return caseRecord.executionStatus;
+    const stepsForCase = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
+    if (!stepsForCase.length) return "not-executed";
+    const statuses = stepsForCase.map((step) => normalizeStepStatus(step.stepStatus || step.status));
+    if (statuses.includes("fallo")) return "failed";
+    if (statuses.every((status) => status === "aprobado")) return "pass";
+    if (statuses.some((status) => status !== "pendiente")) return "in-progress";
+    return "not-executed";
+  }
+
+  function getQaExecutionStatusLabel(status) {
+    return {
+      pass: "Pass",
+      "not-executed": "Not Executed",
+      "in-progress": "In Progress",
+      failed: "Failed",
+      blocked: "Blocked",
+    }[status] || "Not Executed";
+  }
+
+  function openQaNewCaseDialog(opener) {
+    const project = projects.find((item) => item.id === activeProjectId);
+    const suites = project && Array.isArray(project.suites) ? project.suites : [];
+    const suiteInput = document.getElementById("qaNewCaseSuite");
+    const suiteOptions = document.getElementById("qaSuiteOptions");
+    const selectedSuite = suites.find((suite) => suite.id === activeSuiteId);
+    document.getElementById("qaNewCaseForm").reset();
+    document.getElementById("qaNewCaseError").textContent = "";
+    suiteOptions.innerHTML = suites.map((suite) => `<option value="${escapeHtml(suite.name)}"></option>`).join("");
+    suiteInput.value = selectedSuite ? selectedSuite.name : "";
+    openOverlay(document.getElementById("qaNewCaseOverlay"), {
+      opener,
+      display: "flex",
+      initialFocus: document.getElementById("qaNewCaseId"),
+      onEscape: closeQaNewCaseDialog,
+    });
+  }
+
+  function closeQaNewCaseDialog() {
+    const overlay = document.getElementById("qaNewCaseOverlay");
+    if (overlay.style.display !== "none") closeOverlay(overlay);
+  }
+
+  async function saveNewQaCase(event) {
+    event.preventDefault();
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    const caseId = document.getElementById("qaNewCaseId").value.trim();
+    const description = document.getElementById("qaNewCaseName").value.trim();
+    const suiteName = document.getElementById("qaNewCaseSuite").value.trim();
+    const error = document.getElementById("qaNewCaseError");
+    const saveButton = document.getElementById("qaNewCaseSave");
+    error.textContent = "";
+    if (!caseId || !description || !suiteName) return;
+
+    const duplicate = getActiveProjectCases().some((item) =>
+      String(item.caseId || "").trim().toLocaleLowerCase() === caseId.toLocaleLowerCase()
+    );
+    if (duplicate) {
+      error.textContent = `Ya existe un caso con el ID ${caseId} en este proyecto.`;
+      return;
+    }
+
+    if (!Array.isArray(project.suites)) project.suites = [];
+    let suite = project.suites.find((item) => item.name.trim().toLocaleLowerCase() === suiteName.toLocaleLowerCase());
+    const isNewSuite = !suite;
+    if (isNewSuite) {
+      suite = { id: createSuiteId(), name: suiteName, createdAt: Date.now() };
+      project.suites.push(suite);
+    }
+    const caseRecord = {
+      projectId: activeProjectId,
+      suiteId: suite.id,
+      caseId,
+      description,
+      team: "",
+      tester: "",
+      templateKey: DEFAULT_TEMPLATE_KEY,
+      qaContext: {},
+      previewEditedHtml: "",
+      documentNotes: "",
+      fecha: new Date().toLocaleDateString("es-CO"),
+      savedAt: Date.now(),
+      steps: [],
+      executionStatus: "not-executed",
+      executionHistory: [],
+    };
+
+    saveButton.disabled = true;
+    try {
+      if (isNewSuite && !(await saveProjectsToDB())) {
+        project.suites = project.suites.filter((item) => item.id !== suite.id);
+        error.textContent = "No se pudo guardar la suite. Inténtalo nuevamente.";
+        return;
+      }
+      savedCases.push(caseRecord);
+      if (!(await saveCasesToDB())) {
+        savedCases.pop();
+        if (isNewSuite) {
+          project.suites = project.suites.filter((item) => item.id !== suite.id);
+          await saveProjectsToDB();
+        }
+        error.textContent = "No se pudo guardar el caso. Inténtalo nuevamente.";
+        return;
+      }
+      activeSuiteId = suite.id;
+      document.getElementById("qaCaseSearch").value = "";
+      closeQaNewCaseDialog();
+      renderDashboard();
+      renderCasesList();
+    } finally {
+      saveButton.disabled = false;
+    }
+  }
+
+  function renderQaExecutionDialog(caseRecord) {
+    if (!caseRecord) return;
+    const suite = projects.find((item) => item.id === activeProjectId)?.suites?.find((item) => item.id === caseRecord.suiteId);
+    document.getElementById("qaExecutionTitle").textContent = caseRecord.caseId || "Caso sin ID";
+    document.getElementById("qaExecutionSubtitle").textContent =
+      `${caseRecord.description || "Caso de prueba"}${suite ? ` · ${suite.name}` : ""}`;
+    const currentStatus = getCaseExecutionStatus(caseRecord);
+    document.querySelectorAll(".qa-execution-status").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.status === currentStatus));
+    });
+    const history = Array.isArray(caseRecord.executionHistory) ? caseRecord.executionHistory : [];
+    const historyContainer = document.getElementById("qaExecutionHistory");
+    historyContainer.innerHTML = history.length
+      ? history.slice().reverse().map((entry) => {
+          const timestamp = Number(entry.at);
+          const date = Number.isFinite(timestamp) ? new Date(timestamp).toLocaleString("es-CO") : "";
+          return `<div class="qa-execution-history-item">
+            ${escapeHtml(getQaExecutionStatusLabel(entry.status))}${date ? ` · ${escapeHtml(date)}` : ""}
+            ${entry.note ? ` · ${escapeHtml(entry.note)}` : ""}
+          </div>`;
+        }).join("")
+      : "Sin historial.";
+  }
+
+  function openQaExecutionDialog(caseIndex, opener) {
+    const caseRecord = savedCases[caseIndex];
+    if (!caseRecord) return;
+    selectedQaCaseIndex = caseIndex;
+    document.getElementById("qaExecutionNote").value = "";
+    renderQaExecutionDialog(caseRecord);
+    openOverlay(document.getElementById("qaExecutionOverlay"), {
+      opener,
+      display: "flex",
+      initialFocus: document.querySelector(`.qa-execution-status[data-status="${getCaseExecutionStatus(caseRecord)}"]`),
+      onEscape: closeQaExecutionDialog,
+    });
+  }
+
+  function closeQaExecutionDialog() {
+    const overlay = document.getElementById("qaExecutionOverlay");
+    if (overlay.style.display !== "none") closeOverlay(overlay);
+    selectedQaCaseIndex = null;
+  }
+
+  async function updateQaExecutionStatus(status) {
+    if (!["pass", "not-executed", "in-progress", "failed", "blocked"].includes(status)) return;
+    const caseRecord = savedCases[selectedQaCaseIndex];
+    if (!caseRecord) {
+      closeQaExecutionDialog();
+      return;
+    }
+    const noteInput = document.getElementById("qaExecutionNote");
+    const note = noteInput.value.trim();
+    if (!Array.isArray(caseRecord.executionHistory)) caseRecord.executionHistory = [];
+    const previousStatus = caseRecord.executionStatus;
+    const previousHistoryLength = caseRecord.executionHistory.length;
+    caseRecord.executionStatus = status;
+    caseRecord.executionHistory.push({ status, note, at: Date.now() });
+    const saved = await saveCasesToDB();
+    if (!saved) {
+      caseRecord.executionStatus = previousStatus;
+      caseRecord.executionHistory.length = previousHistoryLength;
+      renderQaExecutionDialog(caseRecord);
+      document.getElementById("qaExecutionHistory").insertAdjacentHTML(
+        "beforeend",
+        '<div class="qa-execution-history-item" role="alert" style="color:#c33d3d;font-weight:700;">No se pudo guardar el estado. Inténtalo de nuevo.</div>'
+      );
+      return;
+    }
+    noteInput.value = "";
+    renderDashboard();
+    renderCasesList();
+    renderQaExecutionDialog(caseRecord);
+  }
+
+  function renderQaPanel() {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    const suites = Array.isArray(project.suites) ? project.suites : [];
+    const projectCases = getActiveProjectCases();
+    const counts = { pass: 0, "not-executed": 0, "in-progress": 0, failed: 0, blocked: 0 };
+    projectCases.forEach((caseRecord) => { counts[getCaseExecutionStatus(caseRecord)] += 1; });
+
+    document.getElementById("qaPassCount").textContent = counts.pass;
+    document.getElementById("qaNotExecutedCount").textContent = counts["not-executed"];
+    document.getElementById("qaInProgressCount").textContent = counts["in-progress"];
+    document.getElementById("qaFailedCount").textContent = counts.failed;
+    document.getElementById("qaBlockedCount").textContent = counts.blocked;
+    const executed = projectCases.length - counts["not-executed"];
+    const passPercent = projectCases.length ? Math.round((counts.pass / projectCases.length) * 100) : 0;
+    document.getElementById("qaPanelSummary").textContent =
+      `${executed}/${projectCases.length} ejecutados · ${passPercent}% pass`;
+
+    const grid = document.getElementById("qaSuiteGrid");
+    const detail = document.getElementById("qaSuiteDetail");
+    const createForm = document.getElementById("qaSuiteCreateForm");
+    const addSuiteButton = document.getElementById("qaSuiteCreateBtn");
+    const suiteSearch = document.getElementById("qaSuiteSearch");
+    const selectedSuite = suites.find((suite) => suite.id === activeSuiteId);
+    grid.hidden = !!selectedSuite;
+    detail.hidden = !selectedSuite;
+    createForm.hidden = !!selectedSuite || createForm.dataset.open !== "true";
+    addSuiteButton.hidden = !!selectedSuite;
+    suiteSearch.parentElement.hidden = !!selectedSuite;
+
+    if (!selectedSuite) {
+      const query = suiteSearch.value.trim().toLocaleLowerCase();
+      const visibleSuites = suites.filter((suite) => suite.name.toLocaleLowerCase().includes(query));
+      grid.innerHTML = visibleSuites.map((suite) => {
+        const suiteCases = projectCases.filter((item) => item.suiteId === suite.id);
+        const passed = suiteCases.filter((item) => getCaseExecutionStatus(item) === "pass").length;
+        const rate = suiteCases.length ? Math.round((passed / suiteCases.length) * 100) : 0;
+        return `<button class="qa-suite-item" type="button" data-suite-id="${escapeHtml(suite.id)}">
+          <span class="qa-suite-title">${escapeHtml(suite.name)}</span>
+          <span class="qa-suite-meta">${passed}/${suiteCases.length} · ${rate}% pass</span>
+        </button>`;
+      }).join("") || '<div class="qa-suite-empty">No hay suites que coincidan con la búsqueda.</div>';
+      grid.querySelectorAll("[data-suite-id]").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeSuiteId = button.dataset.suiteId;
+          document.getElementById("qaCaseSearch").value = "";
+          renderQaPanel();
+        });
+      });
+      return;
+    }
+
+    document.getElementById("qaSuiteDetailName").textContent = selectedSuite.name;
+    const suiteCases = projectCases.filter((item) => item.suiteId === selectedSuite.id);
+    const caseQuery = document.getElementById("qaCaseSearch").value.trim().toLocaleLowerCase();
+    const visibleCases = suiteCases.filter((item) =>
+      `${item.caseId || ""} ${item.description || ""}`.toLocaleLowerCase().includes(caseQuery)
+    );
+    const list = document.getElementById("qaSuiteCaseList");
+    list.innerHTML = visibleCases.map((caseRecord) => {
+      const status = getCaseExecutionStatus(caseRecord);
+      const index = savedCases.indexOf(caseRecord);
+      return `<button class="qa-suite-case-item status-${status}" type="button" data-case-index="${index}">
+        <span class="qa-suite-case-copy">
+          <span class="qa-suite-case-id">${escapeHtml(caseRecord.caseId || "Sin ID")}</span>
+          <span class="qa-suite-case-name">${escapeHtml(caseRecord.description || "Caso de prueba")}</span>
+        </span>
+        <span class="qa-suite-case-status">${getQaExecutionStatusLabel(status)}</span>
+      </button>`;
+    }).join("") || '<div class="qa-suite-empty">Esta suite todavía no tiene casos. Pulsa “+ Caso” para agregar el primero.</div>';
+    list.querySelectorAll("[data-case-index]").forEach((button) => {
+      button.addEventListener("click", () => openQaExecutionDialog(Number(button.dataset.caseIndex), button));
+    });
   }
 
   function renderProjectSelector() {
@@ -29157,11 +30186,13 @@ var __async = (__this, __arguments, generator) => {
 
     renderDashboardProjects();
     renderProjectSelector();
+    renderQaPanel();
   }
 
   async function selectDashboardProject(projectId) {
     if (!projects.some((project) => project.id === projectId)) return;
     activeProjectId = projectId;
+    activeSuiteId = "";
     renderDashboard();
     renderCasesList();
   }
@@ -29170,9 +30201,17 @@ var __async = (__this, __arguments, generator) => {
     projects = await loadProjectsFromDB();
     savedCases = await loadCasesFromDB();
     if (!projects.length) {
-      projects = [{ id: createProjectId(), name: "Mi proyecto", createdAt: Date.now() }];
+      projects = [{ id: createProjectId(), name: "Mi proyecto", createdAt: Date.now(), suites: createDefaultSuites() }];
       await saveProjectsToDB();
     }
+    let migratedSuites = false;
+    projects.forEach((project) => {
+      if (!Array.isArray(project.suites) || !project.suites.length) {
+        project.suites = createDefaultSuites();
+        migratedSuites = true;
+      }
+    });
+    if (migratedSuites) await saveProjectsToDB();
     const savedProjectId = localStorage.getItem("activeDashboardProject");
     activeProjectId = projects.some((project) => project.id === savedProjectId) ? savedProjectId : projects[0].id;
     let migratedCases = false;
@@ -29203,7 +30242,7 @@ var __async = (__this, __arguments, generator) => {
   async function createDashboardProject(name) {
     const cleanName = String(name || "").trim();
     if (!cleanName) return;
-    const project = { id: createProjectId(), name: cleanName, createdAt: Date.now() };
+    const project = { id: createProjectId(), name: cleanName, createdAt: Date.now(), suites: createDefaultSuites() };
     projects.push(project);
     activeProjectId = project.id;
     await saveProjectsToDB();
@@ -29214,12 +30253,20 @@ var __async = (__this, __arguments, generator) => {
 
   function initDashboardNavigation() {
     const toggle = document.getElementById("dashboardSidebarToggle");
-    const openDocumenter = async () => {
+    const openDocumenter = async (suiteId = "") => {
       await dashboardReady;
       setSelectedProjectId(activeProjectId);
+      currentSuiteId = suiteId;
       document.body.classList.remove("dashboard-view");
       document.body.classList.add("documenter-view");
       await recoverSavedCaseIfNeeded();
+      const suite = projects.find((item) => item.id === activeProjectId)?.suites?.find((item) => item.id === currentSuiteId);
+      const suiteContext = document.getElementById("qaCaseSuiteContext");
+      if (suiteContext) {
+        suiteContext.hidden = !suite;
+        suiteContext.textContent = suite ? `El nuevo caso se guardará en la suite: ${suite.name}` : "";
+      }
+      if (!suite) currentSuiteId = "";
     };
     document.getElementById("openDocumenterBtn").addEventListener("click", openDocumenter);
     document.getElementById("startDocumenterBtn").addEventListener("click", openDocumenter);
@@ -29246,6 +30293,29 @@ var __async = (__this, __arguments, generator) => {
     });
     const editForm = document.getElementById("editProjectForm");
     const editInput = document.getElementById("editProjectName");
+    const dashboardSearch = document.getElementById("dashboardCaseSearch");
+    const dashboardClearSearch = document.getElementById("dashboardCaseClearBtn");
+    dashboardSearch.addEventListener("input", () => renderCasesList());
+    dashboardClearSearch.addEventListener("click", () => {
+      dashboardSearch.value = "";
+      renderCasesList();
+      dashboardSearch.focus();
+    });
+    const downloadBackupButton = document.getElementById("downloadWorkspaceBackupBtn");
+    const downloadBackupFromDocumenterButton = document.getElementById("downloadWorkspaceBackupFromDocumenterBtn");
+    const importBackupButton = document.getElementById("importWorkspaceBackupBtn");
+    const backupFileInput = document.getElementById("workspaceBackupFileInput");
+    downloadBackupButton.addEventListener("click", () => downloadWorkspaceBackup(downloadBackupButton));
+    downloadBackupFromDocumenterButton.addEventListener("click", () => downloadWorkspaceBackup(downloadBackupFromDocumenterButton));
+    importBackupButton.addEventListener("click", () => backupFileInput.click());
+    backupFileInput.addEventListener("change", async () => {
+      const file = backupFileInput.files?.[0];
+      try {
+        await importWorkspaceBackup(file, importBackupButton);
+      } finally {
+        backupFileInput.value = "";
+      }
+    });
     document.getElementById("editProjectBtn").addEventListener("click", () => {
       const project = projects.find((item) => item.id === activeProjectId);
       if (!project) return;
@@ -29267,8 +30337,88 @@ var __async = (__this, __arguments, generator) => {
       editForm.classList.remove("open");
       renderDashboard();
     });
+    const createSuiteForm = document.getElementById("qaSuiteCreateForm");
+    const createSuiteInput = document.getElementById("qaSuiteCreateName");
+    document.getElementById("qaSuiteCreateBtn").addEventListener("click", () => {
+      createSuiteForm.dataset.open = "true";
+      createSuiteForm.hidden = false;
+      createSuiteInput.focus();
+    });
+    document.getElementById("qaSuiteCreateCancel").addEventListener("click", () => {
+      createSuiteForm.reset();
+      createSuiteForm.dataset.open = "";
+      createSuiteForm.hidden = true;
+    });
+    createSuiteForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const name = createSuiteInput.value.trim();
+      const project = projects.find((item) => item.id === activeProjectId);
+      if (!name || !project) return;
+      if (!Array.isArray(project.suites)) project.suites = [];
+      project.suites.push({ id: createSuiteId(), name, createdAt: Date.now() });
+      await saveProjectsToDB();
+      createSuiteForm.reset();
+      createSuiteForm.dataset.open = "";
+      createSuiteForm.hidden = true;
+      renderDashboard();
+    });
+    document.getElementById("qaSuiteBackBtn").addEventListener("click", () => {
+      activeSuiteId = "";
+      document.getElementById("qaSuiteEditForm").hidden = true;
+      renderQaPanel();
+    });
+    document.getElementById("qaCaseSearch").addEventListener("input", () => renderQaPanel());
+    document.getElementById("qaSuiteSearch").addEventListener("input", () => renderQaPanel());
+    const editSuiteForm = document.getElementById("qaSuiteEditForm");
+    const editSuiteInput = document.getElementById("qaSuiteEditName");
+    document.getElementById("qaEditSuiteBtn").addEventListener("click", () => {
+      const suite = projects.find((item) => item.id === activeProjectId)?.suites?.find((item) => item.id === activeSuiteId);
+      if (!suite) return;
+      editSuiteInput.value = suite.name;
+      editSuiteForm.hidden = false;
+      editSuiteInput.focus();
+      editSuiteInput.select();
+    });
+    document.getElementById("qaSuiteEditCancel").addEventListener("click", () => {
+      editSuiteForm.reset();
+      editSuiteForm.hidden = true;
+    });
+    editSuiteForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const suite = projects.find((item) => item.id === activeProjectId)?.suites?.find((item) => item.id === activeSuiteId);
+      const name = editSuiteInput.value.trim();
+      if (!suite || !name) return;
+      suite.name = name;
+      await saveProjectsToDB();
+      editSuiteForm.hidden = true;
+      renderDashboard();
+    });
+    document.getElementById("qaAddCaseBtn").addEventListener("click", (event) => {
+      openQaNewCaseDialog(event.currentTarget);
+    });
+    document.getElementById("qaNewCaseForm").addEventListener("submit", saveNewQaCase);
+    document.getElementById("qaNewCaseCancel").addEventListener("click", closeQaNewCaseDialog);
+    document.getElementById("qaNewCaseOverlay").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeQaNewCaseDialog();
+    });
+    document.querySelectorAll(".qa-execution-status").forEach((button) => {
+      button.addEventListener("click", () => updateQaExecutionStatus(button.dataset.status));
+    });
+    document.getElementById("qaCloseExecutionBtn").addEventListener("click", closeQaExecutionDialog);
+    document.getElementById("qaExecutionOverlay").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeQaExecutionDialog();
+    });
+    document.getElementById("qaEditCaseBtn").addEventListener("click", async () => {
+      const caseIndex = selectedQaCaseIndex;
+      closeQaExecutionDialog();
+      if (caseIndex === null) return;
+      await openCaseFromBatch(caseIndex);
+    });
     document.getElementById("caseProjectSelect").addEventListener("change", () => {
       activeProjectId = getSelectedProjectId();
+      activeSuiteId = "";
+      currentSuiteId = "";
+      document.getElementById("qaCaseSuiteContext").hidden = true;
       localStorage.setItem("activeDashboardProject", activeProjectId);
       renderDashboard();
       renderCasesList();
@@ -29276,44 +30426,161 @@ var __async = (__this, __arguments, generator) => {
     });
   }
 
+  function getCaseStatusSummary(caseRecord) {
+    if (["pass", "not-executed", "in-progress", "failed", "blocked"].includes(caseRecord.executionStatus)) {
+      const labels = {
+        pass: "Pass",
+        "not-executed": "Not Executed",
+        "in-progress": "In Progress",
+        failed: "Failed",
+        blocked: "Blocked",
+      };
+      return {
+        label: labels[caseRecord.executionStatus],
+        className: caseRecord.executionStatus === "not-executed" ? "empty" : caseRecord.executionStatus,
+      };
+    }
+    const steps = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
+    const statusCounts = { pendiente: 0, aprobado: 0, fallo: 0, observado: 0 };
+    steps.forEach((step) => {
+      const status = normalizeStepStatus(step.stepStatus || step.status);
+      statusCounts[status] += 1;
+    });
+    if (statusCounts.fallo > 0) return { label: `${statusCounts.fallo} fallo${statusCounts.fallo === 1 ? "" : "s"}`, className: "failed" };
+    if (statusCounts.pendiente === steps.length && steps.length > 0) return { label: `${statusCounts.pendiente} pendiente${statusCounts.pendiente === 1 ? "" : "s"}`, className: "pending" };
+    if (statusCounts.aprobado > 0) return { label: `${statusCounts.aprobado} aprobado${statusCounts.aprobado === 1 ? "" : "s"}`, className: "approved" };
+    if (!steps.length) return { label: "Sin pasos", className: "empty" };
+    return { label: `${statusCounts.observado} observado${statusCounts.observado === 1 ? "" : "s"}`, className: "pending" };
+  }
+
   function renderCasesList() {
     const projectCases = getActiveProjectCases();
+    const searchInput = document.getElementById("dashboardCaseSearch");
+    const query = (searchInput ? searchInput.value : "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    const filtered = projectCases.filter((item) => {
+      const status = getCaseStatusSummary(item).label;
+      const qaContext = item.qaContext && typeof item.qaContext === "object" ? Object.values(item.qaContext) : [];
+      const steps = Array.isArray(item.steps) ? item.steps : [];
+      const stepText = steps.flatMap((step) => step ? [
+          step.comment,
+          step.expectedResult,
+          step.actualResult,
+          step.result,
+          step.resultado,
+          step.stepStatus,
+          step.status,
+        ] : []);
+      const searchText = [
+        buildCaseRecordTitle(item),
+        item.description,
+        item.tester,
+        item.team,
+        item.fecha,
+        status,
+        ...qaContext,
+        ...stepText,
+      ]
+        .filter((value) => typeof value === "string" || typeof value === "number")
+        .join(" ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase();
+      return query.every((term) => searchText.includes(term));
+    });
     document.getElementById("casesCount").textContent = projectCases.length;
+    document.getElementById("dashboardCatalogCount").textContent = `${filtered.length} caso${filtered.length === 1 ? "" : "s"}`;
     const container = document.getElementById("casesList");
+    const body = document.getElementById("dashboardCaseTableBody");
     const downloadBtn = document.getElementById("downloadBatchBtn");
     downloadBtn.disabled = projectCases.length === 0;
 
-    if (projectCases.length === 0) {
-      container.innerHTML = '<div class="empty-msg" style="padding:14px;">Aún no hay casos guardados en este proyecto.</div>';
-      return;
+    if (container) {
+      if (projectCases.length === 0) {
+        container.innerHTML = '<div class="empty-msg" style="padding:14px;">Aún no hay casos guardados en este proyecto.</div>';
+      } else {
+        container.innerHTML = projectCases
+          .map((c) => {
+            const i = savedCases.indexOf(c);
+            const n = Array.isArray(c.steps) ? c.steps.length : 0;
+            return `
+            <div class="case-chip">
+              <span>${escapeHtml(c.caseId || "Sin ID")} <span style="color:var(--text-faint);">(${n} paso${n === 1 ? "" : "s"})</span></span>
+              <span class="case-chip-actions">
+                <button class="btn-secondary open-case" data-idx="${i}" title="Abrir este caso para editarlo">Abrir</button>
+                <button class="remove-case" data-idx="${i}" title="Quitar del lote" aria-label="Quitar del lote el caso ${escapeHtml(c.caseId || "Sin ID")}">✕</button>
+              </span>
+            </div>`;
+          })
+          .join("");
+        container.querySelectorAll(".open-case").forEach((btn) => {
+          btn.addEventListener("click", () => openCaseFromBatch(Number(btn.dataset.idx)));
+        });
+        container.querySelectorAll(".remove-case").forEach((btn) => {
+          btn.addEventListener("click", () => removeCaseFromBatch(Number(btn.dataset.idx)));
+        });
+      }
     }
-    container.innerHTML = projectCases
-      .map((c) => {
-        const i = savedCases.indexOf(c);
-        const n = Array.isArray(c.steps) ? c.steps.length : 0;
+
+    if (body) {
+      if (!filtered.length) {
+        body.innerHTML = '<tr><td colspan="4" class="dashboard-case-empty">No hay casos que coincidan con la búsqueda.</td></tr>';
+        return;
+      }
+      body.innerHTML = filtered.map((caseRecord) => {
+        const index = savedCases.indexOf(caseRecord);
+        const stepsCount = Array.isArray(caseRecord.steps) ? caseRecord.steps.length : 0;
+        const status = getCaseStatusSummary(caseRecord);
         return `
-        <div class="case-chip">
-          <span>${escapeHtml(c.caseId || "Sin ID")} <span style="color:var(--text-faint);">(${n} paso${n === 1 ? "" : "s"})</span></span>
-          <span class="case-chip-actions">
-            <button class="btn-secondary open-case" data-idx="${i}" title="Abrir este caso para editarlo">Abrir</button>
-            <button class="remove-case" data-idx="${i}" title="Quitar del lote" aria-label="Quitar del lote el caso ${escapeHtml(c.caseId || "Sin ID")}">✕</button>
-          </span>
-        </div>`;
-      })
-      .join("");
-    container.querySelectorAll(".open-case").forEach((btn) => {
-      btn.addEventListener("click", () => openCaseFromBatch(Number(btn.dataset.idx)));
-    });
-    container.querySelectorAll(".remove-case").forEach((btn) => {
-      btn.addEventListener("click", () => removeCaseFromBatch(Number(btn.dataset.idx)));
-    });
+          <tr>
+            <td>
+              <div class="case-title">${escapeHtml(buildCaseRecordTitle(caseRecord))}</div>
+              <span class="case-meta">${escapeHtml(caseRecord.fecha || "Sin fecha")} • ${escapeHtml(caseRecord.tester || "Sin responsable")}</span>
+            </td>
+            <td><span class="status-pill ${status.className}">${escapeHtml(status.label)}</span></td>
+            <td class="muted">${stepsCount} paso${stepsCount === 1 ? "" : "s"}</td>
+            <td>
+              <div class="case-actions">
+                <button class="btn-secondary open-case" data-idx="${index}" type="button">Abrir</button>
+                <button class="btn-secondary duplicate-case" data-idx="${index}" type="button">Duplicar</button>
+                <button class="btn-secondary danger-btn remove-case" data-idx="${index}" type="button" aria-label="Eliminar ${escapeHtml(buildCaseRecordTitle(caseRecord))}">Eliminar</button>
+              </div>
+            </td>
+          </tr>`;
+      }).join("");
+      body.querySelectorAll(".open-case").forEach((btn) => btn.addEventListener("click", () => openCaseFromBatch(Number(btn.dataset.idx))));
+      body.querySelectorAll(".duplicate-case").forEach((btn) => btn.addEventListener("click", () => duplicateCaseFromCatalog(Number(btn.dataset.idx))));
+      body.querySelectorAll(".remove-case").forEach((btn) => btn.addEventListener("click", () => removeCaseFromBatch(Number(btn.dataset.idx))));
+    }
   }
 
-  function removeCaseFromBatch(idx) {
-    savedCases.splice(idx, 1);
+  async function removeCaseFromBatch(idx) {
+    const safeIndex = Number(idx);
+    const caseRecord = savedCases[safeIndex];
+    if (!caseRecord || !Number.isInteger(safeIndex) || safeIndex < 0 || safeIndex >= savedCases.length) return;
+    const proceed = await showAppConfirm(`¿Eliminar definitivamente ${buildCaseRecordTitle(caseRecord)}? Esta acción no se puede deshacer.`, document.querySelector(`.remove-case[data-idx="${safeIndex}"]`));
+    if (!proceed) return;
+    savedCases.splice(safeIndex, 1);
     renderCasesList();
     renderDashboard();
-    saveCasesToDB();
+    await saveCasesToDB();
+  }
+
+  async function duplicateCaseFromCatalog(idx) {
+    const safeIndex = Number(idx);
+    const source = savedCases[safeIndex];
+    if (!source || !Number.isInteger(safeIndex) || safeIndex < 0 || safeIndex >= savedCases.length) return;
+    const duplicate = dualCaseRecord(source, `${buildCaseRecordTitle(source)} copia`);
+    savedCases.splice(safeIndex + 1, 0, duplicate);
+    renderCasesList();
+    renderDashboard();
+    await saveCasesToDB();
+    showTransientStatus("✅ Caso duplicado en el catálogo.", 2600);
   }
 
   function resetCurrentCaseUI(options) {
@@ -29321,6 +30588,8 @@ var __async = (__this, __arguments, generator) => {
     steps = [];
     editingId = null;
     if (options.clearFields) {
+      editingCaseIndex = null;
+      document.getElementById("addToBatchBtn").textContent = "➕ Guardar caso y empezar otro";
       document.getElementById("caseId").value = "";
       document.getElementById("description").value = "";
       document.getElementById("team").value = "";
@@ -29352,6 +30621,13 @@ var __async = (__this, __arguments, generator) => {
 
     resetCurrentCaseUI({ clearFields: true });
     setSelectedProjectId(selectedCase.projectId || activeProjectId);
+    currentSuiteId = selectedCase.suiteId || "";
+    const suite = projects.find((item) => item.id === activeProjectId)?.suites?.find((item) => item.id === currentSuiteId);
+    const suiteContext = document.getElementById("qaCaseSuiteContext");
+    suiteContext.hidden = !suite;
+    suiteContext.textContent = suite ? `Este caso pertenece a la suite: ${suite.name}` : "";
+    document.body.classList.remove("dashboard-view");
+    document.body.classList.add("documenter-view");
     renderDashboard();
     renderCasesList();
     document.getElementById("caseId").value = selectedCase.caseId || "";
@@ -29365,6 +30641,8 @@ var __async = (__this, __arguments, generator) => {
     const selectedTemplate = document.getElementById("caseTemplateSelect");
     if (selectedTemplate) selectedTemplate.value = selectedCase.templateKey || DEFAULT_TEMPLATE_KEY;
     setDocumentNotesValue(selectedCase.documentNotes || "");
+    editingCaseIndex = idx;
+    document.getElementById("addToBatchBtn").textContent = "💾 Guardar cambios";
     editingId = null;
     steps = [];
     (selectedCase.steps || []).map((step) => normalizeStepForRestore(step)).forEach((step) => {
@@ -29397,8 +30675,9 @@ var __async = (__this, __arguments, generator) => {
       );
       if (!proceed) return;
     }
-    savedCases.push({
+    const updatedCase = {
       projectId: getSelectedProjectId(),
+      ...(currentSuiteId ? { suiteId: currentSuiteId } : {}),
       caseId,
       description: document.getElementById("description").value,
       team: document.getElementById("team").value,
@@ -29410,11 +30689,16 @@ var __async = (__this, __arguments, generator) => {
       fecha: new Date().toLocaleDateString("es-CO"),
       savedAt: Date.now(),
       steps: steps.slice(),
-    });
+    };
+    if (editingCaseIndex !== null && savedCases[editingCaseIndex]) {
+      savedCases[editingCaseIndex] = { ...savedCases[editingCaseIndex], ...updatedCase };
+    } else {
+      savedCases.push(updatedCase);
+    }
     resetCurrentCaseUI({ clearFields: true });
     renderCasesList();
     renderDashboard();
-    saveCasesToDB();
+    await saveCasesToDB();
     saveStateToDB();
     autosaveStatus.textContent = "✅ Caso agregado al lote. Listo para el siguiente.";
   });
@@ -29550,4 +30834,3 @@ var __async = (__this, __arguments, generator) => {
 </script>
 </body>
 </html>
-
