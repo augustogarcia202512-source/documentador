@@ -26270,6 +26270,53 @@ var __async = (__this, __arguments, generator) => {
     saveStateToDB();
   }
 
+  async function replaceStepImage(step, card, file) {
+    if (!file.type.startsWith("image/")) {
+      throw new Error("El archivo seleccionado no es una imagen.");
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+    const image = new Image();
+    try {
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error("No se pudo leer la imagen seleccionada."));
+        image.src = imageUrl;
+      });
+
+      const maxWidth = 1920;
+      const scale = Math.min(1, maxWidth / image.naturalWidth);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("No se pudo preparar la imagen para el paso.");
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      const thumbnailDataUrl = createStepThumbnail(canvas);
+      canvas.width = 0;
+      canvas.height = 0;
+
+      pushUndoCheckpoint();
+      if (editingId === step.id) exitEditMode(step, card);
+      step.dataUrl = dataUrl;
+      step.renderedDataUrl = null;
+      step.thumbnailDataUrl = thumbnailDataUrl;
+      step.boxes = [];
+      step.pins = [];
+      step.pendingCrop = null;
+      step.addingPin = false;
+      displayStepImage(step, card.querySelector(".step-img"));
+      renderStepPins(step, card);
+      invalidateSavedPreview();
+      if (!(await saveStateToDB())) throw new Error("No se pudo guardar el cambio. Inténtalo nuevamente.");
+      showTransientStatus("✅ Imagen del paso reemplazada. Se conservaron el comentario y el estado.", 3800);
+    } finally {
+      URL.revokeObjectURL(imageUrl);
+      image.src = "";
+    }
+  }
+
   function setCapturePaused(paused, options) {
     options = options || {};
     isCapturePaused = !!paused;
@@ -27977,6 +28024,8 @@ var __async = (__this, __arguments, generator) => {
         <button class="btn-secondary defect-btn" type="button" style="flex:1;">🐞 Generar defecto</button>
         <button class="btn-secondary mark-btn" type="button" style="flex:1;">✏️ Marcar zona</button>
         <button class="btn-secondary step-pin-mode-btn" type="button" style="flex:1;" title="Coloca una nota en un punto de la imagen">📍 Nota en imagen</button>
+        <button class="btn-secondary replace-image-btn" type="button" style="flex:1;">🔄 Reemplazar imagen</button>
+        <input class="replace-image-input" type="file" accept="image/*" hidden />
       </div>
       <div class="comment-anchor comment-middle-anchor" data-comment-anchor="middle">Soltar comentario al centro</div>
       <div class="comment-controls">
@@ -28287,6 +28336,23 @@ var __async = (__this, __arguments, generator) => {
         exitEditMode(step, card);
       } else {
         enterEditMode(step, card);
+      }
+    });
+    const replaceImageButton = card.querySelector(".replace-image-btn");
+    const replaceImageInput = card.querySelector(".replace-image-input");
+    replaceImageButton.addEventListener("click", () => replaceImageInput.click());
+    replaceImageInput.addEventListener("change", async () => {
+      const file = replaceImageInput.files?.[0];
+      replaceImageInput.value = "";
+      if (!file) return;
+      replaceImageButton.disabled = true;
+      try {
+        await replaceStepImage(step, card, file);
+      } catch (error) {
+        console.error("No se pudo reemplazar la imagen del paso:", error);
+        await showAppAlert(`No se pudo reemplazar la imagen. ${error.message || "Selecciona una imagen válida e inténtalo nuevamente."}`, replaceImageButton);
+      } finally {
+        replaceImageButton.disabled = false;
       }
     });
     card.querySelector(".apply-crop").addEventListener("click", () => applyCrop(step, card));
