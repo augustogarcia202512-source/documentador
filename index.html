@@ -1491,6 +1491,23 @@
   .dashboard-recent-meta { min-width: 0; }
   .dashboard-status-pill { flex: 0 0 auto; padding: 4px 7px; border-radius: 999px; background: var(--panel-3); color: var(--text-muted); font-size: 9px; }
   .dashboard-empty { padding: 22px 12px; color: var(--text-faint); font-size: 11px; text-align: center; }
+  .dashboard-novedades-section { margin-top: 14px; }
+  .dashboard-novelty-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 12px; }
+  .dashboard-novelty-card { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px; min-width: 0; padding: 9px; border: 1px solid var(--line-soft); border-left: 3px solid #d65a52; border-radius: 9px; background: var(--bg-soft); }
+  .dashboard-novelty-card.sev-alta { border-left-color: #da5148; }
+  .dashboard-novelty-card.sev-media { border-left-color: #d9952f; }
+  .dashboard-novelty-card.sev-baja { border-left-color: #39a88e; }
+  .dashboard-novelty-image { display: block; width: 104px; height: 78px; padding: 0; overflow: hidden; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--panel-2); cursor: zoom-in; }
+  .dashboard-novelty-image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .dashboard-novelty-content { display: grid; align-content: start; gap: 5px; min-width: 0; }
+  .dashboard-novelty-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; color: var(--text-faint); font-size: 9px; }
+  .dashboard-novelty-badge { padding: 3px 6px; border-radius: 999px; background: rgba(218,81,72,.13); color: #ffaba2; font-size: 9px; font-weight: 700; }
+  .dashboard-novelty-card.sev-media .dashboard-novelty-badge { background: rgba(217,149,47,.14); color: #f4cb7d; }
+  .dashboard-novelty-card.sev-baja .dashboard-novelty-badge { background: rgba(57,168,142,.14); color: #83d9c2; }
+  .dashboard-novelty-status { padding: 3px 6px; border-radius: 999px; background: var(--panel-3); color: var(--text-muted); font-size: 9px; }
+  .dashboard-novelty-case { overflow: hidden; color: var(--text); font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  .dashboard-novelty-comment { display: -webkit-box; overflow: hidden; color: var(--text-muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+  .dashboard-novelty-empty { grid-column: 1 / -1; padding: 20px 12px; color: var(--text-faint); font-size: 11px; text-align: center; }
   body.dashboard-sidebar-collapsed .dashboard-shell { --dashboard-sidebar-width: 0px; }
   body.dashboard-sidebar-collapsed .dashboard-sidebar { visibility: hidden; padding: 0; overflow: hidden; }
   body.dashboard-sidebar-collapsed .dashboard-sidebar-toggle { left: 0; }
@@ -1653,6 +1670,14 @@
             <button class="qa-panel-action" type="button">Copiar CSV</button>
             <button class="qa-panel-action" type="button">Reiniciar estados</button>
           </div>
+        </section>
+
+        <section class="dashboard-card dashboard-novedades-section" id="dashboardNovedadesSection" aria-labelledby="dashboardNovedadesTitle">
+          <div class="dashboard-card-heading">
+            <strong id="dashboardNovedadesTitle">Novedades de los pasos</strong>
+            <span id="dashboardNovedadesCount">0 novedades</span>
+          </div>
+          <div class="dashboard-novelty-list" id="dashboardNovedadesList"></div>
         </section>
 
         <div class="dashboard-grid-two">
@@ -26309,6 +26334,7 @@ var __async = (__this, __arguments, generator) => {
       displayStepImage(step, card.querySelector(".step-img"));
       renderStepPins(step, card);
       invalidateSavedPreview();
+      renderDashboardNovedades(getActiveProjectCases());
       if (!(await saveStateToDB())) throw new Error("No se pudo guardar el cambio. Inténtalo nuevamente.");
       showTransientStatus("✅ Imagen del paso reemplazada. Se conservaron el comentario y el estado.", 3800);
     } finally {
@@ -28249,6 +28275,7 @@ var __async = (__this, __arguments, generator) => {
       invalidateSavedPreview();
       autosave();
       applyStepsFilter();
+      renderDashboardNovedades(getActiveProjectCases());
     });
     initDictationControl(
       stepCommentInput,
@@ -28261,6 +28288,7 @@ var __async = (__this, __arguments, generator) => {
       step.stepStatus = normalizeStepStatus(statusSelect.value);
       saveStateToDB();
       applyStepsFilter();
+      renderDashboardNovedades(getActiveProjectCases());
     });
     card.querySelectorAll(".sev-btn").forEach((sb) => {
       sb.addEventListener("click", () => {
@@ -28276,6 +28304,7 @@ var __async = (__this, __arguments, generator) => {
         if (step.severity) card.classList.add("sev-" + step.severity);
         saveStateToDB();
         applyStepsFilter();
+        renderDashboardNovedades(getActiveProjectCases());
       });
     });
     card.querySelectorAll(".color-swatch").forEach((sw) => {
@@ -30196,6 +30225,84 @@ var __async = (__this, __arguments, generator) => {
     if (bar) bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
   }
 
+  function renderDashboardNovedades(projectCases) {
+    const list = document.getElementById("dashboardNovedadesList");
+    const count = document.getElementById("dashboardNovedadesCount");
+    if (!list || !count) return;
+
+    const casesToDisplay = projectCases.slice();
+    const caseId = document.getElementById("caseId").value.trim();
+    const description = document.getElementById("description").value.trim();
+    if (getSelectedProjectId() === activeProjectId && (steps.length || caseId || description)) {
+      const draftCase = currentCaseData();
+      if (editingCaseIndex !== null && savedCases[editingCaseIndex]) {
+        const savedCase = savedCases[editingCaseIndex];
+        const displayIndex = casesToDisplay.indexOf(savedCase);
+        if (displayIndex >= 0) {
+          casesToDisplay[displayIndex] = { ...savedCase, ...draftCase };
+        } else {
+          casesToDisplay.push(draftCase);
+        }
+      } else {
+        casesToDisplay.push(draftCase);
+      }
+    }
+
+    const novelties = casesToDisplay.flatMap((caseRecord) =>
+      (Array.isArray(caseRecord.steps) ? caseRecord.steps : [])
+        .map((step, index) => ({ caseRecord, step, index }))
+        .filter(({ step }) => step && ["alta", "media", "baja"].includes(step.severity))
+    );
+    count.textContent = `${novelties.length} novedad${novelties.length === 1 ? "" : "es"}`;
+    if (!novelties.length) {
+      list.innerHTML = '<div class="dashboard-novelty-empty">Aún no hay pasos marcados con novedad Alta, Media o Baja.</div>';
+      return;
+    }
+
+    const stepStatusLabels = {
+      aprobado: "Aprobado",
+      fallo: "Falló",
+      observado: "Observado",
+      pendiente: "Pendiente",
+    };
+    list.innerHTML = novelties.map(({ caseRecord, step, index }, noveltyIndex) => {
+      const severity = step.severity;
+      const status = normalizeStepStatus(step.stepStatus || step.status);
+      const image = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
+      const comment = String(step.comment || "").trim() || "Sin comentario registrado.";
+      return `<article class="dashboard-novelty-card sev-${severity}">
+        ${image
+          ? `<button class="dashboard-novelty-image" type="button" data-novelty-image="${noveltyIndex}" aria-label="Ampliar imagen del caso ${escapeHtml(caseRecord.caseId || "sin ID")}, paso ${index + 1}">
+              <img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" />
+            </button>`
+          : ""}
+        <div class="dashboard-novelty-content">
+          <div class="dashboard-novelty-meta">
+            <span class="dashboard-novelty-badge">${severity.charAt(0).toUpperCase()}${severity.slice(1)}</span>
+            <span class="dashboard-novelty-status">${stepStatusLabels[status] || "Pendiente"}</span>
+          </div>
+          <div class="dashboard-novelty-case">${escapeHtml(`${caseRecord.caseId || "Caso sin ID"} · Paso ${index + 1}`)}</div>
+          <div class="dashboard-novelty-comment">${escapeHtml(comment)}</div>
+        </div>
+      </article>`;
+    }).join("");
+
+    list.querySelectorAll("[data-novelty-image]").forEach((button) => {
+      const novelty = novelties[Number(button.dataset.noveltyImage)];
+      const image = button.querySelector("img");
+      if (!novelty || !image) return;
+      button.addEventListener("click", () => openZoom(novelty.step.renderedDataUrl || novelty.step.dataUrl, button));
+      image.addEventListener("load", () => {
+        if (novelty.step.thumbnailDataUrl || !image.naturalWidth) return;
+        const thumbnail = createStepThumbnail(image);
+        if (!thumbnail) return;
+        novelty.step.thumbnailDataUrl = thumbnail;
+        image.src = thumbnail;
+        if (savedCases.includes(novelty.caseRecord)) autosaveCases();
+      }, { once: true });
+    });
+  }
+
   function renderDashboard() {
     if (!projects.length) return;
     const project = projects.find((item) => item.id === activeProjectId) || projects[0];
@@ -30209,6 +30316,7 @@ var __async = (__this, __arguments, generator) => {
     if (date) date.textContent = new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
     const cases = getActiveProjectCases();
+    renderDashboardNovedades(cases);
     const caseSteps = cases.flatMap((item) => Array.isArray(item.steps) ? item.steps : []);
     const total = caseSteps.length;
     const statuses = { pendiente: 0, aprobado: 0, fallo: 0, observado: 0 };
@@ -30719,6 +30827,7 @@ var __async = (__this, __arguments, generator) => {
     redoStack.length = 0;
     renumberSteps();
     updateHistoryButtons();
+    renderDashboardNovedades(getActiveProjectCases());
     saveStateToDB();
     autosaveStatus.textContent = "✅ Caso abierto para continuar editándolo.";
     window.scrollTo({ top: 0, behavior: "smooth" });
