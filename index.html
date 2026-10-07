@@ -1492,6 +1492,9 @@
   .dashboard-status-pill { flex: 0 0 auto; padding: 4px 7px; border-radius: 999px; background: var(--panel-3); color: var(--text-muted); font-size: 9px; }
   .dashboard-empty { padding: 22px 12px; color: var(--text-faint); font-size: 11px; text-align: center; }
   .dashboard-novedades-section { margin-top: 14px; }
+  .dashboard-novelty-filters { display: grid; grid-template-columns: minmax(180px, 1.5fr) repeat(4, minmax(120px, 1fr)); gap: 8px; margin-top: 12px; }
+  .dashboard-novelty-filters input, .dashboard-novelty-filters select { min-width: 0; height: 34px; padding: 0 9px; border: 1px solid var(--line-soft); border-radius: 7px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 11px; }
+  .dashboard-novelty-results { margin-top: 9px; color: var(--text-faint); font-size: 10px; }
   .dashboard-novelty-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 12px; }
   .dashboard-novelty-card { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px; min-width: 0; padding: 9px; border: 1px solid var(--line-soft); border-left: 3px solid #d65a52; border-radius: 9px; background: var(--bg-soft); }
   .dashboard-novelty-card.sev-alta { border-left-color: #da5148; }
@@ -1507,7 +1510,21 @@
   .dashboard-novelty-status { padding: 3px 6px; border-radius: 999px; background: var(--panel-3); color: var(--text-muted); font-size: 9px; }
   .dashboard-novelty-case { overflow: hidden; color: var(--text); font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
   .dashboard-novelty-comment { display: -webkit-box; overflow: hidden; color: var(--text-muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+  .dashboard-novelty-open { justify-self: start; padding: 4px 7px; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--panel-2); color: var(--text); font-size: 9px; }
+  .step-card.novelty-focus { animation: novelty-focus-pulse 1.4s ease-in-out 2; }
+  @keyframes novelty-focus-pulse {
+    0%, 100% { box-shadow: var(--shadow-soft); }
+    50% { box-shadow: 0 0 0 3px rgba(217,149,47,.55), 0 0 24px rgba(217,149,47,.24); }
+  }
   .dashboard-novelty-empty { grid-column: 1 / -1; padding: 20px 12px; color: var(--text-faint); font-size: 11px; text-align: center; }
+  @media (max-width: 760px) {
+    .dashboard-novelty-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dashboard-novelty-filters input { grid-column: 1 / -1; }
+  }
+  @media (max-width: 420px) {
+    .dashboard-novelty-filters { grid-template-columns: 1fr; }
+    .dashboard-novelty-filters input { grid-column: auto; }
+  }
   body.dashboard-sidebar-collapsed .dashboard-shell { --dashboard-sidebar-width: 0px; }
   body.dashboard-sidebar-collapsed .dashboard-sidebar { visibility: hidden; padding: 0; overflow: hidden; }
   body.dashboard-sidebar-collapsed .dashboard-sidebar-toggle { left: 0; }
@@ -1677,6 +1694,31 @@
             <strong id="dashboardNovedadesTitle">Novedades de los pasos</strong>
             <span id="dashboardNovedadesCount">0 novedades</span>
           </div>
+          <div class="dashboard-novelty-filters" aria-label="Filtros de novedades">
+            <input id="dashboardNoveltySearch" type="search" placeholder="Buscar caso o comentario" aria-label="Buscar novedades por caso o comentario" />
+            <select id="dashboardNoveltySeverity" aria-label="Filtrar novedades por severidad">
+              <option value="all">Todas las severidades</option>
+              <option value="alta">Alta</option>
+              <option value="media">Media</option>
+              <option value="baja">Baja</option>
+            </select>
+            <select id="dashboardNoveltyStatus" aria-label="Filtrar novedades por estado">
+              <option value="all">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="aprobado">Aprobado</option>
+              <option value="fallo">Falló</option>
+              <option value="observado">Observado</option>
+            </select>
+            <select id="dashboardNoveltySuite" aria-label="Filtrar novedades por suite">
+              <option value="all">Todas las suites</option>
+            </select>
+            <select id="dashboardNoveltySort" aria-label="Ordenar novedades">
+              <option value="priority">Prioridad: Alta primero</option>
+              <option value="low">Prioridad: Baja primero</option>
+              <option value="case">Orden por caso</option>
+            </select>
+          </div>
+          <div class="dashboard-novelty-results" id="dashboardNoveltyResults" aria-live="polite"></div>
           <div class="dashboard-novelty-list" id="dashboardNovedadesList"></div>
         </section>
 
@@ -25183,6 +25225,7 @@ var __async = (__this, __arguments, generator) => {
     let caseRecoveryChecked = false;
     let editingProjectId = null;
     let isCapturePaused = false;
+    let dashboardNoveltyFilters = { query: "", severity: "all", status: "all", suiteId: "all", sort: "priority" };
     let pipWindow = null;
     let pipPauseButton = null;
     let activeDictation = null;
@@ -25285,6 +25328,8 @@ var __async = (__this, __arguments, generator) => {
   const STATE_KEY = "casoActual";
   const PROJECTS_KEY = "proyectos";
   const autosaveStatus = document.getElementById("autosaveStatus");
+  const appDialogOverlay = document.getElementById("appDialog");
+  if (appDialogOverlay.parentElement !== document.body) document.body.appendChild(appDialogOverlay);
   let statusTransientTimer = null;
 
   function showTransientStatus(message, ms) {
@@ -29602,11 +29647,17 @@ var __async = (__this, __arguments, generator) => {
   }
 
   function openZoom(src, openerEl) {
+    if (typeof src !== "string" || !src.trim()) {
+      showTransientStatus("No se encontró una imagen válida para ampliar.", 3500);
+      return;
+    }
     const zoomImg = document.getElementById("zoomImg");
+    const zoomOverlay = document.getElementById("zoomOverlay");
+    if (zoomOverlay.parentElement !== document.body) document.body.appendChild(zoomOverlay);
     zoomImg.src = src;
     zoomLevel = 1;
     setZoomLevel(1);
-    openOverlay(document.getElementById("zoomOverlay"), {
+    openOverlay(zoomOverlay, {
       opener: openerEl,
       display: "flex",
       initialFocus: document.getElementById("closeZoomBtn"),
@@ -29851,10 +29902,36 @@ var __async = (__this, __arguments, generator) => {
   async function downloadWorkspaceBackup(button) {
     button.disabled = true;
     try {
-      await dashboardReady;
-      if (!(await saveProjectsToDB()) || !(await saveCasesToDB()) || !(await saveStateToDB())) {
-        throw new Error("No se pudieron guardar todos los datos antes de crear el respaldo.");
-      }
+      syncStepInputsToData();
+      if (document.getElementById("exportPreview")) syncEditedPreviewToCaseFields();
+      const draft = {
+        projectId: getSelectedProjectId(),
+        caseId: document.getElementById("caseId").value,
+        description: document.getElementById("description").value,
+        team: document.getElementById("team").value,
+        tester: document.getElementById("tester").value,
+        templateKey: getSelectedTemplateKey(),
+        qaContext: getQaContext(),
+        previewEditedHtml: savedDocumentPreviewHtml,
+        documentNotes: document.getElementById("documentNotesInput")
+          ? document.getElementById("documentNotesInput").value
+          : "",
+        steps: steps.map((step) => ({
+          id: step.id,
+          dataUrl: step.dataUrl,
+          renderedDataUrl: step.renderedDataUrl,
+          thumbnailDataUrl: step.thumbnailDataUrl,
+          comment: step.comment,
+          commentPosition: ["top", "middle", "bottom"].includes(step.commentPosition) ? step.commentPosition : "top",
+          stepStatus: normalizeStepStatus(step.stepStatus || step.status),
+          novedad: step.novedad,
+          severity: step.severity,
+          boxes: step.boxes,
+          color: step.color,
+          pins: Array.isArray(step.pins) ? step.pins : [],
+        })),
+        savedAt: Date.now(),
+      };
       const backup = {
         format: WORKSPACE_BACKUP_FORMAT,
         version: WORKSPACE_BACKUP_VERSION,
@@ -29862,19 +29939,35 @@ var __async = (__this, __arguments, generator) => {
         activeProjectId,
         projects,
         cases: savedCases,
-        draft: await loadStateFromDB(),
+        draft,
       };
       const blob = new Blob([JSON.stringify(backup)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `Respaldo_Documentador_${new Date().toISOString().slice(0, 10)}.json`;
+      link.style.display = "none";
+      document.body.appendChild(link);
       link.click();
+      link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       showTransientStatus("✅ Respaldo descargado con proyectos, casos e imágenes.", 5000);
     } catch (error) {
       console.error("No se pudo crear el respaldo del documentador:", error);
-      await showAppAlert(`No se pudo crear el respaldo. ${error.message || "Inténtalo nuevamente."}`, button);
+      await showAppAlert(`No se pudo iniciar la descarga del respaldo. ${error.message || "Inténtalo nuevamente."}`, button);
+      button.disabled = false;
+      return;
+    }
+
+    try {
+      await dashboardReady;
+      const saved = await Promise.all([saveProjectsToDB(), saveCasesToDB(), saveStateToDB()]);
+      if (saved.some((result) => !result)) {
+        throw new Error("El archivo se descargó, pero no se pudieron actualizar todos los datos locales.");
+      }
+    } catch (error) {
+      console.error("No se pudo actualizar el guardado local tras descargar el respaldo:", error);
+      showTransientStatus("⚠️ Respaldo descargado; no se pudo actualizar el guardado local.", 6000);
     } finally {
       button.disabled = false;
     }
@@ -30225,10 +30318,50 @@ var __async = (__this, __arguments, generator) => {
     if (bar) bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
   }
 
+  function bindDashboardNoveltyFilters() {
+    const filters = [
+      ["dashboardNoveltySearch", "input", "query"],
+      ["dashboardNoveltySeverity", "change", "severity"],
+      ["dashboardNoveltyStatus", "change", "status"],
+      ["dashboardNoveltySuite", "change", "suiteId"],
+      ["dashboardNoveltySort", "change", "sort"],
+    ];
+    filters.forEach(([id, eventName, key]) => {
+      const control = document.getElementById(id);
+      if (!control || control.dataset.filterBound) return;
+      control.dataset.filterBound = "true";
+      control.addEventListener(eventName, () => {
+        dashboardNoveltyFilters[key] = control.value;
+        renderDashboardNovedades(getActiveProjectCases());
+      });
+    });
+  }
+
   function renderDashboardNovedades(projectCases) {
     const list = document.getElementById("dashboardNovedadesList");
     const count = document.getElementById("dashboardNovedadesCount");
+    const results = document.getElementById("dashboardNoveltyResults");
     if (!list || !count) return;
+
+    bindDashboardNoveltyFilters();
+    const severityFilter = document.getElementById("dashboardNoveltySeverity");
+    const statusFilter = document.getElementById("dashboardNoveltyStatus");
+    const suiteFilter = document.getElementById("dashboardNoveltySuite");
+    const sortFilter = document.getElementById("dashboardNoveltySort");
+    const searchInput = document.getElementById("dashboardNoveltySearch");
+    const project = projects.find((item) => item.id === activeProjectId);
+    const suites = Array.isArray(project?.suites) ? project.suites : [];
+    const selectedSuiteId = dashboardNoveltyFilters.suiteId;
+    suiteFilter.innerHTML = '<option value="all">Todas las suites</option><option value="none">Sin suite</option>' +
+      suites.map((suite) => `<option value="${escapeHtml(suite.id)}">${escapeHtml(suite.name)}</option>`).join("");
+    if (selectedSuiteId !== "all" && selectedSuiteId !== "none" && !suites.some((suite) => suite.id === selectedSuiteId)) {
+      dashboardNoveltyFilters.suiteId = "all";
+    }
+    searchInput.value = dashboardNoveltyFilters.query;
+    severityFilter.value = dashboardNoveltyFilters.severity;
+    statusFilter.value = dashboardNoveltyFilters.status;
+    suiteFilter.value = dashboardNoveltyFilters.suiteId;
+    sortFilter.value = dashboardNoveltyFilters.sort;
 
     const casesToDisplay = projectCases.slice();
     const caseId = document.getElementById("caseId").value.trim();
@@ -30248,14 +30381,67 @@ var __async = (__this, __arguments, generator) => {
       }
     }
 
-    const novelties = casesToDisplay.flatMap((caseRecord) =>
+    const allNovelties = casesToDisplay.flatMap((caseRecord) =>
       (Array.isArray(caseRecord.steps) ? caseRecord.steps : [])
         .map((step, index) => ({ caseRecord, step, index }))
         .filter(({ step }) => step && ["alta", "media", "baja"].includes(step.severity))
     );
-    count.textContent = `${novelties.length} novedad${novelties.length === 1 ? "" : "es"}`;
-    if (!novelties.length) {
+    const severityCounts = allNovelties.reduce((totals, { step }) => {
+      totals[step.severity] += 1;
+      return totals;
+    }, { alta: 0, media: 0, baja: 0 });
+    count.textContent = `${allNovelties.length} total · ${severityCounts.alta} alta · ${severityCounts.media} media · ${severityCounts.baja} baja`;
+    if (!allNovelties.length) {
+      if (results) results.textContent = "";
       list.innerHTML = '<div class="dashboard-novelty-empty">Aún no hay pasos marcados con novedad Alta, Media o Baja.</div>';
+      return;
+    }
+
+    const normalizedQuery = dashboardNoveltyFilters.query
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    const suiteNames = new Map(suites.map((suite) => [suite.id, suite.name]));
+    const novelties = allNovelties.filter(({ caseRecord, step }) => {
+      const status = normalizeStepStatus(step.stepStatus || step.status);
+      const suiteId = caseRecord.suiteId || "";
+      const searchText = [
+        caseRecord.caseId,
+        caseRecord.description,
+        caseRecord.team,
+        caseRecord.tester,
+        suiteNames.get(suiteId),
+        step.comment,
+        step.expectedResult,
+        step.actualResult,
+        step.result,
+        step.resultado,
+      ].filter((value) => typeof value === "string" || typeof value === "number")
+        .join(" ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase();
+      return (dashboardNoveltyFilters.severity === "all" || step.severity === dashboardNoveltyFilters.severity) &&
+        (dashboardNoveltyFilters.status === "all" || status === dashboardNoveltyFilters.status) &&
+        (dashboardNoveltyFilters.suiteId === "all" ||
+          (dashboardNoveltyFilters.suiteId === "none" ? !suiteId : suiteId === dashboardNoveltyFilters.suiteId)) &&
+        normalizedQuery.every((term) => searchText.includes(term));
+    });
+    const severityPriority = dashboardNoveltyFilters.sort === "low"
+      ? { baja: 0, media: 1, alta: 2 }
+      : { alta: 0, media: 1, baja: 2 };
+    novelties.sort((left, right) => {
+      if (dashboardNoveltyFilters.sort === "case") {
+        return String(left.caseRecord.caseId || "").localeCompare(String(right.caseRecord.caseId || ""), undefined, { numeric: true });
+      }
+      return severityPriority[left.step.severity] - severityPriority[right.step.severity];
+    });
+    if (results) results.textContent = `Mostrando ${novelties.length} de ${allNovelties.length} novedades`;
+    if (!novelties.length) {
+      list.innerHTML = '<div class="dashboard-novelty-empty">No hay novedades que coincidan con estos filtros.</div>';
       return;
     }
 
@@ -30283,15 +30469,30 @@ var __async = (__this, __arguments, generator) => {
           </div>
           <div class="dashboard-novelty-case">${escapeHtml(`${caseRecord.caseId || "Caso sin ID"} · Paso ${index + 1}`)}</div>
           <div class="dashboard-novelty-comment">${escapeHtml(comment)}</div>
+          <button class="dashboard-novelty-open" type="button" data-novelty-open="${noveltyIndex}">Abrir paso</button>
         </div>
       </article>`;
     }).join("");
+
+    list.querySelectorAll("[data-novelty-open]").forEach((button) => {
+      const novelty = novelties[Number(button.dataset.noveltyOpen)];
+      if (!novelty) return;
+      button.addEventListener("click", () => openNoveltyStep(novelty));
+    });
 
     list.querySelectorAll("[data-novelty-image]").forEach((button) => {
       const novelty = novelties[Number(button.dataset.noveltyImage)];
       const image = button.querySelector("img");
       if (!novelty || !image) return;
-      button.addEventListener("click", () => openZoom(novelty.step.renderedDataUrl || novelty.step.dataUrl, button));
+      button.addEventListener("click", () => {
+        const imageSource = novelty.step.renderedDataUrl ||
+          novelty.step.dataUrl ||
+          novelty.step.thumbnailDataUrl ||
+          image.currentSrc ||
+          image.src;
+        if (imageSource) openZoom(imageSource, button);
+        else showTransientStatus("No se encontró una imagen válida para ampliar.", 3500);
+      });
       image.addEventListener("load", () => {
         if (novelty.step.thumbnailDataUrl || !image.naturalWidth) return;
         const thumbnail = createStepThumbnail(image);
@@ -30301,6 +30502,44 @@ var __async = (__this, __arguments, generator) => {
         if (savedCases.includes(novelty.caseRecord)) autosaveCases();
       }, { once: true });
     });
+  }
+
+  async function openNoveltyStep(novelty) {
+    const { caseRecord, step } = novelty;
+    const caseIndex = savedCases.findIndex((savedCase) =>
+      savedCase === caseRecord ||
+      (
+        savedCase.caseId === caseRecord.caseId &&
+        (savedCase.projectId || projects[0]?.id) === (caseRecord.projectId || projects[0]?.id)
+      )
+    );
+
+    if (caseIndex >= 0) {
+      await openCaseFromBatch(caseIndex, step.id);
+      return;
+    }
+
+    const currentStep = steps.find((item) => String(item.id) === String(step.id));
+    if (!currentStep || getSelectedProjectId() !== activeProjectId) return;
+    document.body.classList.remove("dashboard-view");
+    document.body.classList.add("documenter-view");
+    focusDocumenterStep(currentStep.id);
+  }
+
+  function focusDocumenterStep(stepId) {
+    window.setTimeout(() => {
+      const card = [...stepsContainer.querySelectorAll(".step-card")]
+        .find((item) => String(item.dataset.id) === String(stepId));
+      if (!card) {
+        showTransientStatus("No se encontró el paso para abrirlo.", 3500);
+        return;
+      }
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+      card.classList.remove("novelty-focus");
+      void card.offsetWidth;
+      card.classList.add("novelty-focus");
+      window.setTimeout(() => card.classList.remove("novelty-focus"), 3000);
+    }, 120);
   }
 
   function renderDashboard() {
@@ -30584,9 +30823,18 @@ var __async = (__this, __arguments, generator) => {
     });
     document.getElementById("qaEditCaseBtn").addEventListener("click", async () => {
       const caseIndex = selectedQaCaseIndex;
-      closeQaExecutionDialog();
       if (caseIndex === null) return;
-      await openCaseFromBatch(caseIndex);
+      const button = document.getElementById("qaEditCaseBtn");
+      button.disabled = true;
+      try {
+        closeQaExecutionDialog();
+        await openCaseFromBatch(caseIndex);
+      } catch (error) {
+        console.error("No se pudo abrir el caso para editarlo:", error);
+        await showAppAlert(`No se pudo abrir el caso para editarlo. ${error.message || "Inténtalo nuevamente."}`, button);
+      } finally {
+        button.disabled = false;
+      }
     });
     document.getElementById("caseProjectSelect").addEventListener("change", () => {
       activeProjectId = getSelectedProjectId();
@@ -30778,11 +31026,21 @@ var __async = (__this, __arguments, generator) => {
 
   }
 
-  async function openCaseFromBatch(idx) {
+  async function openCaseFromBatch(idx, focusStepId) {
     const selectedCase = savedCases[idx];
     if (!selectedCase) return;
 
     const current = currentCaseData();
+    const isAlreadyOpen = editingCaseIndex === idx &&
+      String(current.caseId) === String(selectedCase.caseId) &&
+      (selectedCase.projectId || projects[0]?.id) === getSelectedProjectId();
+    if (isAlreadyOpen) {
+      document.body.classList.remove("dashboard-view");
+      document.body.classList.add("documenter-view");
+      if (focusStepId !== undefined && focusStepId !== null) focusDocumenterStep(focusStepId);
+      return;
+    }
+
     const hasCurrentData = current.steps.length > 0 || [current.caseId, current.description, current.team, current.tester]
       .some((value) => String(value || "").trim());
     if (hasCurrentData) {
@@ -30830,7 +31088,11 @@ var __async = (__this, __arguments, generator) => {
     renderDashboardNovedades(getActiveProjectCases());
     saveStateToDB();
     autosaveStatus.textContent = "✅ Caso abierto para continuar editándolo.";
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (focusStepId !== undefined && focusStepId !== null) {
+      focusDocumenterStep(focusStepId);
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   document.getElementById("addToBatchBtn").addEventListener("click", async () => {
