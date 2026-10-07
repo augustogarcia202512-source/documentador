@@ -1067,6 +1067,21 @@
     padding: 16px 18px 12px;
     border-bottom: 1px solid rgba(111, 126, 147, 0.16);
   }
+  .qa-cycle-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 18px 14px; }
+  .qa-cycle-toolbar label { color: #718096; font-size: 11px; font-weight: 700; }
+  .qa-cycle-toolbar select, .qa-cycle-form input { min-width: 0; min-height: 36px; padding: 7px 9px; border: 1px solid #d9e0e8; border-radius: 7px; background: #fff; color: #263445; font: 12px var(--sans); }
+  .qa-cycle-toolbar select { flex: 1 1 220px; }
+  .qa-cycle-toolbar button, .qa-cycle-form button { min-height: 36px; padding: 7px 10px; border: 1px solid #d9e0e8; border-radius: 7px; background: #fff; color: #263445; font-size: 11px; font-weight: 700; }
+  .qa-cycle-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 18px 14px; padding: 10px; border: 1px solid #d9e0e8; border-radius: 9px; background: rgba(255,255,255,.65); }
+  .qa-cycle-form[hidden] { display: none; }
+  .qa-cycle-form input { width: 100%; box-sizing: border-box; }
+  .qa-cycle-form .qa-cycle-form-actions { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: 8px; }
+  .qa-cycle-form .qa-cycle-form-save { background: #198f52; color: #fff; border-color: #168149; }
+  .qa-cycle-context { flex: 1 1 100%; color: #718096; font-size: 10px; }
+  @media (max-width: 560px) {
+    .qa-cycle-form { grid-template-columns: 1fr; }
+    .qa-cycle-form .qa-cycle-form-actions { grid-column: auto; }
+  }
   .qa-panel-chip {
     display: inline-flex;
     align-items: center;
@@ -1646,6 +1661,24 @@
             <span class="qa-panel-chip status-failed"><span class="qa-chip-dot"></span>Failed <span id="qaFailedCount">0</span></span>
             <span class="qa-panel-chip status-blocked"><span class="qa-chip-dot"></span>Blocked <span id="qaBlockedCount">0</span></span>
           </div>
+
+          <div class="qa-cycle-toolbar" id="qaCycleToolbar" aria-label="Ciclos de ejecución">
+            <label for="qaExecutionCycleSelect">Ciclo:</label>
+            <select id="qaExecutionCycleSelect" aria-label="Seleccionar ciclo de ejecución" hidden></select>
+            <button id="qaCreateCycleBtn" type="button">+ Nuevo ciclo</button>
+            <button id="qaCycleModeToggle" type="button" hidden>Activar ciclos</button>
+            <span class="qa-cycle-context" id="qaCycleContext"></span>
+          </div>
+          <form id="qaCycleForm" class="qa-cycle-form" hidden>
+            <input id="qaCycleName" type="text" maxlength="100" placeholder="Nombre del ciclo (ej.: Versión 2.4.1)" aria-label="Nombre del ciclo" required />
+            <input id="qaCycleVersion" type="text" maxlength="40" placeholder="Versión (opcional)" aria-label="Versión del ciclo" />
+            <input id="qaCycleEnvironment" type="text" maxlength="60" placeholder="Ambiente (opcional)" aria-label="Ambiente del ciclo" />
+            <input id="qaCycleTester" type="text" maxlength="100" placeholder="Ejecutado por (opcional)" aria-label="Responsable del ciclo" />
+            <div class="qa-cycle-form-actions">
+              <button id="qaCycleCancelBtn" type="button">Cancelar</button>
+              <button class="qa-cycle-form-save" type="submit">Crear ciclo</button>
+            </div>
+          </form>
 
           <div class="qa-panel-search">
             <input id="qaSuiteSearch" type="search" placeholder="Buscar suite" aria-label="Buscar suite" />
@@ -29809,6 +29842,10 @@ var __async = (__this, __arguments, generator) => {
     return `suite-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
 
+  function createQaCaseId() {
+    return `qa-case-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
   function createDefaultSuites() {
     return ["Login", "Pagos", "Carrito", "Reportes"].map((name) => ({
       id: createSuiteId(),
@@ -30020,7 +30057,38 @@ var __async = (__this, __arguments, generator) => {
     return savedCases.filter((item) => (item.projectId || projects[0]?.id) === activeProjectId);
   }
 
+  function createExecutionCycleId() {
+    return `cycle-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function getActiveExecutionCycle(project) {
+    const targetProject = project || projects.find((item) => item.id === activeProjectId);
+    if (!targetProject || !Array.isArray(targetProject.executionCycles)) return null;
+    return targetProject.executionCycles.find((cycle) => cycle.id === targetProject.activeExecutionCycleId) || null;
+  }
+
+  function getCaseCycleResult(caseRecord, cycle) {
+    const caseKey = caseRecord.qaId;
+    if (!cycle || !caseKey) return { status: "not-executed", history: [] };
+    const result = cycle.results?.[caseKey];
+    if (!result || typeof result !== "object") return { status: "not-executed", history: [] };
+    const validStatuses = ["pass", "not-executed", "in-progress", "failed", "blocked"];
+    return {
+      ...result,
+      status: validStatuses.includes(result.status) ? result.status : "not-executed",
+      history: Array.isArray(result.history) ? result.history : [],
+    };
+  }
+
   function getCaseExecutionStatus(caseRecord) {
+    const project = projects.find((item) => item.id === (caseRecord.projectId || projects[0]?.id));
+    if (project?.qaCyclesEnabled) {
+      return getCaseCycleResult(caseRecord, getActiveExecutionCycle(project)).status || "not-executed";
+    }
+    return getLegacyCaseExecutionStatus(caseRecord);
+  }
+
+  function getLegacyCaseExecutionStatus(caseRecord) {
     const savedStatus = ["pass", "not-executed", "in-progress", "failed", "blocked"];
     if (savedStatus.includes(caseRecord.executionStatus)) return caseRecord.executionStatus;
     const stepsForCase = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
@@ -30040,6 +30108,110 @@ var __async = (__this, __arguments, generator) => {
       failed: "Failed",
       blocked: "Blocked",
     }[status] || "Not Executed";
+  }
+
+  function renderQaCycleControls(project) {
+    const cycles = Array.isArray(project.executionCycles) ? project.executionCycles : [];
+    const cycleEnabled = project.qaCyclesEnabled === true && cycles.length > 0;
+    const cycleSelect = document.getElementById("qaExecutionCycleSelect");
+    const modeToggle = document.getElementById("qaCycleModeToggle");
+    const context = document.getElementById("qaCycleContext");
+    const activeCycle = getActiveExecutionCycle(project);
+
+    cycleSelect.innerHTML = cycles.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      .map((cycle) => `<option value="${escapeHtml(cycle.id)}">${escapeHtml(cycle.name)}</option>`).join("");
+    cycleSelect.hidden = !cycleEnabled;
+    cycleSelect.disabled = !cycleEnabled;
+    if (cycleEnabled && activeCycle) cycleSelect.value = activeCycle.id;
+    modeToggle.hidden = cycles.length === 0;
+    modeToggle.textContent = cycleEnabled ? "Volver al modo actual" : "Activar ciclos";
+    modeToggle.setAttribute("aria-pressed", String(cycleEnabled));
+    context.textContent = cycleEnabled && activeCycle
+      ? [activeCycle.version && `Versión ${activeCycle.version}`, activeCycle.environment, activeCycle.tester && `Ejecuta: ${activeCycle.tester}`]
+        .filter(Boolean).join(" · ")
+      : cycles.length
+        ? "Los ciclos se conservan; el modo actual muestra los estados habituales."
+        : "Crea ciclos independientes sin modificar los estados actuales.";
+  }
+
+  function bindQaCycleControls() {
+    const createButton = document.getElementById("qaCreateCycleBtn");
+    const cycleForm = document.getElementById("qaCycleForm");
+    const cycleName = document.getElementById("qaCycleName");
+    if (createButton.dataset.bound) return;
+    createButton.dataset.bound = "true";
+
+    createButton.addEventListener("click", () => {
+      cycleForm.hidden = false;
+      cycleName.focus();
+    });
+    document.getElementById("qaCycleCancelBtn").addEventListener("click", () => {
+      cycleForm.reset();
+      cycleForm.hidden = true;
+    });
+    cycleForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const project = projects.find((item) => item.id === activeProjectId);
+      const name = cycleName.value.trim();
+      if (!project || !name) return;
+
+      if (!Array.isArray(project.executionCycles)) project.executionCycles = [];
+      const cycle = {
+        id: createExecutionCycleId(),
+        name,
+        version: document.getElementById("qaCycleVersion").value.trim(),
+        environment: document.getElementById("qaCycleEnvironment").value.trim(),
+        tester: document.getElementById("qaCycleTester").value.trim(),
+        createdAt: Date.now(),
+        results: Object.fromEntries(getActiveProjectCases().map((caseRecord) => [
+          caseRecord.qaId,
+          { status: "not-executed", history: [] },
+        ])),
+      };
+      const previousActiveCycleId = project.activeExecutionCycleId;
+      const previousCyclesEnabled = project.qaCyclesEnabled;
+      project.executionCycles.push(cycle);
+      project.activeExecutionCycleId = cycle.id;
+      project.qaCyclesEnabled = true;
+      const saveButton = cycleForm.querySelector('[type="submit"]');
+      saveButton.disabled = true;
+      try {
+        if (!(await saveProjectsToDB())) {
+          project.executionCycles.pop();
+          project.activeExecutionCycleId = previousActiveCycleId;
+          project.qaCyclesEnabled = previousCyclesEnabled;
+          showTransientStatus("No se pudo guardar el ciclo. Inténtalo de nuevo.", 4000);
+          return;
+        }
+        cycleForm.reset();
+        cycleForm.hidden = true;
+        renderDashboard();
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+    document.getElementById("qaExecutionCycleSelect").addEventListener("change", async (event) => {
+      const project = projects.find((item) => item.id === activeProjectId);
+      if (!project?.executionCycles?.some((cycle) => cycle.id === event.target.value)) return;
+      const previousCycleId = project.activeExecutionCycleId;
+      project.activeExecutionCycleId = event.target.value;
+      if (!(await saveProjectsToDB())) {
+        project.activeExecutionCycleId = previousCycleId;
+        showTransientStatus("No se pudo guardar el ciclo seleccionado.", 4000);
+      }
+      renderDashboard();
+    });
+    document.getElementById("qaCycleModeToggle").addEventListener("click", async () => {
+      const project = projects.find((item) => item.id === activeProjectId);
+      if (!project?.executionCycles?.length) return;
+      const previousValue = project.qaCyclesEnabled === true;
+      project.qaCyclesEnabled = !previousValue;
+      if (!(await saveProjectsToDB())) {
+        project.qaCyclesEnabled = previousValue;
+        showTransientStatus("No se pudo cambiar el modo de estados.", 4000);
+      }
+      renderDashboard();
+    });
   }
 
   function openQaNewCaseDialog(opener) {
@@ -30093,6 +30265,7 @@ var __async = (__this, __arguments, generator) => {
       project.suites.push(suite);
     }
     const caseRecord = {
+      qaId: createQaCaseId(),
       projectId: activeProjectId,
       suiteId: suite.id,
       caseId,
@@ -30139,15 +30312,19 @@ var __async = (__this, __arguments, generator) => {
 
   function renderQaExecutionDialog(caseRecord) {
     if (!caseRecord) return;
-    const suite = projects.find((item) => item.id === activeProjectId)?.suites?.find((item) => item.id === caseRecord.suiteId);
+    const project = projects.find((item) => item.id === activeProjectId);
+    const suite = project?.suites?.find((item) => item.id === caseRecord.suiteId);
+    const cycle = project?.qaCyclesEnabled ? getActiveExecutionCycle(project) : null;
     document.getElementById("qaExecutionTitle").textContent = caseRecord.caseId || "Caso sin ID";
     document.getElementById("qaExecutionSubtitle").textContent =
-      `${caseRecord.description || "Caso de prueba"}${suite ? ` · ${suite.name}` : ""}`;
+      `${caseRecord.description || "Caso de prueba"}${suite ? ` · ${suite.name}` : ""}${cycle ? ` · ${cycle.name}` : ""}`;
     const currentStatus = getCaseExecutionStatus(caseRecord);
     document.querySelectorAll(".qa-execution-status").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.status === currentStatus));
     });
-    const history = Array.isArray(caseRecord.executionHistory) ? caseRecord.executionHistory : [];
+    const history = cycle
+      ? getCaseCycleResult(caseRecord, cycle).history
+      : Array.isArray(caseRecord.executionHistory) ? caseRecord.executionHistory : [];
     const historyContainer = document.getElementById("qaExecutionHistory");
     historyContainer.innerHTML = history.length
       ? history.slice().reverse().map((entry) => {
@@ -30190,15 +30367,35 @@ var __async = (__this, __arguments, generator) => {
     }
     const noteInput = document.getElementById("qaExecutionNote");
     const note = noteInput.value.trim();
-    if (!Array.isArray(caseRecord.executionHistory)) caseRecord.executionHistory = [];
-    const previousStatus = caseRecord.executionStatus;
-    const previousHistoryLength = caseRecord.executionHistory.length;
-    caseRecord.executionStatus = status;
-    caseRecord.executionHistory.push({ status, note, at: Date.now() });
-    const saved = await saveCasesToDB();
+    const project = projects.find((item) => item.id === (caseRecord.projectId || projects[0]?.id));
+    const cycle = project?.qaCyclesEnabled ? getActiveExecutionCycle(project) : null;
+    let rollback;
+    if (cycle) {
+      if (!cycle.results || typeof cycle.results !== "object") cycle.results = {};
+      const previousResult = cycle.results[caseRecord.qaId];
+      rollback = () => {
+        if (previousResult) cycle.results[caseRecord.qaId] = previousResult;
+        else delete cycle.results[caseRecord.qaId];
+      };
+      const currentResult = getCaseCycleResult(caseRecord, cycle);
+      cycle.results[caseRecord.qaId] = {
+        status,
+        history: [...currentResult.history, { status, note, at: Date.now() }],
+      };
+    } else {
+      if (!Array.isArray(caseRecord.executionHistory)) caseRecord.executionHistory = [];
+      const previousStatus = caseRecord.executionStatus;
+      const previousHistoryLength = caseRecord.executionHistory.length;
+      rollback = () => {
+        caseRecord.executionStatus = previousStatus;
+        caseRecord.executionHistory.length = previousHistoryLength;
+      };
+      caseRecord.executionStatus = status;
+      caseRecord.executionHistory.push({ status, note, at: Date.now() });
+    }
+    const saved = cycle ? await saveProjectsToDB() : await saveCasesToDB();
     if (!saved) {
-      caseRecord.executionStatus = previousStatus;
-      caseRecord.executionHistory.length = previousHistoryLength;
+      rollback();
       renderQaExecutionDialog(caseRecord);
       document.getElementById("qaExecutionHistory").insertAdjacentHTML(
         "beforeend",
@@ -30215,6 +30412,8 @@ var __async = (__this, __arguments, generator) => {
   function renderQaPanel() {
     const project = projects.find((item) => item.id === activeProjectId);
     if (!project) return;
+    bindQaCycleControls();
+    renderQaCycleControls(project);
     const suites = Array.isArray(project.suites) ? project.suites : [];
     const projectCases = getActiveProjectCases();
     const counts = { pass: 0, "not-executed": 0, "in-progress": 0, failed: 0, blocked: 0 };
@@ -30623,16 +30822,27 @@ var __async = (__this, __arguments, generator) => {
         project.suites = createDefaultSuites();
         migratedSuites = true;
       }
+      if (!Array.isArray(project.executionCycles)) {
+        project.executionCycles = [];
+        migratedSuites = true;
+      }
+      if (project.qaCyclesEnabled !== true) project.qaCyclesEnabled = false;
     });
     if (migratedSuites) await saveProjectsToDB();
     const savedProjectId = localStorage.getItem("activeDashboardProject");
     activeProjectId = projects.some((project) => project.id === savedProjectId) ? savedProjectId : projects[0].id;
     let migratedCases = false;
+    const seenQaIds = new Set();
     savedCases.forEach((item) => {
       if (!item.projectId || !projects.some((project) => project.id === item.projectId)) {
         item.projectId = projects[0].id;
         migratedCases = true;
       }
+      if (!item.qaId || seenQaIds.has(item.qaId)) {
+        item.qaId = createQaCaseId();
+        migratedCases = true;
+      }
+      seenQaIds.add(item.qaId);
     });
     if (migratedCases) await saveCasesToDB();
     document.body.classList.add("dashboard-view");
@@ -30849,7 +31059,8 @@ var __async = (__this, __arguments, generator) => {
   }
 
   function getCaseStatusSummary(caseRecord) {
-    if (["pass", "not-executed", "in-progress", "failed", "blocked"].includes(caseRecord.executionStatus)) {
+    const executionStatus = getCaseExecutionStatus(caseRecord);
+    if (["pass", "not-executed", "in-progress", "failed", "blocked"].includes(executionStatus)) {
       const labels = {
         pass: "Pass",
         "not-executed": "Not Executed",
@@ -30858,8 +31069,8 @@ var __async = (__this, __arguments, generator) => {
         blocked: "Blocked",
       };
       return {
-        label: labels[caseRecord.executionStatus],
-        className: caseRecord.executionStatus === "not-executed" ? "empty" : caseRecord.executionStatus,
+        label: labels[executionStatus],
+        className: executionStatus === "not-executed" ? "empty" : executionStatus,
       };
     }
     const steps = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
@@ -30998,6 +31209,7 @@ var __async = (__this, __arguments, generator) => {
     const source = savedCases[safeIndex];
     if (!source || !Number.isInteger(safeIndex) || safeIndex < 0 || safeIndex >= savedCases.length) return;
     const duplicate = dualCaseRecord(source, `${buildCaseRecordTitle(source)} copia`);
+    duplicate.qaId = createQaCaseId();
     savedCases.splice(safeIndex + 1, 0, duplicate);
     renderCasesList();
     renderDashboard();
@@ -31113,6 +31325,9 @@ var __async = (__this, __arguments, generator) => {
       if (!proceed) return;
     }
     const updatedCase = {
+      qaId: editingCaseIndex !== null && savedCases[editingCaseIndex]
+        ? savedCases[editingCaseIndex].qaId || createQaCaseId()
+        : createQaCaseId(),
       projectId: getSelectedProjectId(),
       ...(currentSuiteId ? { suiteId: currentSuiteId } : {}),
       caseId,
