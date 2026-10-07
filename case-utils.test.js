@@ -11,6 +11,7 @@ const {
   getClipboardFallbackMessage,
   dualCaseRecord,
   buildCaseRecordTitle,
+  parseQaCaseImportRows,
 } = require('./case-utils.js');
 
 test('normalizeStepStatus returns a valid fallback', () => {
@@ -120,4 +121,27 @@ test('buildCaseRecordTitle keeps the label readable with and without an ID', () 
   assert.equal(buildCaseRecordTitle({ caseId: 'CP-001', description: 'Validar login' }), 'CP-001 · Validar login');
   assert.equal(buildCaseRecordTitle({ description: 'Validar login' }), 'Validar login');
   assert.equal(buildCaseRecordTitle({}), 'Caso sin ID');
+});
+
+test('parseQaCaseImportRows parses tab-separated Excel rows and an optional header', () => {
+  const parsed = parseQaCaseImportRows('ID\tNombre\tSuite\nTC-101\tLogin válido\tLogin\nTC-102\tValidar pagos\tPagos');
+
+  assert.equal(parsed.hasHeader, true);
+  assert.deepEqual(parsed.errors, []);
+  assert.deepEqual(parsed.rows, [
+    { row: 2, caseId: 'TC-101', description: 'Login válido', suiteName: 'Login' },
+    { row: 3, caseId: 'TC-102', description: 'Validar pagos', suiteName: 'Pagos' },
+  ]);
+});
+
+test('parseQaCaseImportRows supports CSV quoted commas and reports invalid rows', () => {
+  const parsed = parseQaCaseImportRows('TC-101,"Login, válido",Login\nTC-102,,Pagos\nTC-103,Otro,Pagos,Extra');
+
+  assert.deepEqual(parsed.rows, [
+    { row: 1, caseId: 'TC-101', description: 'Login, válido', suiteName: 'Login' },
+  ]);
+  assert.deepEqual(parsed.errors, [
+    'Línea 2: el ID y el nombre del caso son obligatorios.',
+    'Línea 3: se esperaban 2 o 3 columnas (ID, Nombre y Suite).',
+  ]);
 });

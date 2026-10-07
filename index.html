@@ -1121,13 +1121,6 @@
     padding: 0 12px;
     color: #6b7280;
   }
-  .qa-search-slash {
-    font: 700 15px/1 var(--mono);
-    color: #7d8da3;
-    padding: 0 4px;
-    border-radius: 4px;
-    background: rgba(135, 146, 162, 0.08);
-  }
   .qa-panel-search input {
     flex: 1;
     border: none;
@@ -1360,9 +1353,72 @@
   .qa-new-case-actions button { min-height: 43px; border-radius: 8px; font-weight: 800; }
   .qa-new-case-save { background: #198f52; color: #fff; border-color: #168149; }
   .qa-new-case-save:disabled { opacity: .6; cursor: wait; }
+  #qaBulkImportOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1302;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(10,14,20,.58);
+    backdrop-filter: blur(3px);
+  }
+  .qa-bulk-import-panel {
+    width: min(720px, 100%);
+    max-height: min(90vh, 620px);
+    overflow: auto;
+    padding: 20px;
+    border: 1px solid rgba(125,141,163,.22);
+    border-radius: 16px;
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 24px 70px rgba(8,13,22,.35);
+  }
+  .qa-bulk-import-title { margin: 0; color: var(--text); font-size: 18px; font-weight: 800; }
+  .qa-bulk-import-help { margin: 5px 0 12px; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+  .qa-bulk-import-format {
+    display: block;
+    margin: 0 0 7px;
+    color: var(--text-faint);
+    font: 10px var(--mono);
+    overflow-wrap: anywhere;
+  }
+  #qaBulkImportText {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 190px;
+    resize: vertical;
+    padding: 12px;
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    background: var(--panel-2);
+    color: var(--text);
+    font: 12px/1.6 var(--mono);
+  }
+  #qaBulkImportText:focus {
+    outline: none;
+    border-color: rgba(200,61,50,.62);
+    box-shadow: 0 0 0 3px rgba(200,61,50,.12);
+  }
+  .qa-bulk-import-error { min-height: 18px; margin: 8px 0 0; color: #df625a; font-size: 11px; white-space: pre-line; }
+  .qa-bulk-import-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
+  .qa-bulk-import-actions button { min-height: 43px; border-radius: 9px; font-weight: 800; }
+  .qa-bulk-import-submit { border-color: #168149; background: linear-gradient(135deg,#24a25e,#168149); color: #fff; }
+  .qa-bulk-import-submit:disabled { opacity: .6; cursor: wait; }
   @media (max-width: 560px) {
     #qaNewCaseOverlay { padding: 0; }
     .qa-new-case-panel { padding: 14px; }
+    #qaBulkImportOverlay { padding: 10px; }
+    .qa-bulk-import-panel { padding: 15px; border-radius: 14px; }
+    #qaBulkImportText { min-height: 40vh; }
+  }
+  @media (max-height: 520px) {
+    .qa-bulk-import-panel { padding: 14px; }
+    .qa-bulk-import-help { margin-bottom: 8px; }
+    #qaBulkImportText { min-height: 96px; }
+    .qa-bulk-import-actions button { min-height: 38px; }
   }
   .qa-execution-panel {
     width: min(710px, 100%);
@@ -1838,6 +1894,232 @@
   .dashboard-novelty-image { border-radius: 8px; }
   .dashboard-novelty-open { font-weight: 700; transition: background .16s ease, border-color .16s ease; }
   .dashboard-novelty-open:hover { border-color: rgba(200,61,50,.38); background: rgba(200,61,50,.08); }
+  .dashboard-card-heading {
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(125,141,163,.14);
+  }
+  .dashboard-card-heading strong { color: var(--text); font-size: 13px; letter-spacing: -.01em; }
+  .dashboard-card-heading > span {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    border: 1px solid rgba(125,141,163,.15);
+    border-radius: 999px;
+    background: rgba(125,141,163,.07);
+  }
+  .dashboard-grid-two .dashboard-card,
+  .dashboard-content > .dashboard-card {
+    background:
+      radial-gradient(280px 150px at 100% 0%, rgba(57,141,202,.055), transparent 76%),
+      linear-gradient(145deg, var(--panel), var(--bg-soft));
+  }
+  .dashboard-progress-row {
+    grid-template-columns: 82px minmax(0, 1fr) 42px;
+    gap: 11px;
+    margin-top: 17px;
+    font-size: 11px;
+  }
+  .dashboard-progress-row > span:first-child { font-weight: 650; }
+  .dashboard-progress-row > strong {
+    color: var(--text);
+    font: 800 11px var(--mono);
+    text-align: right;
+  }
+  .dashboard-progress-track {
+    height: 9px;
+    border: 1px solid rgba(125,141,163,.11);
+    background: rgba(125,141,163,.13);
+    box-shadow: inset 0 1px 2px rgba(10,18,28,.08);
+  }
+  .dashboard-progress-fill { background: linear-gradient(90deg, #50a9df, #347fbd); }
+  .dashboard-progress-fill.approved { background: linear-gradient(90deg, #47c487, #218f59); }
+  .dashboard-progress-fill.failed { background: linear-gradient(90deg, #f17e70, #cd493f); }
+  .dashboard-team-list,
+  .dashboard-recent-list { gap: 9px; }
+  .dashboard-team-chip,
+  .dashboard-recent-item {
+    position: relative;
+    overflow: hidden;
+    min-height: 52px;
+    padding: 10px 12px;
+    border-color: rgba(125,141,163,.16);
+    border-radius: 11px;
+    background: linear-gradient(110deg, rgba(125,141,163,.075), rgba(125,141,163,.025));
+    transition: transform .16s ease, border-color .16s ease, background .16s ease;
+  }
+  .dashboard-team-chip:hover,
+  .dashboard-recent-item:hover {
+    transform: translateY(-1px);
+    border-color: rgba(200,61,50,.24);
+    background: linear-gradient(110deg, rgba(200,61,50,.07), rgba(125,141,163,.035));
+  }
+  .dashboard-avatar {
+    flex-basis: 34px;
+    height: 34px;
+    border: 1px solid rgba(200,61,50,.15);
+    background: linear-gradient(145deg, rgba(245,119,96,.22), rgba(200,61,50,.1));
+    box-shadow: 0 2px 6px rgba(24,34,48,.07);
+    font-size: 11px;
+  }
+  .dashboard-team-chip > span:last-child { min-width: 0; }
+  .dashboard-team-chip strong,
+  .dashboard-recent-item strong { color: var(--text); font-size: 11px; }
+  .dashboard-team-chip small,
+  .dashboard-recent-item small { font-size: 10px; line-height: 1.35; }
+  .dashboard-recent-item { min-height: 60px; gap: 12px; }
+  .dashboard-recent-meta { display: block; flex: 1; }
+  .dashboard-status-pill {
+    max-width: 130px;
+    padding: 5px 8px;
+    border: 1px solid rgba(125,141,163,.16);
+    background: rgba(125,141,163,.09);
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 750;
+    text-align: center;
+  }
+  .dashboard-case-toolbar.qa-panel-search {
+    min-height: 42px;
+    margin-top: 13px;
+    margin-bottom: 11px;
+    border-radius: 10px;
+    background: var(--panel-2);
+  }
+  .dashboard-backup-actions button {
+    min-height: 34px;
+    border-radius: 8px;
+    font-weight: 700;
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .dashboard-backup-actions button:hover { transform: translateY(-1px); border-color: rgba(200,61,50,.32); }
+  .dashboard-case-table-wrap {
+    overflow: auto;
+    border: 1px solid rgba(125,141,163,.2);
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: 0 3px 10px rgba(24,34,48,.035);
+  }
+  .dashboard-case-table {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .dashboard-case-table th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    background: rgba(125,141,163,.075);
+    color: var(--text-muted);
+  }
+  .dashboard-case-table td { font-size: 11px; }
+  .dashboard-case-table tbody tr { transition: background .14s ease; }
+  .dashboard-case-table tbody tr:hover { background: rgba(125,141,163,.065); }
+  .dashboard-case-table .case-title { color: var(--text); }
+  .dashboard-case-table .case-actions button {
+    min-height: 29px;
+    border-radius: 7px;
+    font-weight: 700;
+    transition: transform .14s ease, border-color .14s ease, background .14s ease;
+  }
+  .dashboard-case-table .case-actions button:hover { transform: translateY(-1px); border-color: rgba(200,61,50,.3); }
+  .dashboard-case-table .status-pill {
+    padding: 5px 8px;
+    border: 1px solid rgba(125,141,163,.13);
+    font-family: var(--sans);
+  }
+  .dashboard-novedades-section {
+    border-color: rgba(200,61,50,.2);
+    background:
+      radial-gradient(420px 200px at 100% 0%, rgba(200,61,50,.055), transparent 78%),
+      linear-gradient(145deg, var(--panel), var(--bg-soft));
+  }
+  .dashboard-novedades-section .dashboard-card-heading > span {
+    border-color: rgba(200,61,50,.2);
+    background: rgba(200,61,50,.09);
+    color: var(--text);
+    font-weight: 750;
+  }
+  .dashboard-novelty-filters {
+    padding: 10px;
+    border: 1px solid rgba(125,141,163,.13);
+    border-radius: 11px;
+    background: rgba(125,141,163,.045);
+  }
+  .dashboard-novelty-filters input,
+  .dashboard-novelty-filters select {
+    height: 37px;
+    border-radius: 9px;
+    background: var(--panel);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .dashboard-novelty-filters input:focus,
+  .dashboard-novelty-filters select:focus,
+  .dashboard-case-toolbar input:focus {
+    outline: none;
+    border-color: rgba(200,61,50,.55);
+    box-shadow: 0 0 0 3px rgba(200,61,50,.11);
+  }
+  .dashboard-novelty-results { margin-top: 11px; font-size: 10.5px; }
+  .dashboard-novelty-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 12px; }
+  .dashboard-novelty-card {
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 12px;
+    min-height: 124px;
+    padding: 11px;
+    border-left-width: 4px;
+    border-radius: 12px;
+  }
+  .dashboard-novelty-card:not(:has(.dashboard-novelty-image)) { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-novelty-card.sev-alta { border-color: var(--line-soft); border-left-color: #da5148; }
+  .dashboard-novelty-card.sev-media { border-color: var(--line-soft); border-left-color: #d9952f; }
+  .dashboard-novelty-card.sev-baja { border-color: var(--line-soft); border-left-color: #39a88e; }
+  .dashboard-novelty-image { width: 110px; height: 100%; min-height: 98px; }
+  .dashboard-novelty-image:focus-visible,
+  .dashboard-novelty-open:focus-visible,
+  .dashboard-case-table button:focus-visible,
+  .dashboard-backup-actions button:focus-visible {
+    outline: 2px solid #ed6657;
+    outline-offset: 2px;
+  }
+  .dashboard-novelty-meta { gap: 6px; }
+  .dashboard-novelty-badge,
+  .dashboard-novelty-status { padding: 4px 7px; font-weight: 750; }
+  .dashboard-novelty-case { font-size: 11px; }
+  .dashboard-novelty-comment { font-size: 10.5px; line-height: 1.5; }
+  .dashboard-novelty-open {
+    min-height: 28px;
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-weight: 750;
+  }
+  .dashboard-empty,
+  .dashboard-case-empty,
+  .dashboard-novelty-empty {
+    border: 1px dashed rgba(125,141,163,.22);
+    border-radius: 10px;
+    background: rgba(125,141,163,.035);
+    line-height: 1.55;
+  }
+  @media (max-width: 760px) {
+    .dashboard-novelty-filters { padding: 8px; }
+  }
+  @media (max-width: 560px) {
+    .dashboard-card { padding: 14px; }
+    .dashboard-grid-two { gap: 11px; }
+    .dashboard-progress-row { grid-template-columns: 74px minmax(0, 1fr) 38px; gap: 8px; }
+    .dashboard-novelty-card { grid-template-columns: 86px minmax(0, 1fr); gap: 9px; padding: 9px; }
+    .dashboard-novelty-image { width: 86px; }
+    .dashboard-case-toolbar { gap: 6px; }
+    .dashboard-case-table th, .dashboard-case-table td { padding: 9px 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dashboard-team-chip,
+    .dashboard-recent-item,
+    .dashboard-backup-actions button,
+    .dashboard-case-table tbody tr,
+    .dashboard-case-table .case-actions button,
+    .dashboard-novelty-filters input,
+    .dashboard-novelty-filters select { transition: none; }
+  }
   .dashboard-case-table-wrap,
   .dashboard-card,
   .dashboard-novelty-card { backdrop-filter: blur(8px); }
@@ -1986,11 +2268,9 @@
           <section class="qa-suite-detail" id="qaSuiteDetail" aria-label="Detalle de suite" hidden>
             <div class="qa-suite-detail-nav">
               <button class="qa-suite-back" id="qaSuiteBackBtn" type="button" aria-label="Volver a las suites">←</button>
-              <span>/</span>
               <strong id="qaSuiteDetailName"></strong>
             </div>
             <div class="qa-panel-search">
-              <span class="qa-search-slash">/</span>
               <input id="qaCaseSearch" type="search" placeholder="Buscar caso por ID o nombre" aria-label="Buscar caso por ID o nombre" />
             </div>
             <form class="qa-suite-edit-form" id="qaSuiteEditForm" hidden>
@@ -2006,7 +2286,7 @@
           </section>
 
           <div class="qa-panel-actions">
-            <button class="qa-panel-action" type="button">Importar casos</button>
+            <button class="qa-panel-action" id="qaBulkImportOpenBtn" type="button">Importar casos</button>
             <button class="qa-panel-action" type="button">Copiar CSV</button>
             <button class="qa-panel-action" type="button">Reiniciar estados</button>
           </div>
@@ -2146,6 +2426,19 @@
             <button class="qa-new-case-save" id="qaNewCaseSave" type="submit">Guardar</button>
           </div>
         </form>
+      </section>
+    </div>
+    <div id="qaBulkImportOverlay" role="dialog" aria-modal="true" aria-labelledby="qaBulkImportTitle">
+      <section class="qa-bulk-import-panel">
+        <h2 class="qa-bulk-import-title" id="qaBulkImportTitle">Importar casos</h2>
+        <p class="qa-bulk-import-help">Copia desde Excel y pega aquí una fila por caso. Se agregarán los casos sin reemplazar los que ya existen.</p>
+        <label class="qa-bulk-import-format" for="qaBulkImportText">Columnas: ID · Nombre · Suite (puedes incluir encabezados)</label>
+        <textarea id="qaBulkImportText" spellcheck="false" placeholder="TC-101&#9;Login válido&#9;Login&#10;TC-102&#9;Clave errónea&#9;Login"></textarea>
+        <p class="qa-bulk-import-error" id="qaBulkImportError" role="alert" aria-live="polite"></p>
+        <div class="qa-bulk-import-actions">
+          <button class="btn-secondary" id="qaBulkImportCancelBtn" type="button">Cancelar</button>
+          <button class="qa-bulk-import-submit" id="qaBulkImportSubmitBtn" type="button">Importar</button>
+        </div>
       </section>
     </div>
   </section>
@@ -30527,6 +30820,120 @@ var __async = (__this, __arguments, generator) => {
     if (overlay.style.display !== "none") closeOverlay(overlay);
   }
 
+  function openQaBulkImportDialog(opener) {
+    const overlay = document.getElementById("qaBulkImportOverlay");
+    document.getElementById("qaBulkImportText").value = "";
+    document.getElementById("qaBulkImportError").textContent = "";
+    openOverlay(overlay, {
+      opener,
+      display: "flex",
+      initialFocus: document.getElementById("qaBulkImportText"),
+      onEscape: closeQaBulkImportDialog,
+    });
+  }
+
+  function closeQaBulkImportDialog() {
+    const overlay = document.getElementById("qaBulkImportOverlay");
+    if (overlay.style.display !== "none") closeOverlay(overlay);
+  }
+
+  async function importQaCasesFromText() {
+    const project = projects.find((item) => item.id === activeProjectId);
+    const input = document.getElementById("qaBulkImportText");
+    const error = document.getElementById("qaBulkImportError");
+    const importButton = document.getElementById("qaBulkImportSubmitBtn");
+    if (!project) {
+      error.textContent = "No hay un proyecto seleccionado para importar los casos.";
+      return;
+    }
+
+    const parsed = caseUtils.parseQaCaseImportRows(input.value);
+    const issues = parsed.errors.slice();
+    const selectedSuite = project.suites?.find((suite) => suite.id === activeSuiteId);
+    const existingIds = new Set(getActiveProjectCases()
+      .map((item) => String(item.caseId || "").trim().toLocaleLowerCase())
+      .filter(Boolean));
+    const importIds = new Set();
+    const preparedRows = parsed.rows.map((row) => {
+      const suiteName = row.suiteName || selectedSuite?.name || "";
+      if (!suiteName) issues.push(`Línea ${row.row}: indica la suite en la tercera columna.`);
+      if (suiteName.length > 60) issues.push(`Línea ${row.row}: el nombre de la suite supera los 60 caracteres.`);
+      if (row.caseId.length > 80) issues.push(`Línea ${row.row}: el ID supera los 80 caracteres.`);
+      if (row.description.length > 240) issues.push(`Línea ${row.row}: el nombre supera los 240 caracteres.`);
+      const normalizedId = row.caseId.toLocaleLowerCase();
+      if (existingIds.has(normalizedId)) issues.push(`Línea ${row.row}: ya existe el ID "${row.caseId}" en este proyecto.`);
+      if (importIds.has(normalizedId)) issues.push(`Línea ${row.row}: el ID "${row.caseId}" está repetido en el listado.`);
+      importIds.add(normalizedId);
+      return { ...row, suiteName };
+    });
+
+    if (issues.length) {
+      error.textContent = issues.join("\n");
+      return;
+    }
+
+    const previousSuites = Array.isArray(project.suites) ? project.suites.slice() : [];
+    if (!Array.isArray(project.suites)) project.suites = [];
+    const suitesByName = new Map(project.suites.map((suite) => [suite.name.trim().toLocaleLowerCase(), suite]));
+    const importedCases = preparedRows.map((row) => {
+      const normalizedSuiteName = row.suiteName.toLocaleLowerCase();
+      let suite = suitesByName.get(normalizedSuiteName);
+      if (!suite) {
+        suite = { id: createSuiteId(), name: row.suiteName, createdAt: Date.now() };
+        project.suites.push(suite);
+        suitesByName.set(normalizedSuiteName, suite);
+      }
+      return {
+        qaId: createQaCaseId(),
+        projectId: activeProjectId,
+        suiteId: suite.id,
+        caseId: row.caseId,
+        description: row.description,
+        team: "",
+        tester: "",
+        templateKey: DEFAULT_TEMPLATE_KEY,
+        qaContext: {},
+        previewEditedHtml: "",
+        documentNotes: "",
+        fecha: new Date().toLocaleDateString("es-CO"),
+        savedAt: Date.now(),
+        steps: [],
+        executionStatus: "not-executed",
+        executionHistory: [],
+      };
+    });
+
+    importButton.disabled = true;
+    try {
+      const suitesChanged = project.suites.length !== previousSuites.length;
+      if (suitesChanged && !(await saveProjectsToDB())) {
+        project.suites = previousSuites;
+        error.textContent = "No se pudieron guardar las suites. No se importó ningún caso.";
+        return;
+      }
+      savedCases.push(...importedCases);
+      if (!(await saveCasesToDB())) {
+        const importedIds = new Set(importedCases.map((item) => item.qaId));
+        savedCases = savedCases.filter((item) => !importedIds.has(item.qaId));
+        project.suites = previousSuites;
+        if (suitesChanged && !(await saveProjectsToDB())) {
+          console.error("No se pudieron revertir las suites después de fallar la importación.");
+        }
+        error.textContent = "No se pudieron guardar los casos. No se completó la importación.";
+        return;
+      }
+      closeQaBulkImportDialog();
+      renderDashboard();
+      renderCasesList();
+      showTransientStatus(`Se importaron ${importedCases.length} casos correctamente.`, 4500);
+    } catch (importError) {
+      console.error("No se pudieron importar los casos:", importError);
+      error.textContent = `No se pudieron importar los casos. ${importError.message || "Inténtalo nuevamente."}`;
+    } finally {
+      importButton.disabled = false;
+    }
+  }
+
   async function saveNewQaCase(event) {
     event.preventDefault();
     const project = projects.find((item) => item.id === activeProjectId);
@@ -31317,6 +31724,14 @@ var __async = (__this, __arguments, generator) => {
     });
     document.getElementById("qaAddCaseBtn").addEventListener("click", (event) => {
       openQaNewCaseDialog(event.currentTarget);
+    });
+    document.getElementById("qaBulkImportOpenBtn").addEventListener("click", (event) => {
+      openQaBulkImportDialog(event.currentTarget);
+    });
+    document.getElementById("qaBulkImportCancelBtn").addEventListener("click", closeQaBulkImportDialog);
+    document.getElementById("qaBulkImportSubmitBtn").addEventListener("click", importQaCasesFromText);
+    document.getElementById("qaBulkImportOverlay").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeQaBulkImportDialog();
     });
     document.getElementById("qaNewCaseForm").addEventListener("submit", saveNewQaCase);
     document.getElementById("qaNewCaseCancel").addEventListener("click", closeQaNewCaseDialog);

@@ -253,6 +253,60 @@
     return parts.length ? parts.join(" · ") : "Caso sin ID";
   }
 
+  function parseQaCaseImportRows(value) {
+    const lines = String(value || "").replace(/^\uFEFF/, "").split(/\r\n?|\n/);
+    const firstLine = lines.find((line) => line.trim());
+    if (!firstLine) return { rows: [], errors: ["Pega al menos un caso para importar."] };
+
+    const delimiter = firstLine.includes("\t") ? "\t" : firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
+    const rows = [];
+    const errors = [];
+    let hasHeader = false;
+
+    lines.forEach((line, index) => {
+      if (!line.trim()) return;
+      const cells = [];
+      let cell = "";
+      let quoted = false;
+      for (let position = 0; position < line.length; position += 1) {
+        const character = line[position];
+        if (character === '"') {
+          if (quoted && line[position + 1] === '"') {
+            cell += '"';
+            position += 1;
+          } else {
+            quoted = !quoted;
+          }
+        } else if (character === delimiter && !quoted) {
+          cells.push(cell.trim());
+          cell = "";
+        } else {
+          cell += character;
+        }
+      }
+      cells.push(cell.trim());
+
+      if (index === lines.findIndex((item) => item.trim())) {
+        const firstCell = cells[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
+        hasHeader = ["id", "id caso", "case id", "caseid"].includes(firstCell);
+        if (hasHeader) return;
+      }
+
+      if (cells.length < 2 || cells.length > 3) {
+        errors.push(`Línea ${index + 1}: se esperaban 2 o 3 columnas (ID, Nombre y Suite).`);
+        return;
+      }
+      if (!cells[0] || !cells[1]) {
+        errors.push(`Línea ${index + 1}: el ID y el nombre del caso son obligatorios.`);
+        return;
+      }
+      rows.push({ row: index + 1, caseId: cells[0], description: cells[1], suiteName: cells[2] || "" });
+    });
+
+    if (!rows.length && !errors.length) errors.push("No se encontraron casos para importar.");
+    return { rows, errors, hasHeader };
+  }
+
   const api = {
     CASE_TEMPLATES,
     STEP_STATUS_VALUES,
@@ -268,6 +322,7 @@
     getClipboardFallbackMessage,
     dualCaseRecord,
     buildCaseRecordTitle,
+    parseQaCaseImportRows,
   };
 
   if (typeof module !== "undefined" && module.exports) {
