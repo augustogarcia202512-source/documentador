@@ -30388,7 +30388,7 @@ var __async = (__this, __arguments, generator) => {
     image.loading = "lazy";
     image.decoding = "async";
     image.addEventListener("load", () => cacheStepThumbnail(step, image), { once: true });
-    image.src = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
+    image.src = step.renderedDataUrl || step.dataUrl || step.thumbnailDataUrl || "";
   }
 
   function cacheStepThumbnail(step, image) {
@@ -30396,7 +30396,6 @@ var __async = (__this, __arguments, generator) => {
     const thumbnailDataUrl = createStepThumbnail(image);
     if (!thumbnailDataUrl) return;
     step.thumbnailDataUrl = thumbnailDataUrl;
-    image.src = thumbnailDataUrl;
     autosave();
     if (editingCaseIndex !== null) {
       const savedStep = savedCases[editingCaseIndex]?.steps?.find((item) => String(item.id) === String(step.id));
