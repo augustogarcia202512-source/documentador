@@ -27734,6 +27734,7 @@ var __async = (__this, __arguments, generator) => {
   // No interfiere con pegar texto normal en los campos: solo actúa si el
   // portapapeles trae específicamente una imagen.
   function handlePasteEvent(e) {
+    if (isTypingTarget(e.target)) return;
     const clipboardData = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
     if (!clipboardData || !clipboardData.items) return;
     let imageItem = null;
