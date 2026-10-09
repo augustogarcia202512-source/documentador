@@ -33,6 +33,23 @@
     return STEP_STATUS_VALUES.includes(normalized) ? normalized : "pendiente";
   }
 
+  function getLegacyCaseExecutionStatus(caseRecord = {}) {
+    const validStatuses = ["pass", "not-executed", "in-progress", "failed", "blocked"];
+    const savedStatus = caseRecord.executionStatus;
+    const hasExecutionHistory = Array.isArray(caseRecord.executionHistory) && caseRecord.executionHistory.length > 0;
+    if (validStatuses.includes(savedStatus) && (savedStatus !== "not-executed" || hasExecutionHistory)) {
+      return savedStatus;
+    }
+
+    const steps = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
+    if (!steps.length) return validStatuses.includes(savedStatus) ? savedStatus : "not-executed";
+    const statuses = steps.map((step) => normalizeStepStatus(step?.stepStatus || step?.status));
+    if (statuses.includes("fallo")) return "failed";
+    if (statuses.every((status) => status === "aprobado")) return "pass";
+    if (statuses.some((status) => status !== "pendiente")) return "in-progress";
+    return validStatuses.includes(savedStatus) ? savedStatus : "not-executed";
+  }
+
   function getStepStatusLabel(status) {
     switch (normalizeStepStatus(status)) {
       case "aprobado": return "✅ Aprobado";
@@ -307,10 +324,46 @@
     return { rows, errors, hasHeader };
   }
 
+  function parseQaCaseIdAndDescription(input) {
+    const value = String(input || "").trim();
+    const match = value.match(/^(\S+)\s+(.+?)\s*$/);
+    if (!match) {
+      return {
+        caseId: "",
+        description: "",
+        error: "Escribe el ID seguido de la descripción, por ejemplo: TC-1 Login incorrecto.",
+      };
+    }
+    return { caseId: match[1], description: match[2], error: "" };
+  }
+
+  function buildIssueLogEntries(caseRecords = []) {
+    return caseRecords.flatMap((caseRecord) => {
+      const steps = Array.isArray(caseRecord?.steps) ? caseRecord.steps : [];
+      const relevantSteps = steps
+        .map((step, index) => ({ step, index }))
+        .filter(({ step }) =>
+          step &&
+          (
+            normalizeStepStatus(step.stepStatus || step.status) === "fallo" ||
+            getStepSeverity(step)
+          )
+        );
+      return relevantSteps.length ? [{ caseRecord, steps: relevantSteps }] : [];
+    });
+  }
+
+  function getStepSeverity(step) {
+    const severity = typeof step?.severity === "string" ? step.severity.trim().toLowerCase() : "";
+    if (["alta", "media", "baja"].includes(severity)) return severity;
+    return step?.novedad === true ? "alta" : null;
+  }
+
   const api = {
     CASE_TEMPLATES,
     STEP_STATUS_VALUES,
     normalizeStepStatus,
+    getLegacyCaseExecutionStatus,
     normalizeDocumentNotes,
     buildDocumentNotesLines,
     normalizePreviewText,
@@ -323,6 +376,9 @@
     dualCaseRecord,
     buildCaseRecordTitle,
     parseQaCaseImportRows,
+    parseQaCaseIdAndDescription,
+    buildIssueLogEntries,
+    getStepSeverity,
   };
 
   if (typeof module !== "undefined" && module.exports) {

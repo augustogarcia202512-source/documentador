@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   normalizeStepStatus,
+  getLegacyCaseExecutionStatus,
   buildCaseSummary,
   buildDocumentNotesLines,
   extractCaseFieldsFromPreviewText,
@@ -12,12 +13,40 @@ const {
   dualCaseRecord,
   buildCaseRecordTitle,
   parseQaCaseImportRows,
+  parseQaCaseIdAndDescription,
+  buildIssueLogEntries,
 } = require('./case-utils.js');
 
 test('normalizeStepStatus returns a valid fallback', () => {
   assert.equal(normalizeStepStatus('aprobado'), 'aprobado');
   assert.equal(normalizeStepStatus('desconocido'), 'pendiente');
   assert.equal(normalizeStepStatus(undefined), 'pendiente');
+});
+
+test('getLegacyCaseExecutionStatus derives failed steps when the case only has its default status', () => {
+  assert.equal(getLegacyCaseExecutionStatus({
+    executionStatus: 'not-executed',
+    executionHistory: [],
+    steps: [{ stepStatus: 'fallo' }],
+  }), 'failed');
+  assert.equal(getLegacyCaseExecutionStatus({
+    executionStatus: 'not-executed',
+    executionHistory: [],
+    steps: [{ stepStatus: 'aprobado' }, { stepStatus: 'pendiente' }],
+  }), 'in-progress');
+});
+
+test('getLegacyCaseExecutionStatus preserves explicitly recorded execution choices', () => {
+  assert.equal(getLegacyCaseExecutionStatus({
+    executionStatus: 'not-executed',
+    executionHistory: [{ status: 'not-executed', at: 1 }],
+    steps: [{ stepStatus: 'fallo' }],
+  }), 'not-executed');
+  assert.equal(getLegacyCaseExecutionStatus({
+    executionStatus: 'pass',
+    executionHistory: [{ status: 'pass', at: 1 }],
+    steps: [{ stepStatus: 'fallo' }],
+  }), 'pass');
 });
 
 test('buildCaseSummary counts statuses and novedad', () => {
@@ -144,4 +173,56 @@ test('parseQaCaseImportRows supports CSV quoted commas and reports invalid rows'
     'Línea 2: el ID y el nombre del caso son obligatorios.',
     'Línea 3: se esperaban 2 o 3 columnas (ID, Nombre y Suite).',
   ]);
+});
+
+test('parseQaCaseIdAndDescription separates the first token from the remaining description', () => {
+  assert.deepEqual(parseQaCaseIdAndDescription('  TC-1   Login incorrecto  '), {
+    caseId: 'TC-1',
+    description: 'Login incorrecto',
+    error: '',
+  });
+  assert.deepEqual(parseQaCaseIdAndDescription('TC-1'), {
+    caseId: '',
+    description: '',
+    error: 'Escribe el ID seguido de la descripción, por ejemplo: TC-1 Login incorrecto.',
+  });
+});
+
+test('buildIssueLogEntries groups by case and keeps only failed or novel steps', () => {
+  const cases = [
+    {
+      caseId: 'CP-001',
+      steps: [
+        { stepStatus: 'fallo', comment: 'Falló sin severidad.' },
+        { stepStatus: 'aprobado', severity: 'media', comment: 'Novedad observada.' },
+        { stepStatus: 'fallo', severity: 'alta', comment: 'Falló con severidad.' },
+        { stepStatus: 'aprobado', comment: 'Sin incidencia.' },
+      ],
+    },
+    {
+      caseId: 'CP-002',
+      steps: [{ stepStatus: 'aprobado', comment: 'Sin incidencia.' }],
+    },
+  ];
+
+  const entries = buildIssueLogEntries(cases);
+
+  assert.equal(entries.length, 1);
+  assert.strictEqual(entries[0].caseRecord, cases[0]);
+  assert.deepEqual(entries[0].steps.map(({ index }) => index), [0, 1, 2]);
+});
+
+test('buildIssueLogEntries recognizes legacy novelty flags without severity', () => {
+  const caseRecord = {
+    caseId: 'CP-LEGACY',
+    steps: [
+      { stepStatus: 'aprobado', novedad: true },
+      { stepStatus: 'aprobado', novedad: false },
+    ],
+  };
+
+  const entries = buildIssueLogEntries([caseRecord]);
+
+  assert.equal(entries.length, 1);
+  assert.deepEqual(entries[0].steps.map(({ index }) => index), [0]);
 });

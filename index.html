@@ -152,6 +152,7 @@
     margin-top: 10px; margin-bottom: 5px;
   }
   label:first-child { margin-top: 0; }
+  .field-hint { display: block; margin-top: 5px; color: var(--text-muted); font-size: 11px; line-height: 1.4; }
   input[type="text"] {
     width: 100%; padding: 10px 11px; border: 1px solid var(--line); border-radius: 7px;
     font-size: 13px; background: var(--panel-2); color: var(--text); font-family: var(--sans);
@@ -941,6 +942,7 @@
     background: #303136; color: #f7f7f7; border-color: #44454b; font-size: 16px;
   }
   .dashboard-project-list { display: grid; gap: 5px; max-height: 45vh; overflow: auto; }
+  .dashboard-project-row { display: flex; align-items: stretch; gap: 4px; min-width: 0; }
   .dashboard-project-item {
     display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0;
     padding: 10px 9px; text-align: left; color: #d8d9dc; background: transparent;
@@ -951,6 +953,23 @@
     background: #303136; border-color: rgba(255,255,255,.06); color: #fff;
     box-shadow: inset 2px 0 #df483b;
   }
+  .dashboard-project-delete {
+    flex: 0 0 30px;
+    width: 30px;
+    min-height: 36px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #a7a9af;
+    font-size: 13px;
+  }
+  .dashboard-project-delete:hover {
+    border-color: rgba(224,72,59,.28);
+    background: rgba(224,72,59,.12);
+    color: #ff9187;
+  }
+  .dashboard-project-delete:focus-visible { outline: 2px solid #ed6657; outline-offset: 1px; }
   .dashboard-project-icon {
     display: grid; place-items: center; flex: 0 0 28px; height: 28px;
     border-radius: 8px; background: #34353a; color: #f07a6d; font-weight: 800;
@@ -1258,9 +1277,10 @@
   .qa-suite-case-item.status-in-progress { border-left-color: #287bdc; }
   .qa-suite-case-item.status-failed { border-left-color: #d93936; }
   .qa-suite-case-item.status-blocked { border-left-color: #8150d5; }
-  .qa-suite-case-copy { min-width: 0; display: grid; gap: 2px; }
+  .qa-suite-case-copy { min-width: 0; display: grid; gap: 3px; }
   .qa-suite-case-id { color: #52657c; font-size: 12px; }
   .qa-suite-case-name { overflow-wrap: anywhere; font-size: 14px; }
+  .qa-suite-case-details { color: #718096; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; }
   .qa-suite-case-status { flex: 0 0 auto; color: #758397; font-size: 11px; font-weight: 700; }
   .qa-case-context {
     margin: 0 0 12px;
@@ -1347,6 +1367,17 @@
     background: #fff;
     color: #253244;
     font: 13px var(--sans);
+  }
+  .qa-new-case-form textarea {
+    width: 100%;
+    min-height: 78px;
+    padding: 9px 10px;
+    border: 1px solid #d9e0e8;
+    border-radius: 8px;
+    background: #fff;
+    color: #253244;
+    font: 13px/1.45 var(--sans);
+    resize: vertical;
   }
   .qa-new-case-error { min-height: 16px; margin: 0; color: #c33d3d; font-size: 11px; }
   .qa-new-case-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
@@ -1841,38 +1872,43 @@
     font-size: 12px;
   }
   .qa-suite-card-count strong { color: #273448; font-size: 19px; line-height: 1; }
-  .qa-suite-card-pass {
-    padding: 5px 8px;
-    border: 1px solid rgba(24,168,87,.16);
-    border-radius: 999px;
-    background: rgba(24,168,87,.08);
-    color: #16804a;
-    font-size: 12px;
-    font-weight: 800;
-    white-space: nowrap;
+  .qa-suite-status-list { display: grid; gap: 6px; }
+  .qa-suite-status-row {
+    display: grid;
+    grid-template-columns: 94px minmax(36px, 1fr) 62px;
+    align-items: center;
+    gap: 7px;
+    color: #637084;
+    font-size: 10px;
+    text-align: left;
   }
-  .qa-suite-card-pass small { font-size: 10px; font-weight: 700; }
-  .qa-suite-progress {
+  .qa-suite-status-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .qa-suite-status-value { color: #435166; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .qa-suite-status-track {
     display: block;
     height: 6px;
     overflow: hidden;
     border-radius: 999px;
     background: rgba(125,141,163,.16);
   }
-  .qa-suite-progress > span {
+  .qa-suite-status-fill {
     display: block;
     height: 100%;
+    min-width: 0;
     border-radius: inherit;
-    background: linear-gradient(90deg, #31b875, #16804a);
     transition: width .24s ease;
   }
-  .qa-suite-card-footnote { color: #758397; font-size: 11px; text-align: left; }
+  .qa-suite-status-pass { background: #18a857; }
+  .qa-suite-status-failed { background: #d93936; }
+  .qa-suite-status-in-progress { background: #e4a321; }
+  .qa-suite-status-not-executed { background: #a8b3c2; }
+  .qa-suite-status-blocked { background: #7a3cb8; }
   @media (max-width: 520px) {
     .qa-suite-grid { grid-template-columns: 1fr; }
   }
   @media (prefers-reduced-motion: reduce) {
     .qa-suite-card-arrow,
-    .qa-suite-progress > span { transition: none; }
+    .qa-suite-status-fill { transition: none; }
   }
   .qa-cycle-toolbar {
     padding: 10px 11px;
@@ -2091,6 +2127,105 @@
     border-radius: 7px;
     font-weight: 750;
   }
+  .dashboard-issue-log { margin-top: 14px; border-color: rgba(218,81,72,.22); }
+  .dashboard-issue-log[hidden] { display: none; }
+  .dashboard-issue-log .dashboard-card-heading > span {
+    border: 1px solid rgba(218,81,72,.18);
+    border-radius: 999px;
+    padding: 4px 8px;
+    background: rgba(218,81,72,.08);
+    color: var(--text);
+    font-weight: 750;
+  }
+  .dashboard-issue-log-list { display: grid; gap: 12px; margin-top: 12px; }
+  .dashboard-issue-case {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid rgba(125,141,163,.18);
+    border-radius: 12px;
+    background: linear-gradient(145deg, rgba(125,141,163,.045), transparent);
+  }
+  .dashboard-issue-case-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(125,141,163,.15);
+    background: rgba(125,141,163,.055);
+  }
+  .dashboard-issue-case-copy { display: grid; gap: 4px; min-width: 0; }
+  .dashboard-issue-case-id { color: var(--text); font-size: 12px; font-weight: 800; overflow-wrap: anywhere; }
+  .dashboard-issue-case-description { color: var(--text-muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+  .dashboard-issue-case-meta { color: var(--text-faint); font-size: 10px; }
+  .dashboard-issue-case-count {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    border: 1px solid rgba(218,81,72,.18);
+    border-radius: 999px;
+    background: rgba(218,81,72,.08);
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 750;
+    white-space: nowrap;
+  }
+  .dashboard-issue-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr)); gap: 10px; padding: 12px; }
+  .dashboard-issue-step {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid rgba(125,141,163,.16);
+    border-left: 3px solid #8995a5;
+    border-radius: 10px;
+    background: var(--panel);
+  }
+  .dashboard-issue-step.status-fallo { border-left-color: #da5148; }
+  .dashboard-issue-step.sev-alta { border-top: 2px solid #da5148; }
+  .dashboard-issue-step.sev-media { border-top: 2px solid #d9952f; }
+  .dashboard-issue-step.sev-baja { border-top: 2px solid #39a88e; }
+  .dashboard-issue-step-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 10px 10px 7px; }
+  .dashboard-issue-step-number { margin-right: auto; color: var(--text); font-size: 11px; font-weight: 800; }
+  .dashboard-issue-step-badge {
+    padding: 4px 7px;
+    border: 1px solid rgba(125,141,163,.15);
+    border-radius: 999px;
+    background: rgba(125,141,163,.08);
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 750;
+  }
+  .dashboard-issue-step-badge.sev-alta { border-color: rgba(218,81,72,.2); background: rgba(218,81,72,.1); color: #ffaba2; }
+  .dashboard-issue-step-badge.sev-media { border-color: rgba(217,149,47,.2); background: rgba(217,149,47,.1); color: #f4cb7d; }
+  .dashboard-issue-step-badge.sev-baja { border-color: rgba(57,168,142,.2); background: rgba(57,168,142,.1); color: #83d9c2; }
+  .dashboard-issue-step-comment { min-height: 36px; padding: 0 10px 9px; color: var(--text-muted); font-size: 10.5px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .dashboard-issue-image {
+    display: grid;
+    place-items: center;
+    width: calc(100% - 20px);
+    height: 210px;
+    margin: 0 10px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid rgba(125,141,163,.18);
+    border-radius: 8px;
+    background: var(--panel-2);
+    cursor: zoom-in;
+  }
+  .dashboard-issue-image img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .dashboard-issue-image-empty { color: var(--text-faint); font-size: 10px; }
+  .dashboard-issue-step-actions { display: flex; justify-content: flex-end; padding: 8px 10px 10px; }
+  .dashboard-issue-open {
+    min-height: 28px;
+    padding: 5px 9px;
+    border: 1px solid var(--line-soft);
+    border-radius: 7px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 750;
+  }
+  .dashboard-issue-open:hover { border-color: rgba(200,61,50,.38); background: rgba(200,61,50,.08); }
+  .dashboard-issue-image:focus-visible,
+  .dashboard-issue-open:focus-visible { outline: 2px solid #ed6657; outline-offset: 2px; }
   .dashboard-empty,
   .dashboard-case-empty,
   .dashboard-novelty-empty {
@@ -2108,6 +2243,9 @@
     .dashboard-progress-row { grid-template-columns: 74px minmax(0, 1fr) 38px; gap: 8px; }
     .dashboard-novelty-card { grid-template-columns: 86px minmax(0, 1fr); gap: 9px; padding: 9px; }
     .dashboard-novelty-image { width: 86px; }
+    .dashboard-issue-case-heading { padding: 10px; }
+    .dashboard-issue-steps { grid-template-columns: 1fr; padding: 9px; }
+    .dashboard-issue-image { height: 190px; }
     .dashboard-case-toolbar { gap: 6px; }
     .dashboard-case-table th, .dashboard-case-table td { padding: 9px 8px; }
   }
@@ -2131,7 +2269,8 @@
     .qa-cycle-toolbar button,
     .qa-cycle-form button,
     .dashboard-novelty-card,
-    .dashboard-novelty-open { transition: none; }
+    .dashboard-novelty-open,
+    .dashboard-issue-open { transition: none; }
   }
 </style>
 </head>
@@ -2151,7 +2290,7 @@
         <button id="newProjectBtn" type="button" aria-label="Crear proyecto" title="Crear proyecto">+</button>
       </div>
       <form id="newProjectForm" class="dashboard-new-project-form">
-        <input id="newProjectName" type="text" maxlength="60" placeholder="Nombre del proyecto" aria-label="Nombre del proyecto" />
+        <input id="newProjectName" type="text" maxlength="60" placeholder="Nombre del proyecto" aria-label="Nombre del proyecto" required />
         <div class="btn-row">
           <button class="btn-primary" type="submit">Crear</button>
           <button class="btn-secondary" id="cancelNewProjectBtn" type="button">Cancelar</button>
@@ -2325,6 +2464,14 @@
           <div class="dashboard-novelty-list" id="dashboardNovedadesList"></div>
         </section>
 
+        <section class="dashboard-card dashboard-issue-log" id="dashboardIssueLog" aria-labelledby="dashboardIssueLogTitle" hidden>
+          <div class="dashboard-card-heading">
+            <strong id="dashboardIssueLogTitle">Log de issues</strong>
+            <span id="dashboardIssueLogCount"></span>
+          </div>
+          <div class="dashboard-issue-log-list" id="dashboardIssueLogList"></div>
+        </section>
+
         <div class="dashboard-grid-two">
           <section class="dashboard-card">
             <div class="dashboard-card-heading">
@@ -2414,10 +2561,11 @@
     <div id="qaNewCaseOverlay" role="dialog" aria-modal="true" aria-labelledby="qaNewCaseTitle">
       <section class="qa-new-case-panel">
         <h2 class="qa-new-case-title" id="qaNewCaseTitle">Nuevo caso</h2>
-        <p class="qa-new-case-help">Usa una suite existente o escribe una nueva (ej.: Login, Pagos).</p>
+        <p class="qa-new-case-help">En el primer campo escribe el ID seguido de la descripción, por ejemplo: TC-1 Login incorrecto. El detalle es opcional.</p>
         <form class="qa-new-case-form" id="qaNewCaseForm">
-          <input id="qaNewCaseId" type="text" maxlength="80" placeholder="ID (ej.: TC-104)" aria-label="ID del caso" required />
-          <input id="qaNewCaseName" type="text" maxlength="240" placeholder="Nombre del caso" aria-label="Nombre del caso" required />
+          <input id="qaNewCaseId" type="text" maxlength="330" placeholder="ID y descripción (ej.: TC-1 Login incorrecto)" aria-label="ID seguido de la descripción del caso" required />
+          <label for="qaNewCaseDetails">Detalle, pasos o datos adicionales (opcional)</label>
+          <textarea id="qaNewCaseDetails" maxlength="1000" placeholder="Agrega datos o notas adicionales del caso si los necesitas." aria-label="Detalle, pasos o datos adicionales"></textarea>
           <input id="qaNewCaseSuite" type="text" maxlength="60" list="qaSuiteOptions" placeholder="Suite" aria-label="Suite del caso" required />
           <datalist id="qaSuiteOptions"></datalist>
           <p class="qa-new-case-error" id="qaNewCaseError" role="alert" aria-live="polite"></p>
@@ -2450,7 +2598,6 @@
     <button class="btn-secondary backup-header-btn" id="downloadWorkspaceBackupFromDocumenterBtn" type="button" title="Descargar proyectos, casos e imágenes para abrirlos en otro equipo">📦 Respaldo</button>
     <button class="btn-secondary" id="backToDashboardBtn" type="button" style="margin-left:auto;">← Panel</button>
   </div>
-  <div class="subtitle">No requiere instalación. Funciona compartiendo pantalla, igual que en Meet.</div>
   <div class="theme-switch" role="group" aria-label="Estilo visual">
     <span class="theme-label">Estilo</span>
     <button class="theme-btn active" data-theme="aurora" aria-pressed="true">Aurora</button>
@@ -2490,10 +2637,17 @@
     <div class="qa-case-context" id="qaCaseSuiteContext" hidden></div>
     <label for="caseProjectSelect">Proyecto</label>
     <select id="caseProjectSelect" name="caseProjectSelect" style="width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:7px; font-size:13px; background:var(--panel-2); color:var(--text); font-family:var(--sans);"></select>
+    <label for="documenterCasePicker">Caso de una suite o caso manual</label>
+    <select id="documenterCasePicker" name="documenterCasePicker" style="width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:7px; font-size:13px; background:var(--panel-2); color:var(--text); font-family:var(--sans);">
+      <option value="">Selecciona un caso...</option>
+    </select>
+    <small class="field-hint">Selecciona un caso guardado en una suite o elige la opción manual para documentar uno imprevisto.</small>
     <label for="caseId">ID / Tema</label>
     <input type="text" id="caseId" name="caseId" autocomplete="off" placeholder="Ej: CP-001 o Soporte contabilidad" />
     <label for="description">Descripción</label>
     <input type="text" id="description" name="description" autocomplete="off" placeholder="Descripción" />
+    <label for="caseDetails">Detalle, pasos o datos adicionales</label>
+    <textarea id="caseDetails" name="caseDetails" rows="3" maxlength="1000" placeholder="Detalle opcional del caso"></textarea>
     <label for="caseTemplateSelect">Plantilla del caso</label>
     <select id="caseTemplateSelect" name="caseTemplateSelect" style="width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:7px; font-size:13px; background:var(--panel-2); color:var(--text); font-family:var(--sans);">
       <option value="general">General</option>
@@ -2526,7 +2680,6 @@
       <button class="btn-secondary" id="redoBtn" title="Rehacer (Ctrl+Y)" disabled>↷ Rehacer</button>
       <span id="historyStatus" class="history-chip" role="status" aria-live="polite">Historial: 0/80</span>
     </div>
-    <div class="help">1) Comparte la pestaña/ventana de Meet una sola vez. 2) Activa el botón flotante para no perder de vista la llamada. 3) Haz clic en Capturar cada vez que algo sea relevante (o presiona Ctrl+Shift+Y). 4) En cada paso, elige un color y arrastra sobre la imagen para resaltar algo puntual. 5) También puedes pegar una imagen ya copiada con Ctrl+V (por ejemplo, un pantallazo que te mandaron por chat) y se agrega como paso nuevo.</div>
     <details class="shortcut-help">
       <summary>⌨️ Ayuda rápida y atajos de teclado</summary>
       <div class="shortcut-help-content">
@@ -25826,7 +25979,7 @@ var __async = (__this, __arguments, generator) => {
   return exports;
 })({});
 </script>
-<script src="case-utils.js"></script>
+<script src="case-utils.js?v=20261008-execution-status-fix"></script>
   <script>
     let mediaStream = null;
     let steps = [];
@@ -25835,10 +25988,12 @@ var __async = (__this, __arguments, generator) => {
     let activeProjectId = "";
     let activeSuiteId = "";
     let currentSuiteId = "";
+    const MANUAL_CASE_PICKER_VALUE = "__manual__";
     let selectedQaCaseIndex = null;
     let editingCaseIndex = null;
     let dashboardReady = Promise.resolve();
     let caseRecoveryChecked = false;
+    let caseRecoveryPromise = null;
     let editingProjectId = null;
     let isCapturePaused = false;
     let dashboardNoveltyFilters = { query: "", severity: "all", status: "all", suiteId: "all", sort: "priority" };
@@ -25851,6 +26006,28 @@ var __async = (__this, __arguments, generator) => {
     const normalizeStepStatus = caseUtils.normalizeStepStatus || ((value) => {
       const normalized = String(value || "").trim().toLowerCase();
       return ["pendiente", "aprobado", "fallo", "observado"].includes(normalized) ? normalized : "pendiente";
+    });
+    const getStepSeverity = caseUtils.getStepSeverity || ((step) => {
+      const severity = typeof step?.severity === "string" ? step.severity.trim().toLowerCase() : "";
+      if (["alta", "media", "baja"].includes(severity)) return severity;
+      return step?.novedad === true ? "alta" : null;
+    });
+    const buildIssueLogEntries = caseUtils.buildIssueLogEntries || ((caseRecords = []) =>
+      caseRecords.flatMap((caseRecord) => {
+        const relevantSteps = (Array.isArray(caseRecord?.steps) ? caseRecord.steps : [])
+          .map((step, index) => ({ step, index }))
+          .filter(({ step }) => step && (
+            normalizeStepStatus(step.stepStatus || step.status) === "fallo" ||
+            getStepSeverity(step)
+          ));
+        return relevantSteps.length ? [{ caseRecord, steps: relevantSteps }] : [];
+      })
+    );
+    const parseQaCaseIdAndDescription = caseUtils.parseQaCaseIdAndDescription || ((input) => {
+      const match = String(input || "").trim().match(/^(\S+)\s+(.+?)\s*$/);
+      return match
+        ? { caseId: match[1], description: match[2], error: "" }
+        : { caseId: "", description: "", error: "Escribe el ID seguido de la descripción, por ejemplo: TC-1 Login incorrecto." };
     });
     const buildCaseSummary = caseUtils.buildCaseSummary || ((stepsList, severityLabels = {}) => ({
       totalSteps: Array.isArray(stepsList) ? stepsList.length : 0,
@@ -25971,13 +26148,25 @@ var __async = (__this, __arguments, generator) => {
 
   function debounce(fn, delay) {
     let t;
+    let latestArgs = [];
     const debounced = (...args) => {
+      latestArgs = args;
       clearTimeout(t);
-      t = setTimeout(() => fn(...args), delay);
+      t = setTimeout(() => {
+        t = null;
+        fn(...latestArgs);
+      }, delay);
+    };
+    debounced.flush = () => {
+      if (t === null || t === undefined) return Promise.resolve();
+      clearTimeout(t);
+      t = null;
+      return fn(...latestArgs);
     };
     debounced.cancel = () => {
       clearTimeout(t);
       t = null;
+      latestArgs = [];
     };
     return debounced;
   }
@@ -26006,6 +26195,7 @@ var __async = (__this, __arguments, generator) => {
         description: document.getElementById("description").value,
         team: document.getElementById("team").value,
         tester: document.getElementById("tester").value,
+        details: document.getElementById("caseDetails").value,
         templateKey: getSelectedTemplateKey(),
         qaContext: savedDefectContext,
         previewEditedHtml: savedDocumentPreviewHtml,
@@ -26045,13 +26235,14 @@ var __async = (__this, __arguments, generator) => {
     try {
       const db = await openDB();
       const tx = db.transaction(STORE_NAME, "readonly");
-      return await new Promise((resolve) => {
+      return await new Promise((resolve, reject) => {
         const req = tx.objectStore(STORE_NAME).get(STATE_KEY);
         req.onsuccess = () => { db.close(); resolve(req.result || null); };
-        req.onerror = () => { db.close(); resolve(null); };
+        req.onerror = () => { db.close(); reject(req.error || new Error("No se pudo leer el borrador guardado.")); };
       });
     } catch (e) {
-      return null;
+      console.error("No se pudo recuperar el borrador guardado:", e);
+      throw e;
     }
   }
 
@@ -26080,7 +26271,7 @@ var __async = (__this, __arguments, generator) => {
       commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "top",
       stepStatus: normalizeStepStatus(s.stepStatus || s.status),
       novedad: !!s.novedad,
-      severity: s.severity !== undefined ? s.severity : (s.novedad ? "alta" : null),
+      severity: getStepSeverity(s),
       boxes: s.boxes || [],
       color: s.color || "#e02424",
       pins: Array.isArray(s.pins) ? s.pins : [],
@@ -26092,6 +26283,7 @@ var __async = (__this, __arguments, generator) => {
       projectId: getSelectedProjectId(),
       caseId: document.getElementById("caseId").value,
       description: document.getElementById("description").value,
+      details: document.getElementById("caseDetails").value,
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
       templateKey: getSelectedTemplateKey(),
@@ -26162,6 +26354,7 @@ var __async = (__this, __arguments, generator) => {
       renderCasesList();
       document.getElementById("caseId").value = snapshot.caseId || "";
       document.getElementById("description").value = snapshot.description || "";
+      document.getElementById("caseDetails").value = snapshot.details || "";
       document.getElementById("team").value = snapshot.team || "";
       document.getElementById("tester").value = snapshot.tester || "";
       setQaContext(snapshot.qaContext);
@@ -26205,7 +26398,7 @@ var __async = (__this, __arguments, generator) => {
     if (historySuspended) return;
     const target = e.target;
     if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
-    const isCaseField = ["caseId", "description", "team", "tester", ...QA_CONTEXT_FIELDS].includes(target.id);
+    const isCaseField = ["caseId", "description", "caseDetails", "team", "tester", ...QA_CONTEXT_FIELDS].includes(target.id);
     const isStepComment = !!target.closest(".comment-block");
     if (!isCaseField && !isStepComment) return;
     const now = Date.now();
@@ -26235,8 +26428,10 @@ var __async = (__this, __arguments, generator) => {
   });
   // ============================================================
 
-  ["caseId", "description", "team", "tester", ...QA_CONTEXT_FIELDS].forEach((id) => {
-    document.getElementById(id).addEventListener("input", () => autosave());
+  ["caseId", "description", "caseDetails", "team", "tester", ...QA_CONTEXT_FIELDS].forEach((id) => {
+    const field = document.getElementById(id);
+    field.addEventListener("input", () => autosave());
+    field.addEventListener("change", () => autosave.flush());
   });
   const caseTemplateSelect = document.getElementById("caseTemplateSelect");
   if (caseTemplateSelect) {
@@ -29351,6 +29546,7 @@ var __async = (__this, __arguments, generator) => {
     syncStepInputsToData();
     const caseId = document.getElementById("caseId").value;
     const description = document.getElementById("description").value;
+    const details = document.getElementById("caseDetails").value.trim();
     const team = document.getElementById("team").value;
     const tester = document.getElementById("tester").value;
     const qaContext = getQaContext();
@@ -29404,6 +29600,7 @@ var __async = (__this, __arguments, generator) => {
         <p style="margin:4px 0;"><b>Plantilla:</b> ${escapeHtml(template.label || "General")}</p>
         <p style="margin:4px 0;"><b>Objetivo:</b> ${escapeHtml(template.objective || "Documentar la evidencia del caso." )}</p>
         <p style="margin:4px 0;"><b>Descripción:</b> ${escapeHtml(description || "Sin descripción")}</p>
+        ${details ? `<p style="margin:4px 0;"><b>Detalle del caso:</b> ${escapeHtml(details)}</p>` : ""}
         <p style="margin:4px 0;"><b>Novedad principal:</b> ${escapeHtml((summary.stepSummaries.find((item) => item.novedad) || summary.stepSummaries[0] || {}).comment || "No se registraron elementos con novedad.")}</p>
         <p style="margin:4px 0;"><b>Impacto:</b> ${escapeHtml(executiveSummary.text.split("Impacto:")[1] ? executiveSummary.text.split("Impacto:")[1].split("\n")[0].trim() : "Sin impacto crítico reportado.")}</p>
       </div>`;
@@ -29451,6 +29648,7 @@ var __async = (__this, __arguments, generator) => {
         ${documentHeaderHtml}
         <h1 style="color:#2b579a;">Caso de Prueba: ${escapeHtml(caseId)}</h1>
         <p><b>Descripción:</b> ${escapeHtml(description)}</p>
+        ${details ? `<p><b>Detalle del caso:</b> ${escapeHtml(details).replace(/\n/g, "<br>")}</p>` : ""}
         <p><b>Plantilla:</b> ${escapeHtml(template.label || "General")}</p>
         <p><b>Área / equipo:</b> ${escapeHtml(team)}</p>
         <p><b>Requisito / historia:</b> ${escapeHtml(qaContext.requirement || "Sin especificar")}</p>
@@ -29687,7 +29885,7 @@ var __async = (__this, __arguments, generator) => {
     options = options || {};
     const onlyNovedades = !!options.onlyNovedades;
     const { Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, AlignmentType } = docx;
-    const { caseId, description, team, tester, templateKey, qaContext = {}, steps: caseSteps } = caseData;
+    const { caseId, description, details, team, tester, templateKey, qaContext = {}, steps: caseSteps } = caseData;
     const fecha = caseData.fecha || new Date().toLocaleDateString("es-CO");
     const novedades = sortedNovedades(caseSteps.filter((s) => s.novedad));
     const MAX_W = 500;
@@ -29719,6 +29917,7 @@ var __async = (__this, __arguments, generator) => {
     if (qaContext.buildVersion) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Versión / build: "), panamValueRun(qaContext.buildVersion)] }));
     if (qaContext.preconditions) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Precondiciones: "), panamValueRun(qaContext.preconditions)] }));
     if (description) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Descripción: "), panamValueRun(description)] }));
+    if (details) evidenceParas.push(new Paragraph({ children: [panamLabelRun("Detalle del caso: "), panamValueRun(details)] }));
     if (qaContext.expectedResult || qaContext.actualResult) {
       evidenceParas.push(new Paragraph({ children: [panamLabelRun("Resultado esperado: "), panamValueRun(qaContext.expectedResult || "Sin especificar")] }));
       evidenceParas.push(new Paragraph({ children: [panamLabelRun("Resultado actual: "), panamValueRun(qaContext.actualResult || "Sin especificar")] }));
@@ -29799,16 +29998,38 @@ var __async = (__this, __arguments, generator) => {
     return blocks;
   }
 
+  function normalizeCaseIdInputValue(rawCaseIdValue, fallbackDescription) {
+    const rawValue = String(rawCaseIdValue || "").trim();
+    if (!rawValue) return { caseId: "", description: String(fallbackDescription || "").trim() };
+
+    const parsed = (typeof caseUtils !== "undefined" && caseUtils.parseQaCaseIdAndDescription)
+      ? caseUtils.parseQaCaseIdAndDescription(rawValue)
+      : (() => {
+          const match = rawValue.match(/^(\S+)\s+(.+?)\s*$/);
+          return match ? { caseId: match[1], description: match[2], error: "" } : { caseId: rawValue, description: String(fallbackDescription || "").trim(), error: "" };
+        })();
+
+    if (parsed.caseId && parsed.description) {
+      return { caseId: parsed.caseId, description: parsed.description };
+    }
+
+    return { caseId: rawValue, description: String(fallbackDescription || "").trim() };
+  }
+
   function currentCaseData() {
     syncStepInputsToData();
     const preview = document.getElementById("exportPreview");
     if (preview) syncEditedPreviewToCaseFields();
+    const rawCaseId = document.getElementById("caseId").value;
+    const rawDescription = document.getElementById("description").value;
+    const normalized = normalizeCaseIdInputValue(rawCaseId, rawDescription);
     return {
       projectId: getSelectedProjectId(),
-      caseId: document.getElementById("caseId").value,
-      description: document.getElementById("description").value,
+      caseId: normalized.caseId,
+      description: normalized.description,
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
+      details: document.getElementById("caseDetails").value,
       templateKey: getSelectedTemplateKey(),
       qaContext: getQaContext(),
       documentNotes: document.getElementById("documentNotesInput") ? document.getElementById("documentNotesInput").value : "",
@@ -29896,7 +30117,9 @@ var __async = (__this, __arguments, generator) => {
       if (document.getElementById("copyOverlay").style.display === "block") {
         applyDocumentNotesToPreview();
       }
+      autosave();
     });
+    documentNotesInput.addEventListener("change", () => autosave.flush());
   }
 
   const applyDocumentNotesBtn = document.getElementById("applyDocumentNotesBtn");
@@ -30035,6 +30258,7 @@ var __async = (__this, __arguments, generator) => {
 
     const caseIdInput = document.getElementById("caseId");
     const descriptionInput = document.getElementById("description");
+    const caseDetailsInput = document.getElementById("caseDetails");
     const teamInput = document.getElementById("team");
     const testerInput = document.getElementById("tester");
     const expectedInput = document.getElementById("expectedResult");
@@ -30056,6 +30280,10 @@ var __async = (__this, __arguments, generator) => {
     if (descriptionNode) {
       const descriptionText = (descriptionNode.textContent || "").replace(/^Descripción:\s*/i, "").trim();
       descriptionInput.value = parsedFromPreview.description || descriptionText;
+    }
+    const detailsNode = [...preview.querySelectorAll("p")].find((el) => /Detalle del caso:/i.test(el.textContent || ""));
+    if (detailsNode && caseDetailsInput) {
+      caseDetailsInput.value = (detailsNode.innerText || detailsNode.textContent || "").replace(/^Detalle del caso:\s*/i, "").trim();
     }
 
     if (teamInput) {
@@ -30364,6 +30592,14 @@ var __async = (__this, __arguments, generator) => {
     }
   }
   const autosaveCases = debounce(saveCasesToDB, 1000);
+  const flushPendingAutosaves = () => {
+    autosave.flush();
+    autosaveCases.flush();
+  };
+  window.addEventListener("pagehide", flushPendingAutosaves);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushPendingAutosaves();
+  });
 
   const STEP_THUMBNAIL_MAX_DIMENSION = 720;
 
@@ -30528,6 +30764,7 @@ var __async = (__this, __arguments, generator) => {
         projectId: getSelectedProjectId(),
         caseId: document.getElementById("caseId").value,
         description: document.getElementById("description").value,
+        details: document.getElementById("caseDetails").value,
         team: document.getElementById("team").value,
         tester: document.getElementById("tester").value,
         templateKey: getSelectedTemplateKey(),
@@ -30672,15 +30909,22 @@ var __async = (__this, __arguments, generator) => {
   }
 
   function getLegacyCaseExecutionStatus(caseRecord) {
+    if (caseUtils.getLegacyCaseExecutionStatus) {
+      return caseUtils.getLegacyCaseExecutionStatus(caseRecord);
+    }
     const savedStatus = ["pass", "not-executed", "in-progress", "failed", "blocked"];
-    if (savedStatus.includes(caseRecord.executionStatus)) return caseRecord.executionStatus;
+    const hasExecutionHistory = Array.isArray(caseRecord.executionHistory) && caseRecord.executionHistory.length > 0;
+    if (savedStatus.includes(caseRecord.executionStatus) &&
+        (caseRecord.executionStatus !== "not-executed" || hasExecutionHistory)) {
+      return caseRecord.executionStatus;
+    }
     const stepsForCase = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
-    if (!stepsForCase.length) return "not-executed";
+    if (!stepsForCase.length) return savedStatus.includes(caseRecord.executionStatus) ? caseRecord.executionStatus : "not-executed";
     const statuses = stepsForCase.map((step) => normalizeStepStatus(step.stepStatus || step.status));
     if (statuses.includes("fallo")) return "failed";
     if (statuses.every((status) => status === "aprobado")) return "pass";
     if (statuses.some((status) => status !== "pendiente")) return "in-progress";
-    return "not-executed";
+    return savedStatus.includes(caseRecord.executionStatus) ? caseRecord.executionStatus : "not-executed";
   }
 
   function getQaExecutionStatusLabel(status) {
@@ -30889,6 +31133,7 @@ var __async = (__this, __arguments, generator) => {
         suiteId: suite.id,
         caseId: row.caseId,
         description: row.description,
+        details: "",
         team: "",
         tester: "",
         templateKey: DEFAULT_TEMPLATE_KEY,
@@ -30938,13 +31183,27 @@ var __async = (__this, __arguments, generator) => {
     event.preventDefault();
     const project = projects.find((item) => item.id === activeProjectId);
     if (!project) return;
-    const caseId = document.getElementById("qaNewCaseId").value.trim();
-    const description = document.getElementById("qaNewCaseName").value.trim();
+    const parsedCase = parseQaCaseIdAndDescription(document.getElementById("qaNewCaseId").value);
+    const { caseId, description } = parsedCase;
+    const details = document.getElementById("qaNewCaseDetails").value.trim();
     const suiteName = document.getElementById("qaNewCaseSuite").value.trim();
     const error = document.getElementById("qaNewCaseError");
     const saveButton = document.getElementById("qaNewCaseSave");
     error.textContent = "";
-    if (!caseId || !description || !suiteName) return;
+    if (!caseId || !description) {
+      error.textContent = parsedCase.error;
+      document.getElementById("qaNewCaseId").focus();
+      return;
+    }
+    if (caseId.length > 80) {
+      error.textContent = "El ID del caso no puede superar los 80 caracteres.";
+      return;
+    }
+    if (description.length > 240) {
+      error.textContent = "La descripción del caso no puede superar los 240 caracteres.";
+      return;
+    }
+    if (details.length > 1000 || !suiteName) return;
 
     const duplicate = getActiveProjectCases().some((item) =>
       String(item.caseId || "").trim().toLocaleLowerCase() === caseId.toLocaleLowerCase()
@@ -30967,6 +31226,7 @@ var __async = (__this, __arguments, generator) => {
       suiteId: suite.id,
       caseId,
       description,
+      details,
       team: "",
       tester: "",
       templateKey: DEFAULT_TEMPLATE_KEY,
@@ -31014,7 +31274,7 @@ var __async = (__this, __arguments, generator) => {
     const cycle = project?.qaCyclesEnabled ? getActiveExecutionCycle(project) : null;
     document.getElementById("qaExecutionTitle").textContent = caseRecord.caseId || "Caso sin ID";
     document.getElementById("qaExecutionSubtitle").textContent =
-      `${caseRecord.description || "Caso de prueba"}${suite ? ` · ${suite.name}` : ""}${cycle ? ` · ${cycle.name}` : ""}`;
+      `${caseRecord.description || "Caso de prueba"}${caseRecord.details ? ` · ${caseRecord.details}` : ""}${suite ? ` · ${suite.name}` : ""}${cycle ? ` · ${cycle.name}` : ""}`;
     const currentStatus = getCaseExecutionStatus(caseRecord);
     document.querySelectorAll(".qa-execution-status").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.status === currentStatus));
@@ -31143,9 +31403,33 @@ var __async = (__this, __arguments, generator) => {
       const visibleSuites = suites.filter((suite) => suite.name.toLocaleLowerCase().includes(query));
       grid.innerHTML = visibleSuites.map((suite) => {
         const suiteCases = projectCases.filter((item) => item.suiteId === suite.id);
-        const passed = suiteCases.filter((item) => getCaseExecutionStatus(item) === "pass").length;
-        const rate = suiteCases.length ? Math.round((passed / suiteCases.length) * 100) : 0;
-        return `<button class="qa-suite-item" type="button" data-suite-id="${escapeHtml(suite.id)}" aria-label="${escapeHtml(suite.name)}, ${suiteCases.length} casos, ${passed} aprobados, ${rate}% pass">
+        const suiteStatuses = [
+          { key: "pass", label: "Pass" },
+          { key: "failed", label: "Failed" },
+          { key: "in-progress", label: "In Progress" },
+          { key: "not-executed", label: "Not Executed" },
+          { key: "blocked", label: "Blocked" },
+        ];
+        const suiteStatusCounts = Object.fromEntries(suiteStatuses.map(({ key }) => [key, 0]));
+        suiteCases.forEach((caseRecord) => {
+          const status = getCaseExecutionStatus(caseRecord);
+          if (Object.hasOwn(suiteStatusCounts, status)) suiteStatusCounts[status] += 1;
+        });
+        const statusBreakdown = suiteStatuses.map(({ key, label }) => {
+          const count = suiteStatusCounts[key];
+          const percentage = suiteCases.length ? Math.round((count / suiteCases.length) * 100) : 0;
+          return `<span class="qa-suite-status-row">
+            <span class="qa-suite-status-label">${label}</span>
+            <span class="qa-suite-status-track" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percentage}">
+              <span class="qa-suite-status-fill qa-suite-status-${key}" style="width:${percentage}%"></span>
+            </span>
+            <span class="qa-suite-status-value">${count} · ${percentage}%</span>
+          </span>`;
+        }).join("");
+        const statusSummary = suiteStatuses
+          .map(({ key, label }) => `${label}: ${suiteStatusCounts[key]}`)
+          .join(", ");
+        return `<button class="qa-suite-item" type="button" data-suite-id="${escapeHtml(suite.id)}" aria-label="${escapeHtml(suite.name)}, ${suiteCases.length} casos. ${statusSummary}">
           <span class="qa-suite-card-heading">
             <span class="qa-suite-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5h6l2 2h9v8.8a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7z"/><path d="M3.5 7.5V5.7A1.7 1.7 0 0 1 5.2 4h4.1l2 2H18"/></svg></span>
             <span class="qa-suite-title">${escapeHtml(suite.name)}</span>
@@ -31153,10 +31437,8 @@ var __async = (__this, __arguments, generator) => {
           </span>
           <span class="qa-suite-card-stats">
             <span class="qa-suite-card-count"><strong>${suiteCases.length}</strong> ${suiteCases.length === 1 ? "caso" : "casos"}</span>
-            <span class="qa-suite-card-pass">${rate}% <small>pass</small></span>
           </span>
-          <span class="qa-suite-progress" role="progressbar" aria-label="Casos aprobados" aria-valuemin="0" aria-valuemax="${Math.max(suiteCases.length, 1)}" aria-valuenow="${passed}"><span style="width:${rate}%"></span></span>
-          <span class="qa-suite-card-footnote">${passed} de ${suiteCases.length} aprobados</span>
+          <span class="qa-suite-status-list" aria-hidden="true">${statusBreakdown}</span>
         </button>`;
       }).join("") || '<div class="qa-suite-empty">No hay suites que coincidan con la búsqueda.</div>';
       grid.querySelectorAll("[data-suite-id]").forEach((button) => {
@@ -31173,7 +31455,7 @@ var __async = (__this, __arguments, generator) => {
     const suiteCases = projectCases.filter((item) => item.suiteId === selectedSuite.id);
     const caseQuery = document.getElementById("qaCaseSearch").value.trim().toLocaleLowerCase();
     const visibleCases = suiteCases.filter((item) =>
-      `${item.caseId || ""} ${item.description || ""}`.toLocaleLowerCase().includes(caseQuery)
+      `${item.caseId || ""} ${item.description || ""} ${item.details || ""}`.toLocaleLowerCase().includes(caseQuery)
     );
     const list = document.getElementById("qaSuiteCaseList");
     list.innerHTML = visibleCases.map((caseRecord) => {
@@ -31183,6 +31465,7 @@ var __async = (__this, __arguments, generator) => {
         <span class="qa-suite-case-copy">
           <span class="qa-suite-case-id">${escapeHtml(caseRecord.caseId || "Sin ID")}</span>
           <span class="qa-suite-case-name">${escapeHtml(caseRecord.description || "Caso de prueba")}</span>
+          ${caseRecord.details ? `<span class="qa-suite-case-details">${escapeHtml(caseRecord.details)}</span>` : ""}
         </span>
         <span class="qa-suite-case-status">${getQaExecutionStatusLabel(status)}</span>
       </button>`;
@@ -31201,21 +31484,140 @@ var __async = (__this, __arguments, generator) => {
     setSelectedProjectId(activeProjectId);
   }
 
+  function renderDocumenterCasePicker(selectedValue) {
+    const selector = document.getElementById("documenterCasePicker");
+    if (!selector) return;
+
+    const previousValue = selectedValue === undefined ? selector.value : selectedValue;
+    const project = projects.find((item) => item.id === activeProjectId);
+    const suites = Array.isArray(project?.suites) ? project.suites : [];
+    const projectCases = savedCases
+      .map((caseRecord, index) => ({ caseRecord, index }))
+      .filter(({ caseRecord }) =>
+        (caseRecord.projectId || projects[0]?.id) === activeProjectId && !!caseRecord.suiteId
+      );
+
+    selector.replaceChildren(new Option("Selecciona un caso...", ""));
+    suites.forEach((suite) => {
+      const suiteCases = projectCases.filter(({ caseRecord }) => caseRecord.suiteId === suite.id);
+      if (!suiteCases.length) return;
+      const group = document.createElement("optgroup");
+      group.label = suite.name;
+      suiteCases.forEach(({ caseRecord, index }) => {
+        const title = [caseRecord.caseId, caseRecord.description].filter(Boolean).join(" ").trim() || "Caso sin ID";
+        group.append(new Option(title, `case:${index}`));
+      });
+      selector.append(group);
+    });
+
+    const unlistedSuiteCases = projectCases.filter(({ caseRecord }) =>
+      !suites.some((suite) => suite.id === caseRecord.suiteId)
+    );
+    if (unlistedSuiteCases.length) {
+      const group = document.createElement("optgroup");
+      group.label = "Otras suites";
+      unlistedSuiteCases.forEach(({ caseRecord, index }) => {
+        const title = [caseRecord.caseId, caseRecord.description].filter(Boolean).join(" ").trim() || "Caso sin ID";
+        group.append(new Option(title, `case:${index}`));
+      });
+      selector.append(group);
+    }
+
+    selector.append(new Option("➕ Caso manual / imprevisto", MANUAL_CASE_PICKER_VALUE));
+    selector.value = [...selector.options].some((option) => option.value === previousValue)
+      ? previousValue
+      : "";
+  }
+
   function renderDashboardProjects() {
     const list = document.getElementById("dashboardProjects");
     if (!list) return;
     list.innerHTML = projects.map((project) => {
       const caseCount = savedCases.filter((item) => (item.projectId || projects[0]?.id) === project.id).length;
       const initial = escapeHtml((project.name || "P").trim().charAt(0).toUpperCase() || "P");
-      return `<button class="dashboard-project-item${project.id === activeProjectId ? " active" : ""}" type="button" data-project-id="${escapeHtml(project.id)}" title="${escapeHtml(project.name)}">
-        <span class="dashboard-project-icon">${initial}</span>
-        <span class="dashboard-project-name">${escapeHtml(project.name)}</span>
-        <span class="dashboard-project-count">${caseCount}</span>
-      </button>`;
+      return `<div class="dashboard-project-row">
+        <button class="dashboard-project-item${project.id === activeProjectId ? " active" : ""}" type="button" data-project-id="${escapeHtml(project.id)}" title="${escapeHtml(project.name)}">
+          <span class="dashboard-project-icon">${initial}</span>
+          <span class="dashboard-project-name">${escapeHtml(project.name)}</span>
+          <span class="dashboard-project-count">${caseCount}</span>
+        </button>
+        <button class="dashboard-project-delete" type="button" data-delete-project-id="${escapeHtml(project.id)}" aria-label="Eliminar proyecto ${escapeHtml(project.name)}" title="Eliminar proyecto">✕</button>
+      </div>`;
     }).join("") || '<div class="dashboard-empty">Crea un proyecto para comenzar.</div>';
     list.querySelectorAll("[data-project-id]").forEach((button) => {
       button.addEventListener("click", () => selectDashboardProject(button.dataset.projectId));
     });
+    list.querySelectorAll("[data-delete-project-id]").forEach((button) => {
+      button.addEventListener("click", () => deleteDashboardProject(button.dataset.deleteProjectId, button));
+    });
+  }
+
+  async function persistProjectDeletion(nextProjects, nextCases, deletedProjectId) {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.put(nextProjects, PROJECTS_KEY);
+    store.put(nextCases, CASES_KEY);
+    const draftRequest = store.get(STATE_KEY);
+    draftRequest.onsuccess = () => {
+      const draft = draftRequest.result;
+      const draftProjectId = draft?.projectId || projects[0]?.id;
+      if (draftProjectId === deletedProjectId) store.delete(STATE_KEY);
+    };
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onerror = () => { db.close(); reject(tx.error || new Error("No se pudieron guardar los cambios al eliminar el proyecto.")); };
+      tx.onabort = () => { db.close(); reject(tx.error || new Error("Se canceló la eliminación del proyecto.")); };
+    });
+  }
+
+  async function deleteDashboardProject(projectId, opener) {
+    const project = projects.find((item) => item.id === projectId);
+    if (!project) return;
+    if (projects.length <= 1) {
+      await showAppAlert("Debe quedar al menos un proyecto. Crea otro antes de eliminar este.", opener);
+      return;
+    }
+
+    const deletingActiveProject = project.id === activeProjectId;
+    const hasDraft = deletingActiveProject && (
+      steps.length > 0 ||
+      ["caseId", "description", "team", "tester"].some((id) =>
+        String(document.getElementById(id)?.value || "").trim()
+      )
+    );
+    const projectCases = savedCases.filter((item) => (item.projectId || projects[0]?.id) === project.id);
+    const draftWarning = hasDraft ? " También se descartará el borrador sin guardar de este proyecto." : "";
+    const confirmed = await showAppConfirm(
+      `¿Eliminar el proyecto “${project.name}” junto con sus ${projectCases.length} caso(s) y todas sus suites? Esta acción no se puede deshacer.${draftWarning}`,
+      opener
+    );
+    if (!confirmed) return;
+
+    const nextProjects = projects.filter((item) => item.id !== project.id);
+    const nextCases = savedCases.filter((item) => (item.projectId || projects[0]?.id) !== project.id);
+    const nextActiveProjectId = deletingActiveProject ? nextProjects[0].id : activeProjectId;
+    if (deletingActiveProject) autosave.cancel();
+    opener.disabled = true;
+    try {
+      await persistProjectDeletion(nextProjects, nextCases, project.id);
+      projects = nextProjects;
+      savedCases = nextCases;
+      activeProjectId = nextActiveProjectId;
+      localStorage.setItem("activeDashboardProject", activeProjectId);
+      if (deletingActiveProject) {
+        currentSuiteId = "";
+        resetCurrentCaseUI({ clearFields: true });
+      }
+      renderDashboard();
+      renderCasesList();
+      showTransientStatus(`Proyecto “${project.name}” y sus datos eliminados.`, 3500);
+    } catch (error) {
+      console.error("No se pudo eliminar el proyecto:", error);
+      await showAppAlert(`No se pudo eliminar el proyecto. ${error.message || "Inténtalo nuevamente."}`, opener);
+    } finally {
+      opener.disabled = false;
+    }
   }
 
   function setProgressBar(id, value) {
@@ -31238,6 +31640,109 @@ var __async = (__this, __arguments, generator) => {
       control.addEventListener(eventName, () => {
         dashboardNoveltyFilters[key] = control.value;
         renderDashboardNovedades(getActiveProjectCases());
+      });
+    });
+  }
+
+  function getDashboardCasesWithDraft(projectCases) {
+    const casesToDisplay = projectCases.slice();
+    const caseId = document.getElementById("caseId").value.trim();
+    const description = document.getElementById("description").value.trim();
+    if (getSelectedProjectId() === activeProjectId && (steps.length || caseId || description)) {
+      const draftCase = currentCaseData();
+      if (editingCaseIndex !== null && savedCases[editingCaseIndex]) {
+        const savedCase = savedCases[editingCaseIndex];
+        const displayIndex = casesToDisplay.indexOf(savedCase);
+        if (displayIndex >= 0) {
+          casesToDisplay[displayIndex] = { ...savedCase, ...draftCase };
+        } else {
+          casesToDisplay.push(draftCase);
+        }
+      } else {
+        casesToDisplay.push(draftCase);
+      }
+    }
+    return casesToDisplay;
+  }
+
+  function renderDashboardIssueLog(caseRecords) {
+    const section = document.getElementById("dashboardIssueLog");
+    const count = document.getElementById("dashboardIssueLogCount");
+    const list = document.getElementById("dashboardIssueLogList");
+    if (!section || !count || !list) return;
+
+    const entries = buildIssueLogEntries(caseRecords);
+    section.hidden = entries.length === 0;
+    if (!entries.length) {
+      count.textContent = "";
+      list.innerHTML = "";
+      return;
+    }
+
+    const project = projects.find((item) => item.id === activeProjectId);
+    const suiteNames = new Map((Array.isArray(project?.suites) ? project.suites : [])
+      .map((suite) => [suite.id, suite.name]));
+    const issueSteps = [];
+    const stepStatusLabels = {
+      aprobado: "Aprobado",
+      fallo: "Falló",
+      observado: "Observado",
+      pendiente: "Pendiente",
+    };
+    const stepCount = entries.reduce((total, entry) => total + entry.steps.length, 0);
+    count.textContent = `${entries.length} ${entries.length === 1 ? "caso" : "casos"} · ${stepCount} ${stepCount === 1 ? "paso" : "pasos"}`;
+    list.innerHTML = entries.map(({ caseRecord, steps: relevantSteps }) => {
+      const suiteName = suiteNames.get(caseRecord.suiteId);
+      const caseMeta = [suiteName, caseRecord.tester ? `Documentado por ${caseRecord.tester}` : ""]
+        .filter(Boolean)
+        .join(" · ");
+      const renderedSteps = relevantSteps.map(({ step, index }) => {
+        const issueIndex = issueSteps.push({ caseRecord, step, index }) - 1;
+        const status = caseUtils.normalizeStepStatus(step.stepStatus || step.status);
+        const severity = getStepSeverity(step) || "";
+        const image = step.renderedDataUrl || step.dataUrl || step.thumbnailDataUrl;
+        const comment = String(step.comment || "").trim() || "Sin comentario registrado.";
+        return `<article class="dashboard-issue-step status-${status}${severity ? ` sev-${severity}` : ""}">
+          <div class="dashboard-issue-step-heading">
+            <span class="dashboard-issue-step-number">Paso ${index + 1}</span>
+            <span class="dashboard-issue-step-badge">${stepStatusLabels[status] || "Pendiente"}</span>
+            ${severity ? `<span class="dashboard-issue-step-badge sev-${severity}">Novedad ${severity}</span>` : ""}
+          </div>
+          <div class="dashboard-issue-step-comment">${escapeHtml(comment)}</div>
+          ${image
+            ? `<button class="dashboard-issue-image" type="button" data-issue-image="${issueIndex}" aria-label="Ampliar evidencia del caso ${escapeHtml(caseRecord.caseId || "sin ID")}, paso ${index + 1}">
+                <img src="${escapeHtml(image)}" alt="Evidencia del paso ${index + 1}" loading="lazy" decoding="async" />
+              </button>`
+            : '<div class="dashboard-issue-image"><span class="dashboard-issue-image-empty">Este paso no tiene evidencia adjunta.</span></div>'}
+          <div class="dashboard-issue-step-actions">
+            <button class="dashboard-issue-open" type="button" data-issue-open="${issueIndex}">Abrir paso</button>
+          </div>
+        </article>`;
+      }).join("");
+      return `<article class="dashboard-issue-case">
+        <div class="dashboard-issue-case-heading">
+          <div class="dashboard-issue-case-copy">
+            <strong class="dashboard-issue-case-id">${escapeHtml(caseRecord.caseId || "Caso sin ID")}</strong>
+            <span class="dashboard-issue-case-description">${escapeHtml(caseRecord.description || "Caso de prueba")}</span>
+            ${caseMeta ? `<span class="dashboard-issue-case-meta">${escapeHtml(caseMeta)}</span>` : ""}
+          </div>
+          <span class="dashboard-issue-case-count">${relevantSteps.length} ${relevantSteps.length === 1 ? "issue" : "issues"}</span>
+        </div>
+        <div class="dashboard-issue-steps">${renderedSteps}</div>
+      </article>`;
+    }).join("");
+
+    list.querySelectorAll("[data-issue-open]").forEach((button) => {
+      const issue = issueSteps[Number(button.dataset.issueOpen)];
+      if (issue) button.addEventListener("click", () => openDashboardIssueStep(issue));
+    });
+    list.querySelectorAll("[data-issue-image]").forEach((button) => {
+      const issue = issueSteps[Number(button.dataset.issueImage)];
+      if (!issue) return;
+      button.addEventListener("click", () => {
+        const image = issue.step.renderedDataUrl || issue.step.dataUrl || issue.step.thumbnailDataUrl;
+        if (image) openZoom(image, button);
+        else showTransientStatus("No se encontró una imagen válida para ampliar.", 3500);
       });
     });
   }
@@ -31268,31 +31773,16 @@ var __async = (__this, __arguments, generator) => {
     suiteFilter.value = dashboardNoveltyFilters.suiteId;
     sortFilter.value = dashboardNoveltyFilters.sort;
 
-    const casesToDisplay = projectCases.slice();
-    const caseId = document.getElementById("caseId").value.trim();
-    const description = document.getElementById("description").value.trim();
-    if (getSelectedProjectId() === activeProjectId && (steps.length || caseId || description)) {
-      const draftCase = currentCaseData();
-      if (editingCaseIndex !== null && savedCases[editingCaseIndex]) {
-        const savedCase = savedCases[editingCaseIndex];
-        const displayIndex = casesToDisplay.indexOf(savedCase);
-        if (displayIndex >= 0) {
-          casesToDisplay[displayIndex] = { ...savedCase, ...draftCase };
-        } else {
-          casesToDisplay.push(draftCase);
-        }
-      } else {
-        casesToDisplay.push(draftCase);
-      }
-    }
+    const casesToDisplay = getDashboardCasesWithDraft(projectCases);
+    renderDashboardIssueLog(casesToDisplay);
 
     const allNovelties = casesToDisplay.flatMap((caseRecord) =>
       (Array.isArray(caseRecord.steps) ? caseRecord.steps : [])
-        .map((step, index) => ({ caseRecord, step, index }))
-        .filter(({ step }) => step && ["alta", "media", "baja"].includes(step.severity))
+        .map((step, index) => ({ caseRecord, step, index, severity: getStepSeverity(step) }))
+        .filter(({ severity }) => severity)
     );
-    const severityCounts = allNovelties.reduce((totals, { step }) => {
-      totals[step.severity] += 1;
+    const severityCounts = allNovelties.reduce((totals, { severity }) => {
+      totals[severity] += 1;
       return totals;
     }, { alta: 0, media: 0, baja: 0 });
     count.textContent = `${allNovelties.length} total · ${severityCounts.alta} alta · ${severityCounts.media} media · ${severityCounts.baja} baja`;
@@ -31310,7 +31800,7 @@ var __async = (__this, __arguments, generator) => {
       .split(/\s+/)
       .filter(Boolean);
     const suiteNames = new Map(suites.map((suite) => [suite.id, suite.name]));
-    const novelties = allNovelties.filter(({ caseRecord, step }) => {
+    const novelties = allNovelties.filter(({ caseRecord, step, severity }) => {
       const status = normalizeStepStatus(step.stepStatus || step.status);
       const suiteId = caseRecord.suiteId || "";
       const searchText = [
@@ -31329,7 +31819,7 @@ var __async = (__this, __arguments, generator) => {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLocaleLowerCase();
-      return (dashboardNoveltyFilters.severity === "all" || step.severity === dashboardNoveltyFilters.severity) &&
+      return (dashboardNoveltyFilters.severity === "all" || severity === dashboardNoveltyFilters.severity) &&
         (dashboardNoveltyFilters.status === "all" || status === dashboardNoveltyFilters.status) &&
         (dashboardNoveltyFilters.suiteId === "all" ||
           (dashboardNoveltyFilters.suiteId === "none" ? !suiteId : suiteId === dashboardNoveltyFilters.suiteId)) &&
@@ -31342,7 +31832,7 @@ var __async = (__this, __arguments, generator) => {
       if (dashboardNoveltyFilters.sort === "case") {
         return String(left.caseRecord.caseId || "").localeCompare(String(right.caseRecord.caseId || ""), undefined, { numeric: true });
       }
-      return severityPriority[left.step.severity] - severityPriority[right.step.severity];
+      return severityPriority[left.severity] - severityPriority[right.severity];
     });
     if (results) results.textContent = `Mostrando ${novelties.length} de ${allNovelties.length} novedades`;
     if (!novelties.length) {
@@ -31356,8 +31846,7 @@ var __async = (__this, __arguments, generator) => {
       observado: "Observado",
       pendiente: "Pendiente",
     };
-    list.innerHTML = novelties.map(({ caseRecord, step, index }, noveltyIndex) => {
-      const severity = step.severity;
+    list.innerHTML = novelties.map(({ caseRecord, step, index, severity }, noveltyIndex) => {
       const status = normalizeStepStatus(step.stepStatus || step.status);
       const image = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
       const comment = String(step.comment || "").trim() || "Sin comentario registrado.";
@@ -31382,7 +31871,7 @@ var __async = (__this, __arguments, generator) => {
     list.querySelectorAll("[data-novelty-open]").forEach((button) => {
       const novelty = novelties[Number(button.dataset.noveltyOpen)];
       if (!novelty) return;
-      button.addEventListener("click", () => openNoveltyStep(novelty));
+      button.addEventListener("click", () => openDashboardIssueStep(novelty));
     });
 
     list.querySelectorAll("[data-novelty-image]").forEach((button) => {
@@ -31411,11 +31900,14 @@ var __async = (__this, __arguments, generator) => {
 
   async function openNoveltyStep(novelty) {
     const { caseRecord, step } = novelty;
+    await dashboardReady;
+    const caseProjectId = caseRecord.projectId || projects[0]?.id;
     const caseIndex = savedCases.findIndex((savedCase) =>
+      (caseRecord.qaId && savedCase.qaId === caseRecord.qaId) ||
       savedCase === caseRecord ||
       (
         savedCase.caseId === caseRecord.caseId &&
-        (savedCase.projectId || projects[0]?.id) === (caseRecord.projectId || projects[0]?.id)
+        (savedCase.projectId || projects[0]?.id) === caseProjectId
       )
     );
 
@@ -31425,10 +31917,21 @@ var __async = (__this, __arguments, generator) => {
     }
 
     const currentStep = steps.find((item) => String(item.id) === String(step.id));
-    if (!currentStep || getSelectedProjectId() !== activeProjectId) return;
+    if (!currentStep || getSelectedProjectId() !== activeProjectId) {
+      throw new Error("No se encontró el caso guardado ni el paso abierto para navegar.");
+    }
     document.body.classList.remove("dashboard-view");
     document.body.classList.add("documenter-view");
     focusDocumenterStep(currentStep.id);
+  }
+
+  async function openDashboardIssueStep(issue) {
+    try {
+      await openNoveltyStep(issue);
+    } catch (error) {
+      console.error("No se pudo abrir el paso desde el panel:", error);
+      showTransientStatus(`No se pudo abrir este paso. ${error.message || "Inténtalo nuevamente."}`, 5000);
+    }
   }
 
   function focusDocumenterStep(stepId) {
@@ -31504,6 +32007,7 @@ var __async = (__this, __arguments, generator) => {
 
     renderDashboardProjects();
     renderProjectSelector();
+    renderDocumenterCasePicker();
     renderQaPanel();
   }
 
@@ -31568,34 +32072,79 @@ var __async = (__this, __arguments, generator) => {
     if (!show && input) input.value = "";
   }
 
-  async function createDashboardProject(name) {
+  async function createDashboardProject(name, submitButton) {
     const cleanName = String(name || "").trim();
-    if (!cleanName) return;
+    if (!cleanName) {
+      showTransientStatus("Escribe un nombre para crear el proyecto.", 3000);
+      document.getElementById("newProjectName").focus();
+      return false;
+    }
+    const previousProjectId = activeProjectId;
     const project = { id: createProjectId(), name: cleanName, createdAt: Date.now(), suites: createDefaultSuites() };
     projects.push(project);
+    if (!(await saveProjectsToDB())) {
+      projects = projects.filter((item) => item.id !== project.id);
+      activeProjectId = previousProjectId;
+      renderDashboard();
+      renderCasesList();
+      await showAppAlert("No se pudo guardar el proyecto en este navegador. Revisa el espacio disponible e inténtalo de nuevo.", submitButton);
+      return false;
+    }
     activeProjectId = project.id;
-    await saveProjectsToDB();
     renderDashboard();
     renderCasesList();
     showNewProjectForm(false);
+    return true;
   }
 
   function initDashboardNavigation() {
     const toggle = document.getElementById("dashboardSidebarToggle");
+    document.getElementById("documenterCasePicker").addEventListener("change", async (event) => {
+      const value = event.currentTarget.value;
+      const picker = event.currentTarget;
+      if (value === MANUAL_CASE_PICKER_VALUE) {
+        await startManualDocumenterCase();
+        return;
+      }
+      if (!value.startsWith("case:")) return;
+      const caseIndex = Number(value.slice("case:".length));
+      if (!Number.isInteger(caseIndex) || !savedCases[caseIndex]) {
+        renderDocumenterCasePicker("");
+        showTransientStatus("No se encontró el caso seleccionado. Actualicé la lista de suites.", 4000);
+        return;
+      }
+      try {
+        await openCaseFromBatch(caseIndex);
+        document.getElementById("documenterCasePicker").value =
+          editingCaseIndex === caseIndex ? `case:${caseIndex}` : editingCaseIndex !== null
+            ? `case:${editingCaseIndex}`
+            : MANUAL_CASE_PICKER_VALUE;
+      } catch (error) {
+        console.error("No se pudo abrir el caso seleccionado:", error);
+        await showAppAlert(`No se pudo abrir el caso seleccionado. ${error.message || "Inténtalo nuevamente."}`, picker);
+        renderDocumenterCasePicker(editingCaseIndex !== null ? `case:${editingCaseIndex}` : "");
+      }
+    });
     const openDocumenter = async (suiteId = "") => {
-      await dashboardReady;
-      setSelectedProjectId(activeProjectId);
-      currentSuiteId = suiteId;
       document.body.classList.remove("dashboard-view");
       document.body.classList.add("documenter-view");
-      await recoverSavedCaseIfNeeded();
-      const suite = projects.find((item) => item.id === activeProjectId)?.suites?.find((item) => item.id === currentSuiteId);
-      const suiteContext = document.getElementById("qaCaseSuiteContext");
-      if (suiteContext) {
-        suiteContext.hidden = !suite;
-        suiteContext.textContent = suite ? `El nuevo caso se guardará en la suite: ${suite.name}` : "";
+      try {
+        await dashboardReady;
+        document.body.classList.remove("dashboard-view");
+        setSelectedProjectId(activeProjectId);
+        currentSuiteId = suiteId;
+        await recoverSavedCaseIfNeeded();
+        const suite = projects.find((item) => item.id === activeProjectId)?.suites?.find((item) => item.id === currentSuiteId);
+        const suiteContext = document.getElementById("qaCaseSuiteContext");
+        if (suiteContext) {
+          suiteContext.hidden = !suite;
+          suiteContext.textContent = suite ? `El nuevo caso se guardará en la suite: ${suite.name}` : "";
+        }
+        if (!suite) currentSuiteId = "";
+      } catch (error) {
+        console.error("No se pudo preparar el documentador:", error);
+        showTransientStatus(`No se pudo cargar el proyecto para el documentador. ${error.message || "Inténtalo nuevamente."}`, 5000);
       }
-      if (!suite) currentSuiteId = "";
     };
     document.getElementById("openDocumenterBtn").addEventListener("click", openDocumenter);
     document.getElementById("startDocumenterBtn").addEventListener("click", openDocumenter);
@@ -31616,9 +32165,23 @@ var __async = (__this, __arguments, generator) => {
     toggle.setAttribute("aria-label", document.body.classList.contains("dashboard-sidebar-collapsed") ? "Mostrar barra lateral" : "Ocultar barra lateral");
     document.getElementById("newProjectBtn").addEventListener("click", () => showNewProjectForm(true));
     document.getElementById("cancelNewProjectBtn").addEventListener("click", () => showNewProjectForm(false));
-    document.getElementById("newProjectForm").addEventListener("submit", async (event) => {
+    const newProjectForm = document.getElementById("newProjectForm");
+    newProjectForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      await createDashboardProject(document.getElementById("newProjectName").value);
+      if (!newProjectForm.reportValidity()) return;
+      const submitButton = newProjectForm.querySelector('[type="submit"]');
+      const originalLabel = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = "Guardando…";
+      try {
+        await createDashboardProject(document.getElementById("newProjectName").value, submitButton);
+      } catch (error) {
+        console.error("No se pudo crear el proyecto:", error);
+        await showAppAlert(`No se pudo crear el proyecto. ${error.message || "Inténtalo nuevamente."}`, submitButton);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalLabel;
+      }
     });
     const editForm = document.getElementById("editProjectForm");
     const editInput = document.getElementById("editProjectName");
@@ -31767,6 +32330,7 @@ var __async = (__this, __arguments, generator) => {
       document.getElementById("qaCaseSuiteContext").hidden = true;
       localStorage.setItem("activeDashboardProject", activeProjectId);
       renderDashboard();
+      renderDocumenterCasePicker("");
       renderCasesList();
       autosave();
     });
@@ -31826,6 +32390,7 @@ var __async = (__this, __arguments, generator) => {
       const searchText = [
         buildCaseRecordTitle(item),
         item.description,
+        item.details,
         item.tester,
         item.team,
         item.fecha,
@@ -31940,6 +32505,7 @@ var __async = (__this, __arguments, generator) => {
       document.getElementById("addToBatchBtn").textContent = "➕ Guardar caso y empezar otro";
       document.getElementById("caseId").value = "";
       document.getElementById("description").value = "";
+      document.getElementById("caseDetails").value = "";
       document.getElementById("team").value = "";
       document.getElementById("tester").value = "";
       setQaContext({});
@@ -31950,6 +32516,35 @@ var __async = (__this, __arguments, generator) => {
     }
     renumberSteps();
 
+  }
+
+  async function startManualDocumenterCase() {
+    const current = currentCaseData();
+    const hasCurrentData = current.steps.length > 0 ||
+      [current.caseId, current.description, current.details, current.team, current.tester]
+        .some((value) => String(value || "").trim());
+    if (hasCurrentData) {
+      const proceed = await showAppConfirm(
+        "El caso actual tiene información. ¿Empezar un caso manual nuevo? Los cambios sin guardar del caso actual se descartarán.",
+        document.getElementById("documenterCasePicker")
+      );
+      if (!proceed) {
+        document.getElementById("documenterCasePicker").value =
+          editingCaseIndex !== null ? `case:${editingCaseIndex}` : "";
+        return;
+      }
+    }
+
+    resetCurrentCaseUI({ clearFields: true });
+    currentSuiteId = "";
+    const suiteContext = document.getElementById("qaCaseSuiteContext");
+    suiteContext.hidden = true;
+    suiteContext.textContent = "";
+    document.getElementById("documenterCasePicker").value = MANUAL_CASE_PICKER_VALUE;
+    document.body.classList.remove("dashboard-view");
+    document.body.classList.add("documenter-view");
+    autosaveStatus.textContent = "Caso manual listo para documentar.";
+    await saveStateToDB();
   }
 
   async function openCaseFromBatch(idx, focusStepId) {
@@ -31967,7 +32562,7 @@ var __async = (__this, __arguments, generator) => {
       return;
     }
 
-    const hasCurrentData = current.steps.length > 0 || [current.caseId, current.description, current.team, current.tester]
+    const hasCurrentData = current.steps.length > 0 || [current.caseId, current.description, current.details, current.team, current.tester]
       .some((value) => String(value || "").trim());
     if (hasCurrentData) {
       const proceed = await showAppConfirm(
@@ -31988,8 +32583,17 @@ var __async = (__this, __arguments, generator) => {
     document.body.classList.add("documenter-view");
     renderDashboard();
     renderCasesList();
-    document.getElementById("caseId").value = selectedCase.caseId || "";
-    document.getElementById("description").value = selectedCase.description || "";
+    const savedCaseId = String(selectedCase.caseId || "");
+    const legacySuiteCase = selectedCase.suiteId
+      ? savedCaseId.match(/^([A-Za-z][A-Za-z0-9._-]*-\d+)\s+(.+)$/)
+      : null;
+    const combinedCaseLabel = [savedCaseId, selectedCase.description].filter(Boolean).join(" ").trim();
+    document.getElementById("caseId").value = combinedCaseLabel || (legacySuiteCase ? legacySuiteCase[1] : savedCaseId);
+    document.getElementById("description").value = selectedCase.suiteId || legacySuiteCase
+      ? ""
+      : selectedCase.description || "";
+    document.getElementById("caseDetails").value = selectedCase.details ||
+      (legacySuiteCase ? selectedCase.description || "" : "");
     document.getElementById("team").value = selectedCase.team || "";
     document.getElementById("tester").value = selectedCase.tester || "";
     savedDefectContext = selectedCase.qaContext || {};
@@ -32011,6 +32615,7 @@ var __async = (__this, __arguments, generator) => {
     redoStack.length = 0;
     renumberSteps();
     updateHistoryButtons();
+    document.getElementById("documenterCasePicker").value = `case:${idx}`;
     renderDashboardNovedades(getActiveProjectCases());
     saveStateToDB();
     autosaveStatus.textContent = "✅ Caso abierto para continuar editándolo.";
@@ -32026,7 +32631,11 @@ var __async = (__this, __arguments, generator) => {
     if (document.getElementById("exportPreview")) {
       syncEditedPreviewToCaseFields();
     }
-    const caseId = document.getElementById("caseId").value.trim();
+    const normalizedCase = normalizeCaseIdInputValue(
+      document.getElementById("caseId").value,
+      document.getElementById("description").value
+    );
+    const caseId = normalizedCase.caseId;
     if (!caseId) {
       await showAppAlert("Ponle un ID al caso antes de guardarlo en el lote.", document.getElementById("addToBatchBtn"));
       return;
@@ -32045,9 +32654,10 @@ var __async = (__this, __arguments, generator) => {
       projectId: getSelectedProjectId(),
       ...(currentSuiteId ? { suiteId: currentSuiteId } : {}),
       caseId,
-      description: document.getElementById("description").value,
+      description: normalizedCase.description,
       team: document.getElementById("team").value,
       tester: document.getElementById("tester").value,
+      details: document.getElementById("caseDetails").value,
       templateKey: getSelectedTemplateKey(),
       qaContext: { ...savedDefectContext },
       previewEditedHtml: savedDocumentPreviewHtml || previewEditedHtml || "",
@@ -32064,6 +32674,7 @@ var __async = (__this, __arguments, generator) => {
     resetCurrentCaseUI({ clearFields: true });
     renderCasesList();
     renderDashboard();
+    document.getElementById("documenterCasePicker").value = MANUAL_CASE_PICKER_VALUE;
     await saveCasesToDB();
     saveStateToDB();
     autosaveStatus.textContent = "✅ Caso agregado al lote. Listo para el siguiente.";
@@ -32125,7 +32736,12 @@ var __async = (__this, __arguments, generator) => {
   initQuickCommentFab();
   initDashboardNavigation();
   dashboardReady = initializeDashboard();
-  dashboardReady.then(() => recoverSavedCaseIfNeeded());
+  dashboardReady
+    .then(() => recoverSavedCaseIfNeeded())
+    .catch((error) => {
+      console.error("No se pudo iniciar la recuperación del borrador:", error);
+      showTransientStatus("No se pudo leer el borrador guardado. Tus casos del lote permanecen guardados.", 6000);
+    });
   updateHistoryButtons();
 
   document.getElementById("resetBtn").addEventListener("click", async () => {
@@ -32142,60 +32758,63 @@ var __async = (__this, __arguments, generator) => {
   // ================== RECUPERAR CASO SI HABÍA UNO SIN TERMINAR ==================
   async function recoverSavedCaseIfNeeded() {
     if (caseRecoveryChecked) return;
-    caseRecoveryChecked = true;
-    const saved = await loadStateFromDB();
-    if (!saved) return;
-    const hasSavedContent = (saved.steps || []).length > 0
-      || [saved.caseId, saved.description, saved.team, saved.tester, saved.documentNotes]
-        .some((value) => String(value || "").trim())
-      || Object.values(saved.qaContext || {}).some((value) => String(value || "").trim())
-      || !!saved.previewEditedHtml;
-    if (!hasSavedContent) return;
+    if (caseRecoveryPromise) return caseRecoveryPromise;
 
-    const fechaGuardado = new Date(saved.savedAt).toLocaleString("es-CO");
-    const recuperar = await showAppConfirm(
-      `Se encontró un caso sin terminar (guardado el ${fechaGuardado}) con ${saved.steps.length} paso(s).\n\n¿Quieres recuperarlo?\n\nAceptar = Recuperar\nCancelar = Descartar y empezar de cero`
-    );
+    caseRecoveryPromise = (async () => {
+      const saved = await loadStateFromDB();
+      if (!saved) {
+        caseRecoveryChecked = true;
+        return;
+      }
+      const hasSavedContent = (saved.steps || []).length > 0
+        || [saved.caseId, saved.description, saved.details, saved.team, saved.tester, saved.documentNotes]
+          .some((value) => String(value || "").trim())
+        || Object.values(saved.qaContext || {}).some((value) => String(value || "").trim())
+        || !!saved.previewEditedHtml;
+      if (!hasSavedContent) {
+        caseRecoveryChecked = true;
+        return;
+      }
 
-    if (!recuperar) {
-      clearStateInDB();
-      return;
+      const fechaGuardado = new Date(saved.savedAt).toLocaleString("es-CO");
+      const recuperar = await showAppConfirm(
+        `Se encontró un caso sin terminar (guardado el ${fechaGuardado}) con ${saved.steps.length} paso(s).\n\n¿Quieres recuperarlo?\n\nAceptar = Recuperar\nCancelar = Descartar y empezar de cero`
+      );
+
+      if (!recuperar) {
+        await clearStateInDB();
+        caseRecoveryChecked = true;
+        return;
+      }
+
+      setSelectedProjectId(saved.projectId || activeProjectId);
+      document.getElementById("caseId").value = saved.caseId || "";
+      document.getElementById("description").value = saved.description || "";
+      document.getElementById("caseDetails").value = saved.details || "";
+      document.getElementById("team").value = saved.team || "";
+      document.getElementById("tester").value = saved.tester || "";
+      savedDefectContext = saved.qaContext || {};
+      setQaContext(savedDefectContext);
+      savedDocumentPreviewHtml = saved.previewEditedHtml || "";
+      setDocumentNotesValue(saved.documentNotes || "");
+      steps = (saved.steps || []).map((step) => normalizeStepForRestore(step));
+      steps.forEach((step) => addStepCard(step));
+      renumberSteps();
+      undoStack.length = 0;
+      redoStack.length = 0;
+      updateHistoryButtons();
+      autosaveStatus.textContent = "✅ Caso recuperado del guardado automático.";
+      document.body.classList.remove("dashboard-view");
+      document.body.classList.add("documenter-view");
+      caseRecoveryChecked = true;
+    })();
+
+    try {
+      await caseRecoveryPromise;
+    } catch (error) {
+      caseRecoveryPromise = null;
+      throw error;
     }
-
-    setSelectedProjectId(saved.projectId || activeProjectId);
-    document.getElementById("caseId").value = saved.caseId || "";
-    document.getElementById("description").value = saved.description || "";
-    document.getElementById("team").value = saved.team || "";
-    document.getElementById("tester").value = saved.tester || "";
-    savedDefectContext = saved.qaContext || {};
-    setQaContext(savedDefectContext);
-    savedDocumentPreviewHtml = saved.previewEditedHtml || "";
-    setDocumentNotesValue(saved.documentNotes || "");
-    setSelectedProjectId(saved.projectId || activeProjectId);
-
-    steps = saved.steps.map((s) => ({
-      id: s.id,
-      dataUrl: s.dataUrl,
-      renderedDataUrl: s.renderedDataUrl,
-      comment: s.comment || "",
-      commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "top",
-      stepStatus: normalizeStepStatus(s.stepStatus || s.status),
-      novedad: !!s.novedad,
-      // compatibilidad: sesiones guardadas antes de tener severidad solo tenían
-      // "novedad: true/false" — esas se recuperan como severidad "alta" por defecto
-      severity: s.severity !== undefined ? s.severity : (s.novedad ? "alta" : null),
-      boxes: s.boxes || [],
-      pins: Array.isArray(s.pins) ? s.pins : [],
-      color: s.color || "#e02424",
-    }));
-    steps.forEach((s) => addStepCard(s));
-    renumberSteps();
-    undoStack.length = 0;
-    redoStack.length = 0;
-    updateHistoryButtons();
-    autosaveStatus.textContent = "✅ Caso recuperado del guardado automático.";
-    document.body.classList.remove("dashboard-view");
-    document.body.classList.add("documenter-view");
   }
 </script>
 </body>
