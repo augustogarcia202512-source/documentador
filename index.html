@@ -31267,11 +31267,25 @@ var __async = (__this, __arguments, generator) => {
     }
   }
 
+  function getLatestQaExecutionNote(caseRecord) {
+    const project = projects.find((item) => item.id === (caseRecord.projectId || projects[0]?.id));
+    const cycle = project?.qaCyclesEnabled ? getActiveExecutionCycle(project) : null;
+    const history = cycle
+      ? getCaseCycleResult(caseRecord, cycle).history
+      : Array.isArray(caseRecord.executionHistory) ? caseRecord.executionHistory : [];
+    const latestEntry = history.slice().reverse().find((entry) => typeof entry?.note === "string" && entry.note.trim());
+    return latestEntry ? latestEntry.note.trim() : "";
+  }
+
   function renderQaExecutionDialog(caseRecord) {
     if (!caseRecord) return;
     const project = projects.find((item) => item.id === activeProjectId);
     const suite = project?.suites?.find((item) => item.id === caseRecord.suiteId);
     const cycle = project?.qaCyclesEnabled ? getActiveExecutionCycle(project) : null;
+    const noteInput = document.getElementById("qaExecutionNote");
+    if (noteInput && !noteInput.dataset.hasPendingEdit) {
+      noteInput.value = getLatestQaExecutionNote(caseRecord);
+    }
     document.getElementById("qaExecutionTitle").textContent = caseRecord.caseId || "Caso sin ID";
     document.getElementById("qaExecutionSubtitle").textContent =
       `${caseRecord.description || "Caso de prueba"}${caseRecord.details ? ` · ${caseRecord.details}` : ""}${suite ? ` · ${suite.name}` : ""}${cycle ? ` · ${cycle.name}` : ""}`;
@@ -31295,11 +31309,52 @@ var __async = (__this, __arguments, generator) => {
       : "Sin historial.";
   }
 
+  async function persistPendingQaExecutionNote() {
+    const caseIndex = selectedQaCaseIndex;
+    if (caseIndex === null || caseIndex === undefined) return;
+    const caseRecord = savedCases[caseIndex];
+    if (!caseRecord) return;
+    const noteInput = document.getElementById("qaExecutionNote");
+    if (!noteInput) return;
+    const note = noteInput.value.trim();
+    if (!note) return;
+    const currentStatus = getCaseExecutionStatus(caseRecord);
+    const project = projects.find((item) => item.id === (caseRecord.projectId || projects[0]?.id));
+    const cycle = project?.qaCyclesEnabled ? getActiveExecutionCycle(project) : null;
+    const history = cycle
+      ? getCaseCycleResult(caseRecord, cycle).history
+      : Array.isArray(caseRecord.executionHistory) ? caseRecord.executionHistory : [];
+    const matchingEntry = history.slice().reverse().find((entry) => entry && typeof entry.note === "string" && entry.note.trim() === note);
+    if (matchingEntry && matchingEntry.status === currentStatus) {
+      noteInput.value = "";
+      return;
+    }
+    if (cycle) {
+      if (!cycle.results || typeof cycle.results !== "object") cycle.results = {};
+      cycle.results[caseRecord.qaId] = {
+        status: currentStatus,
+        history: [...history, { status: currentStatus, note, at: Date.now() }],
+      };
+    } else {
+      if (!Array.isArray(caseRecord.executionHistory)) caseRecord.executionHistory = [];
+      caseRecord.executionStatus = currentStatus;
+      caseRecord.executionHistory.push({ status: currentStatus, note, at: Date.now() });
+    }
+    const saved = cycle ? await saveProjectsToDB() : await saveCasesToDB();
+    if (!saved) return;
+    noteInput.value = "";
+    renderDashboard();
+    renderCasesList();
+    renderQaExecutionDialog(caseRecord);
+  }
+
   function openQaExecutionDialog(caseIndex, opener) {
     const caseRecord = savedCases[caseIndex];
     if (!caseRecord) return;
     selectedQaCaseIndex = caseIndex;
-    document.getElementById("qaExecutionNote").value = "";
+    const noteInput = document.getElementById("qaExecutionNote");
+    noteInput.dataset.hasPendingEdit = "false";
+    noteInput.value = getLatestQaExecutionNote(caseRecord);
     renderQaExecutionDialog(caseRecord);
     openOverlay(document.getElementById("qaExecutionOverlay"), {
       opener,
@@ -31310,9 +31365,15 @@ var __async = (__this, __arguments, generator) => {
   }
 
   function closeQaExecutionDialog() {
+    persistPendingQaExecutionNote();
     const overlay = document.getElementById("qaExecutionOverlay");
     if (overlay.style.display !== "none") closeOverlay(overlay);
     selectedQaCaseIndex = null;
+    const noteInput = document.getElementById("qaExecutionNote");
+    if (noteInput) {
+      noteInput.dataset.hasPendingEdit = "false";
+      noteInput.value = "";
+    }
   }
 
   async function updateQaExecutionStatus(status) {
