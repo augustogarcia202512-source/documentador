@@ -1573,6 +1573,8 @@
   }
   .dashboard-backup-actions { display: flex; justify-content: flex-end; gap: 8px; margin: 0 0 10px; }
   .dashboard-backup-actions button { min-height: 30px; padding: 5px 9px; font-size: 10px; }
+  .dashboard-backup-help { flex-basis: 100%; margin: 0; color: var(--text-faint); font-size: 10px; text-align: right; }
+  .dashboard-backup-actions #resetWorkspaceBtn { border-color: rgba(224,82,74,.4); color: #ff9d95; }
   .dashboard-case-table { width: 100%; border-collapse: collapse; overflow: hidden; border: 1px solid var(--line-soft); border-radius: 11px; background: var(--panel); }
   .dashboard-case-table th, .dashboard-case-table td { padding: 10px 11px; text-align: left; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
   .dashboard-case-table th { color: var(--text-faint); font: 9px var(--mono); letter-spacing: .09em; text-transform: uppercase; }
@@ -2530,8 +2532,10 @@
           </div>
           <div class="dashboard-backup-actions" aria-label="Transferir datos del documentador">
             <button class="btn-secondary" id="downloadWorkspaceBackupBtn" type="button">⬇ Descargar respaldo</button>
-            <button class="btn-secondary" id="importWorkspaceBackupBtn" type="button">⬆ Importar respaldo</button>
+            <button class="btn-secondary" id="importWorkspaceBackupBtn" type="button" title="Reemplaza los datos actuales con los del respaldo">⬆ Importar respaldo</button>
+            <button class="btn-secondary" id="resetWorkspaceBtn" type="button">🗑 Reiniciar todo</button>
             <input id="workspaceBackupFileInput" type="file" accept=".json,application/json" hidden />
+            <p class="dashboard-backup-help">Importar reemplaza el espacio actual. Reiniciar lo deja listo para comenzar de nuevo.</p>
           </div>
           <div class="dashboard-case-table-wrap">
             <table class="dashboard-case-table" aria-describedby="dashboardCasesTitle">
@@ -30855,6 +30859,56 @@ var __async = (__this, __arguments, generator) => {
     });
   }
 
+  async function resetWorkspaceData() {
+    const freshProject = {
+      id: createProjectId(),
+      name: "Mi proyecto",
+      createdAt: Date.now(),
+      suites: createDefaultSuites(),
+      executionCycles: [],
+      qaCyclesEnabled: false,
+    };
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      store.put([freshProject], PROJECTS_KEY);
+      store.put([], CASES_KEY);
+      store.delete(STATE_KEY);
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onerror = () => { db.close(); reject(tx.error || new Error("No se pudieron reiniciar los datos.")); };
+      tx.onabort = () => { db.close(); reject(tx.error || new Error("Se canceló el reinicio de los datos.")); };
+    });
+    return freshProject;
+  }
+
+  async function resetWorkspace(button) {
+    await dashboardReady;
+    const hasDraft = steps.length > 0 || ["caseId", "description", "caseDetails", "team", "tester"].some((id) =>
+      String(document.getElementById(id)?.value || "").trim()
+    );
+    const confirmed = await showAppConfirm(
+      `Se eliminarán ${projects.length} proyecto(s), sus ${savedCases.length} caso(s) y el borrador${hasDraft ? " abierto" : " guardado"}. Se creará un proyecto nuevo vacío con sus suites iniciales. Esta acción no se puede deshacer.`,
+      button,
+      "Reiniciar todo"
+    );
+    if (!confirmed) return;
+
+    button.disabled = true;
+    autosave.cancel();
+    autosaveCases.cancel();
+    try {
+      const freshProject = await resetWorkspaceData();
+      localStorage.setItem("activeDashboardProject", freshProject.id);
+      await showAppAlert("El espacio quedó reiniciado. Ya puedes comenzar con un proyecto limpio.", button);
+      window.location.reload();
+    } catch (error) {
+      console.error("No se pudo reiniciar el espacio de trabajo:", error);
+      await showAppAlert(`No se pudo reiniciar el espacio de trabajo. ${error.message || "Inténtalo nuevamente."}`, button);
+      button.disabled = false;
+    }
+  }
+
   async function importWorkspaceBackup(file, opener) {
     if (!file) return;
     try {
@@ -30870,6 +30924,7 @@ var __async = (__this, __arguments, generator) => {
       if (!confirmed) return;
 
       autosave.cancel();
+      autosaveCases.cancel();
       await replaceWorkspaceDataFromBackup(backup);
       const restoredProjectId = backup.projects.some((project) => project.id === backup.activeProjectId)
         ? backup.activeProjectId
@@ -32345,9 +32400,11 @@ var __async = (__this, __arguments, generator) => {
     const downloadBackupFromDocumenterButton = document.getElementById("downloadWorkspaceBackupFromDocumenterBtn");
     const importBackupButton = document.getElementById("importWorkspaceBackupBtn");
     const backupFileInput = document.getElementById("workspaceBackupFileInput");
+    const resetWorkspaceButton = document.getElementById("resetWorkspaceBtn");
     downloadBackupButton.addEventListener("click", () => downloadWorkspaceBackup(downloadBackupButton));
     downloadBackupFromDocumenterButton.addEventListener("click", () => downloadWorkspaceBackup(downloadBackupFromDocumenterButton));
     importBackupButton.addEventListener("click", () => backupFileInput.click());
+    resetWorkspaceButton.addEventListener("click", () => resetWorkspace(resetWorkspaceButton));
     backupFileInput.addEventListener("change", async () => {
       const file = backupFileInput.files?.[0];
       try {
