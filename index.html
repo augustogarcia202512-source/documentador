@@ -1253,6 +1253,15 @@
     font-size: 13px;
     font-weight: 800;
   }
+  .qa-suite-case-actions #qaDeleteSuiteBtn {
+    grid-column: 1 / -1;
+    border-color: var(--red);
+    background: transparent;
+    color: var(--red);
+  }
+  .qa-suite-case-actions #qaDeleteSuiteBtn:hover {
+    background: var(--red-dim);
+  }
   .qa-suite-case-list { display: grid; gap: 8px; }
   .qa-suite-case-item {
     width: 100%;
@@ -2420,6 +2429,7 @@
             <div class="qa-suite-case-actions">
               <button id="qaAddCaseBtn" type="button">+ Caso</button>
               <button id="qaEditSuiteBtn" type="button">Editar suite</button>
+              <button class="btn-danger" id="qaDeleteSuiteBtn" type="button">Eliminar suite</button>
             </div>
             <div class="qa-suite-case-list" id="qaSuiteCaseList"></div>
           </section>
@@ -31427,6 +31437,83 @@ var __async = (__this, __arguments, generator) => {
     renderQaExecutionDialog(caseRecord);
   }
 
+  async function persistSuiteDeletion(nextProjects, nextCases, discardDraft) {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.put(nextProjects, PROJECTS_KEY);
+    store.put(nextCases, CASES_KEY);
+    if (discardDraft) store.delete(STATE_KEY);
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onerror = () => { db.close(); reject(tx.error || new Error("No se pudieron guardar los cambios al eliminar la suite.")); };
+      tx.onabort = () => { db.close(); reject(tx.error || new Error("Se canceló la eliminación de la suite.")); };
+    });
+  }
+
+  async function deleteQaSuite(opener) {
+    const project = projects.find((item) => item.id === activeProjectId);
+    const suite = project?.suites?.find((item) => item.id === activeSuiteId);
+    if (!project || !suite) return;
+
+    const projectCases = savedCases.filter((item) =>
+      (item.projectId || projects[0]?.id) === project.id && item.suiteId === suite.id
+    );
+    const hasOpenDraft = getSelectedProjectId() === project.id && currentSuiteId === suite.id;
+    const draftWarning = hasOpenDraft
+      ? " También se descartará el borrador abierto de esta suite."
+      : "";
+    const confirmed = await showAppConfirm(
+      `¿Eliminar la suite “${suite.name}” junto con sus ${projectCases.length} caso(s)? Esta acción no se puede deshacer.${draftWarning}`,
+      opener
+    );
+    if (!confirmed) return;
+
+    const removedQaIds = new Set(projectCases.map((item) => item.qaId).filter(Boolean));
+    const nextCases = savedCases.filter((item) =>
+      (item.projectId || projects[0]?.id) !== project.id || item.suiteId !== suite.id
+    );
+    const nextProjects = projects.map((item) => {
+      if (item.id !== project.id) return item;
+      return {
+        ...item,
+        suites: (Array.isArray(item.suites) ? item.suites : []).filter((candidate) => candidate.id !== suite.id),
+        executionCycles: Array.isArray(item.executionCycles)
+          ? item.executionCycles.map((cycle) => {
+              if (!cycle.results || typeof cycle.results !== "object") return cycle;
+              const results = { ...cycle.results };
+              removedQaIds.forEach((qaId) => { delete results[qaId]; });
+              return { ...cycle, results };
+            })
+          : item.executionCycles,
+      };
+    });
+
+    opener.disabled = true;
+    try {
+      await persistSuiteDeletion(nextProjects, nextCases, hasOpenDraft);
+      projects = nextProjects;
+      savedCases = nextCases;
+      activeSuiteId = "";
+      if (hasOpenDraft) {
+        autosave.cancel();
+        resetCurrentCaseUI({ clearFields: true });
+        currentSuiteId = "";
+        const suiteContext = document.getElementById("qaCaseSuiteContext");
+        suiteContext.hidden = true;
+        suiteContext.textContent = "";
+      }
+      renderDashboard();
+      renderCasesList();
+      showTransientStatus(`Suite “${suite.name}” y sus casos eliminados.`, 3500);
+    } catch (error) {
+      console.error("No se pudo eliminar la suite:", error);
+      await showAppAlert(`No se pudo eliminar la suite. ${error.message || "Inténtalo nuevamente."}`, opener);
+    } finally {
+      opener.disabled = false;
+    }
+  }
+
   function renderQaPanel() {
     const project = projects.find((item) => item.id === activeProjectId);
     if (!project) return;
@@ -32335,6 +32422,9 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("qaSuiteEditCancel").addEventListener("click", () => {
       editSuiteForm.reset();
       editSuiteForm.hidden = true;
+    });
+    document.getElementById("qaDeleteSuiteBtn").addEventListener("click", (event) => {
+      deleteQaSuite(event.currentTarget);
     });
     editSuiteForm.addEventListener("submit", async (event) => {
       event.preventDefault();
