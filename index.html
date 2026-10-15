@@ -1505,6 +1505,8 @@
     color: #253244;
     font: 13px var(--sans);
   }
+  .qa-execution-attachments { display: grid; gap: 6px; margin-top: 10px; color: #52657c; font-size: 11px; }
+  .qa-execution-attachments[hidden] { display: none; }
   .qa-execution-history { min-height: 31px; margin: 10px 0; color: #718096; font-size: 11px; }
   .qa-execution-history-item { margin-top: 5px; line-height: 1.4; }
   .qa-execution-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -2139,7 +2141,6 @@
     font-weight: 750;
   }
   .dashboard-issue-log { margin-top: 14px; border-color: rgba(218,81,72,.22); }
-  .dashboard-issue-log[hidden] { display: none; }
   .dashboard-issue-log .dashboard-card-heading > span {
     border: 1px solid rgba(218,81,72,.18);
     border-radius: 999px;
@@ -2147,6 +2148,88 @@
     background: rgba(218,81,72,.08);
     color: var(--text);
     font-weight: 750;
+  }
+  .dashboard-issue-heading-actions { display: flex; gap: 7px; }
+  .dashboard-issue-heading-actions button { min-height: 32px; padding: 5px 9px; font-size: 10px; font-weight: 750; }
+  .dashboard-issue-summary { display: grid; grid-template-columns: repeat(6, minmax(90px, 1fr)); gap: 1px; margin-top: 12px; overflow: hidden; border: 1px solid var(--line-soft); border-radius: 9px; background: var(--line-soft); }
+  .dashboard-issue-summary-item { display: grid; gap: 3px; justify-items: center; padding: 10px 5px; background: var(--panel); }
+  .dashboard-issue-summary-item strong { font-size: 19px; line-height: 1; }
+  .dashboard-issue-summary-item span { color: var(--text-faint); font-size: 8px; text-align: center; text-transform: uppercase; letter-spacing: .06em; }
+  .dashboard-issue-summary-item[data-status="Open"] strong { color: #e7463e; }
+  .dashboard-issue-summary-item[data-status="Blocked"] strong { color: #8b4bc4; }
+  .dashboard-issue-summary-item[data-status="Ready for Retest"] strong { color: #3498db; }
+  .dashboard-issue-summary-item[data-status="In progress"] strong { color: #ef9800; }
+  .dashboard-issue-summary-item[data-status="Closed"] strong { color: #18a857; }
+  .dashboard-issue-summary-item[data-status="Re-Open"] strong { color: #e87920; }
+  .dashboard-issue-toolbar { display: grid; grid-template-columns: minmax(180px, 1.5fr) repeat(2, minmax(130px, 1fr)) auto; gap: 8px; margin-top: 11px; }
+  .dashboard-issue-toolbar input,
+  .dashboard-issue-toolbar select { min-width: 0; height: 35px; padding: 0 9px; border: 1px solid var(--line-soft); border-radius: 7px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 10px; }
+  .dashboard-issue-view-toggle { display: flex; gap: 4px; }
+  .dashboard-issue-view-toggle button { min-height: 35px; padding: 0 10px; border: 1px solid var(--line-soft); border-radius: 7px; background: var(--panel); color: var(--text-muted); font-size: 10px; font-weight: 750; }
+  .dashboard-issue-view-toggle button.active { border-color: #f2b34f; background: #f2b34f; color: #1a1406; }
+  .dashboard-issue-results { min-height: 16px; margin: 8px 0; color: var(--text-faint); font-size: 10px; }
+  .dashboard-issue-table-wrap { overflow: auto; border: 1px solid var(--line-soft); border-radius: 9px; }
+  #dashboardIssueTableView[hidden],
+  #dashboardIssueKanbanView[hidden] { display: none; }
+  .dashboard-issue-table { width: 100%; min-width: 0; table-layout: auto; border-collapse: collapse; background: var(--panel); font-size: 10px; }
+  .dashboard-issue-table th { padding: 9px 5px; background: #202d3d; color: #9bb0c9; font-size: 8px; text-align: left; text-transform: uppercase; white-space: normal; }
+  .dashboard-issue-table td { padding: 9px 5px; border-bottom: 1px solid var(--line-soft); vertical-align: top; overflow-wrap: anywhere; }
+  .dashboard-issue-table th:last-child, .dashboard-issue-table td:last-child { width: 1%; white-space: nowrap; overflow-wrap: normal; }
+  .dashboard-issue-table tr:last-child td { border-bottom: 0; }
+  .dashboard-issue-test-id { color: #e0524a; font-weight: 800; white-space: nowrap; }
+  .dashboard-issue-observation { max-width: 200px; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .dashboard-issue-status-pill { display: inline-flex; padding: 3px 6px; border: 1px solid currentColor; border-radius: 5px; font-size: 8px; font-weight: 800; white-space: nowrap; }
+  .dashboard-issue-status-pill.status-open { color: #e7463e; }
+  .dashboard-issue-status-pill.status-blocked { color: #8b4bc4; }
+  .dashboard-issue-status-pill.status-ready-for-retest { color: #3498db; }
+  .dashboard-issue-status-pill.status-in-progress { color: #d88900; }
+  .dashboard-issue-status-pill.status-closed { color: #18a857; }
+  .dashboard-issue-status-pill.status-re-open { color: #e87920; }
+  .dashboard-issue-table-actions { display: flex; gap: 5px; }
+  .dashboard-issue-table-actions button { min-height: 27px; padding: 4px 7px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--panel-2); color: var(--text); font-size: 9px; }
+  .dashboard-issue-evidence-button { min-height: 26px; padding: 4px 6px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--panel-2); color: var(--text); font-size: 9px; }
+  .dashboard-issue-evidence-previews { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 5px; min-width: 112px; max-width: 180px; }
+  .dashboard-issue-evidence-preview { display: grid; gap: 3px; width: 52px; padding: 3px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--panel-2); color: var(--text); font-size: 8px; text-align: center; }
+  .dashboard-issue-evidence-preview img { display: block; width: 44px; height: 36px; object-fit: cover; border-radius: 3px; background: var(--bg-soft); }
+  .dashboard-issue-evidence-more { align-self: center; font-size: 8px; color: var(--muted); }
+  .dashboard-issue-attachments { display: grid; gap: 6px; }
+  .dashboard-issue-attachment-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dashboard-issue-attachment-item { position: relative; width: 72px; padding: 3px; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--panel-2); }
+  .dashboard-issue-attachment-item img { display: block; width: 100%; height: 56px; object-fit: cover; border-radius: 4px; }
+  .dashboard-issue-attachment-item button { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: #e0524a; color: #fff; font-size: 11px; line-height: 18px; cursor: pointer; }
+  .dashboard-issue-kanban { display: grid; grid-template-columns: repeat(6, minmax(190px, 1fr)); gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+  .dashboard-issue-column { min-height: 145px; padding: 8px; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--panel-2); }
+  .dashboard-issue-column-heading { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 8px; font-size: 10px; font-weight: 800; }
+  .dashboard-issue-kanban-list { display: grid; align-content: start; gap: 7px; }
+  .dashboard-issue-kanban-card { padding: 8px; border: 1px solid var(--line-soft); border-left: 3px solid #e7463e; border-radius: 7px; background: var(--panel); }
+  .dashboard-issue-kanban-card strong,
+  .dashboard-issue-kanban-card span { display: block; overflow-wrap: anywhere; }
+  .dashboard-issue-kanban-card strong { color: #e0524a; font-size: 9px; }
+  .dashboard-issue-kanban-card span { margin-top: 4px; color: var(--text-muted); font-size: 9px; }
+  .dashboard-issue-kanban-card button { margin-top: 7px; min-height: 26px; padding: 4px 7px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--panel-2); color: var(--text); font-size: 9px; }
+  .dashboard-issue-empty { padding: 22px 12px; color: var(--text-faint); text-align: center; font-size: 11px; }
+  .dashboard-issue-editor { width: min(680px, 100%); max-height: 90vh; overflow: auto; }
+  .dashboard-issue-editor-form { display: grid; gap: 10px; }
+  .dashboard-issue-editor-form label { display: grid; gap: 5px; color: var(--text-muted); font-size: 10px; font-weight: 750; }
+  .dashboard-issue-editor-form input,
+  .dashboard-issue-editor-form textarea,
+  .dashboard-issue-editor-form select { width: 100%; min-height: 36px; padding: 8px 9px; border: 1px solid var(--line-soft); border-radius: 7px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 11px; }
+  .dashboard-issue-editor-form textarea { min-height: 90px; resize: vertical; }
+  .dashboard-issue-editor-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .dashboard-issue-evidence-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; max-height: 64vh; overflow: auto; }
+  .dashboard-issue-evidence-item { display: grid; gap: 5px; padding: 6px; border: 1px solid var(--line-soft); border-radius: 7px; background: var(--panel-2); color: var(--text); font-size: 9px; }
+  .dashboard-issue-evidence-item img { width: 100%; height: 110px; object-fit: contain; border-radius: 4px; background: var(--bg-soft); }
+  @media (max-width: 760px) {
+    .dashboard-issue-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .dashboard-issue-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dashboard-issue-toolbar input { grid-column: 1 / -1; }
+  }
+  @media (max-width: 480px) {
+    .dashboard-issue-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dashboard-issue-toolbar { grid-template-columns: 1fr; }
+    .dashboard-issue-toolbar input { grid-column: auto; }
+    .dashboard-issue-heading-actions { flex-wrap: wrap; justify-content: flex-end; }
+    .dashboard-issue-editor-fields { grid-template-columns: 1fr; }
   }
   .dashboard-issue-log-list { display: grid; gap: 12px; margin-top: 12px; }
   .dashboard-issue-case {
@@ -2476,13 +2559,123 @@
           <div class="dashboard-novelty-list" id="dashboardNovedadesList"></div>
         </section>
 
-        <section class="dashboard-card dashboard-issue-log" id="dashboardIssueLog" aria-labelledby="dashboardIssueLogTitle" hidden>
+        <section class="dashboard-card dashboard-issue-log" id="dashboardIssueLog" aria-labelledby="dashboardIssueLogTitle">
           <div class="dashboard-card-heading">
-            <strong id="dashboardIssueLogTitle">Log de issues</strong>
-            <span id="dashboardIssueLogCount"></span>
+            <strong id="dashboardIssueLogTitle">Bitácora de issues</strong>
+            <div class="dashboard-issue-heading-actions">
+              <button class="btn-primary" id="dashboardIssueCreateBtn" type="button">+ Registrar issue</button>
+              <button class="btn-secondary" id="dashboardIssueExportBtn" type="button">Exportar CSV</button>
+            </div>
           </div>
-          <div class="dashboard-issue-log-list" id="dashboardIssueLogList"></div>
+          <div class="dashboard-issue-summary" id="dashboardIssueSummary" aria-label="Resumen de issues"></div>
+          <div class="dashboard-issue-toolbar" aria-label="Filtros de issues">
+            <input id="dashboardIssueSearch" type="search" placeholder="Buscar por Test ID, formulario o escenario" aria-label="Buscar issues" />
+            <select id="dashboardIssueStatusFilter" aria-label="Filtrar issues por estado">
+              <option value="all">Todos los estados</option>
+            </select>
+            <select id="dashboardIssueSuiteFilter" aria-label="Filtrar issues por suite">
+              <option value="all">Todos los módulos</option>
+            </select>
+            <div class="dashboard-issue-view-toggle" role="group" aria-label="Vista de issues">
+              <button id="dashboardIssueTableToggle" type="button" class="active" aria-pressed="true">Tabla</button>
+              <button id="dashboardIssueKanbanToggle" type="button" aria-pressed="false">Kanban</button>
+            </div>
+          </div>
+          <div class="dashboard-issue-results" id="dashboardIssueResults" aria-live="polite"></div>
+          <div class="dashboard-issue-table-wrap" id="dashboardIssueTableView">
+            <table class="dashboard-issue-table">
+              <thead>
+                <tr>
+                  <th>Test ID</th>
+                  <th>Formulario</th>
+                  <th>Observación</th>
+                  <th>Evidencia</th>
+                  <th>Resultado QA</th>
+                  <th>Severidad</th>
+                  <th>Prioridad</th>
+                  <th>Estado</th>
+                  <th>Fecha registro</th>
+                  <th>Fecha cierre</th>
+                  <th>Última validación</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardIssueTableBody"></tbody>
+            </table>
+          </div>
+          <div class="dashboard-issue-kanban" id="dashboardIssueKanbanView" hidden></div>
         </section>
+        <div id="dashboardIssueEditorOverlay" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="dashboardIssueEditorTitle">
+          <div class="app-dialog-panel dashboard-issue-editor">
+            <h2 id="dashboardIssueEditorTitle" class="app-dialog-title">Registrar issue</h2>
+            <form class="dashboard-issue-editor-form" id="dashboardIssueForm">
+              <input id="dashboardIssueId" type="hidden" />
+              <label for="dashboardIssueCase">Caso relacionado (opcional)
+                <select id="dashboardIssueCase">
+                  <option value="">Sin caso relacionado</option>
+                </select>
+              </label>
+              <div class="dashboard-issue-editor-fields">
+                <label for="dashboardIssueTestId">Test ID
+                  <input id="dashboardIssueTestId" type="text" maxlength="100" required />
+                </label>
+                <label for="dashboardIssueFormName">Formulario / escenario
+                  <input id="dashboardIssueFormName" type="text" maxlength="180" required />
+                </label>
+              </div>
+              <label for="dashboardIssueObservation">Observación
+                <textarea id="dashboardIssueObservation" maxlength="3000" required></textarea>
+              </label>
+              <div class="dashboard-issue-editor-fields">
+                <label for="dashboardIssueSeverity">Severidad
+                  <select id="dashboardIssueSeverity">
+                    <option>Critical</option>
+                    <option>High</option>
+                    <option selected>Medium</option>
+                    <option>Low</option>
+                  </select>
+                </label>
+                <label for="dashboardIssuePriority">Prioridad
+                  <select id="dashboardIssuePriority">
+                    <option>Critical</option>
+                    <option>High</option>
+                    <option selected>Medium</option>
+                    <option>Low</option>
+                  </select>
+                </label>
+              </div>
+              <label for="dashboardIssueStatus">Estado
+                <select id="dashboardIssueStatus">
+                  <option>Open</option>
+                  <option>Closed</option>
+                  <option>Ready for Retest</option>
+                  <option>In progress</option>
+                  <option>Re-Open</option>
+                </select>
+              </label>
+              <div class="dashboard-issue-attachments">
+                <label for="dashboardIssueImages">Imágenes adjuntas (puedes pegar con Ctrl+V)
+                  <input id="dashboardIssueImages" type="file" accept="image/*" multiple />
+                </label>
+                <div class="dashboard-issue-attachment-list" id="dashboardIssueAttachmentList"></div>
+              </div>
+              <div id="dashboardIssueFormError" role="alert" hidden></div>
+              <div class="app-dialog-actions">
+                <button id="dashboardIssueCancelBtn" class="btn-secondary" type="button">Cancelar</button>
+                <button id="dashboardIssueSaveBtn" class="btn-primary" type="submit">Guardar issue</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div id="dashboardIssueEvidenceOverlay" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="dashboardIssueEvidenceTitle">
+          <div class="app-dialog-panel dashboard-issue-editor">
+            <h2 id="dashboardIssueEvidenceTitle" class="app-dialog-title">Evidencias del issue</h2>
+            <div class="dashboard-issue-evidence-list" id="dashboardIssueEvidenceList"></div>
+            <div class="app-dialog-actions" style="margin-top:12px;">
+              <button id="dashboardIssueEvidenceCloseBtn" class="btn-secondary" type="button">Cerrar</button>
+            </div>
+          </div>
+        </div>
 
         <div class="dashboard-grid-two">
           <section class="dashboard-card">
@@ -2565,6 +2758,12 @@
           <button class="qa-execution-status" type="button" data-status="blocked" aria-pressed="false"><span>Blocked</span></button>
         </div>
         <input class="qa-execution-note" id="qaExecutionNote" type="text" maxlength="500" placeholder="Nota / ID del bug (opcional)" aria-label="Nota o ID del bug opcional" />
+        <div class="qa-execution-attachments" id="qaExecutionAttachments" hidden>
+          <label for="qaExecutionImages">Imágenes del fallo (puedes pegar con Ctrl+V)
+            <input id="qaExecutionImages" type="file" accept="image/*" multiple />
+          </label>
+          <div class="dashboard-issue-attachment-list" id="qaExecutionAttachmentList"></div>
+        </div>
         <div class="qa-execution-history" id="qaExecutionHistory" aria-live="polite"></div>
         <div class="qa-execution-actions">
           <button id="qaEditCaseBtn" type="button">Editar caso</button>
@@ -25993,7 +26192,7 @@ var __async = (__this, __arguments, generator) => {
   return exports;
 })({});
 </script>
-<script src="case-utils.js?v=20261008-execution-status-fix"></script>
+<script src="case-utils.js?v=20261014-qa-issue-novelty"></script>
   <script>
     let mediaStream = null;
     let steps = [];
@@ -26011,6 +26210,9 @@ var __async = (__this, __arguments, generator) => {
     let editingProjectId = null;
     let isCapturePaused = false;
     let dashboardNoveltyFilters = { query: "", severity: "all", status: "all", suiteId: "all", sort: "priority" };
+    const DASHBOARD_ISSUE_STATUSES = ["Open", "Closed", "Ready for Retest", "In progress", "Re-Open"];
+    const DASHBOARD_ISSUE_PRIORITIES = ["Critical", "High", "Medium", "Low"];
+    let dashboardIssueFilters = { query: "", status: "all", suiteId: "all", view: "table" };
     let pipWindow = null;
     let pipPauseButton = null;
     let activeDictation = null;
@@ -26037,6 +26239,42 @@ var __async = (__this, __arguments, generator) => {
         return relevantSteps.length ? [{ caseRecord, steps: relevantSteps }] : [];
       })
     );
+    const buildAutoIssueSnapshot = caseUtils.buildAutoIssueSnapshot || ((caseRecord = {}, forceFailed = false, fallbackNote = "") => {
+      const issueSteps = (Array.isArray(caseRecord.steps) ? caseRecord.steps : [])
+        .map((step, index) => ({ step, index }))
+        .filter(({ step }) => step && (
+          normalizeStepStatus(step.stepStatus || step.status) === "fallo" ||
+          getStepSeverity(step)
+        ));
+      const failedSteps = issueSteps.filter(({ step }) => normalizeStepStatus(step.stepStatus || step.status) === "fallo");
+      if (!issueSteps.length && !forceFailed) return null;
+      const severityRank = { alta: 3, media: 2, baja: 1 };
+      const highestSeverity = issueSteps.map(({ step }) => getStepSeverity(step))
+        .filter(Boolean)
+        .sort((left, right) => severityRank[right] - severityRank[left])[0];
+      const statusLabels = { pendiente: "Pendiente", aprobado: "Aprobado", fallo: "Fallido", observado: "Observado" };
+      const severityLabels = { alta: "Alta", media: "Media", baja: "Baja" };
+      const observations = issueSteps.map(({ step, index }) => {
+        const status = normalizeStepStatus(step.stepStatus || step.status);
+        const stepSeverity = getStepSeverity(step);
+        const metadata = [statusLabels[status], stepSeverity ? `Severidad ${severityLabels[stepSeverity]}` : ""]
+          .filter(Boolean).join(" · ");
+        const fallback = status === "fallo" ? "Falló sin observación registrada." : "Novedad sin observación registrada.";
+        return `Paso ${index + 1} (${metadata}): ${String(step.comment || "").trim() || fallback}`;
+      });
+      if (!observations.length) observations.push(String(fallbackNote || "").trim() || "El caso fue marcado como Failed durante la ejecución QA.");
+      else if (String(fallbackNote || "").trim()) observations.push(`Nota de ejecución: ${String(fallbackNote).trim()}`);
+      const severity = highestSeverity === "alta" ? "High" : highestSeverity === "baja" ? "Low" : "Medium";
+      return {
+        testId: String(caseRecord.caseId || "").trim() || "Caso sin ID",
+        formName: String(caseRecord.description || "").trim() || "Caso de prueba",
+        observation: observations.join("\n"),
+        qaResult: forceFailed || failedSteps.length ? "Failed" : "Novedad",
+        evidenceStepIds: issueSteps.map(({ step }) => step.id).filter((id) => id !== undefined && id !== null).map(String),
+        severity,
+        priority: severity,
+      };
+    });
     const parseQaCaseIdAndDescription = caseUtils.parseQaCaseIdAndDescription || ((input) => {
       const match = String(input || "").trim().match(/^(\S+)\s+(.+?)\s*$/);
       return match
@@ -26674,6 +26912,25 @@ var __async = (__this, __arguments, generator) => {
         return true;
       }
       showTransientStatus("No se pudo abrir la imagen. Inténtalo de nuevo.", 5200);
+      return false;
+    }
+  }
+
+  async function saveCasesAndProjectsToDB() {
+    try {
+      const db = await openDB();
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      store.put(projects, PROJECTS_KEY);
+      store.put(savedCases, CASES_KEY);
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error || new Error("Falló el guardado de casos e issues.")); };
+        tx.onabort = () => { db.close(); reject(tx.error || new Error("Se canceló el guardado de casos e issues.")); };
+      });
+      return true;
+    } catch (error) {
+      console.error("No se pudieron guardar los casos y sus issues:", error);
       return false;
     }
   }
@@ -30679,6 +30936,10 @@ var __async = (__this, __arguments, generator) => {
     return `qa-case-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
 
+  function createQaIssueId() {
+    return `ISS-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+  }
+
   function createDefaultSuites() {
     return ["Login", "Pagos", "Carrito", "Reportes"].map((name) => ({
       id: createSuiteId(),
@@ -30940,6 +31201,152 @@ var __async = (__this, __arguments, generator) => {
 
   function getActiveProjectCases() {
     return savedCases.filter((item) => (item.projectId || projects[0]?.id) === activeProjectId);
+  }
+
+  function syncAutoIssueForCase(caseRecord, forceFailed = false, fallbackNote = "") {
+    const projectId = caseRecord.projectId || projects[0]?.id;
+    const project = projects.find((item) => item.id === projectId);
+    if (!project) return false;
+    const snapshot = buildAutoIssueSnapshot(caseRecord, forceFailed, fallbackNote);
+    if (!snapshot) return false;
+    if (!Array.isArray(project.issues)) project.issues = [];
+    const issueIndex = project.issues.findIndex((item) =>
+      item.source === "auto" && item.caseQaId === caseRecord.qaId
+    );
+    const timestamp = Date.now();
+    if (issueIndex < 0) {
+      project.issues.push({
+        id: createQaIssueId(),
+        source: "auto",
+        caseQaId: caseRecord.qaId,
+        suiteId: caseRecord.suiteId || "",
+        ...snapshot,
+        status: "Open",
+        createdAt: timestamp,
+        closedAt: null,
+        lastValidationAt: timestamp,
+        statusHistory: [{ status: "Open", at: timestamp }],
+      });
+      return true;
+    }
+
+    const previous = project.issues[issueIndex];
+    const next = {
+      ...previous,
+      caseQaId: caseRecord.qaId,
+      suiteId: caseRecord.suiteId || "",
+      testId: snapshot.testId,
+      formName: snapshot.formName,
+      qaResult: snapshot.qaResult,
+      evidenceStepIds: snapshot.evidenceStepIds,
+    };
+    if (!previous.observationEdited) next.observation = snapshot.observation;
+    if (!previous.severityEdited) next.severity = snapshot.severity;
+    if (!previous.priorityEdited) next.priority = snapshot.priority;
+    const changed = ["suiteId", "testId", "formName", "qaResult", "observation", "severity", "priority"]
+      .some((key) => JSON.stringify(previous[key]) !== JSON.stringify(next[key])) ||
+      JSON.stringify(previous.evidenceStepIds || []) !== JSON.stringify(next.evidenceStepIds);
+    if (!changed) return false;
+    next.lastValidationAt = timestamp;
+    project.issues[issueIndex] = next;
+    return true;
+  }
+
+  function formatDashboardIssueDate(timestamp) {
+    const value = Number(timestamp);
+    return Number.isFinite(value) && value > 0 ? new Date(value).toLocaleDateString("es-CO") : "—";
+  }
+
+  function getDashboardIssueStatusClass(status) {
+    return `status-${String(status || "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+  }
+
+  function getDashboardIssueCase(issue, project) {
+    return savedCases.find((item) =>
+      item.qaId === issue.caseQaId &&
+      (item.projectId || projects[0]?.id) === project.id
+    ) || null;
+  }
+
+  function getDashboardIssueEvidence(issue, project) {
+    const attachments = (Array.isArray(issue.attachments) ? issue.attachments : [])
+      .filter((item) => item && item.dataUrl)
+      .map((item, attachmentIndex) => ({
+        attachment: true,
+        index: attachmentIndex,
+        step: { id: item.id, dataUrl: item.dataUrl, thumbnailDataUrl: item.dataUrl, comment: item.name || "" },
+      }));
+    const caseRecord = getDashboardIssueCase(issue, project);
+    if (!caseRecord || !Array.isArray(caseRecord.steps)) return attachments;
+    const wantedIds = new Set(Array.isArray(issue.evidenceStepIds) ? issue.evidenceStepIds.map(String) : []);
+    const evidence = caseRecord.steps
+      .map((step, index) => ({ step, index }))
+      .filter(({ step }) => {
+        const stepId = step.id === undefined || step.id === null ? "" : String(step.id);
+        const isLinked = wantedIds.size
+          ? wantedIds.has(stepId)
+          : normalizeStepStatus(step.stepStatus || step.status) === "fallo" || !!getStepSeverity(step);
+        return isLinked && !!(step.renderedDataUrl || step.dataUrl || step.thumbnailDataUrl);
+      });
+    return [...evidence, ...attachments];
+  }
+
+  function getDashboardEvidenceLabel(item) {
+    return `${item.attachment ? "Adjunto" : "Paso"} ${item.index + 1}`;
+  }
+
+  let dashboardIssueDraftImages = [];
+
+  function renderDashboardIssueAttachments() {
+    const list = document.getElementById("dashboardIssueAttachmentList");
+    list.innerHTML = dashboardIssueDraftImages.map((item, index) =>
+      `<div class="dashboard-issue-attachment-item"><img src="${escapeHtml(item.dataUrl)}" alt="${escapeHtml(item.name || "Imagen adjunta")}" /><button type="button" data-remove-attachment="${index}" aria-label="Quitar imagen">×</button></div>`
+    ).join("");
+    list.querySelectorAll("[data-remove-attachment]").forEach((button) => {
+      button.addEventListener("click", () => {
+        dashboardIssueDraftImages.splice(Number(button.dataset.removeAttachment), 1);
+        renderDashboardIssueAttachments();
+      });
+    });
+  }
+
+  function readIssueImageFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("No se pudo leer la imagen."));
+      reader.onload = () => {
+        const image = new Image();
+        image.onerror = () => reject(new Error("El archivo no es una imagen válida."));
+        image.onload = () => {
+          const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(image.width * scale);
+          canvas.height = Math.round(image.height * scale);
+          canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+          resolve({
+            id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            name: file.name || "imagen",
+            dataUrl: canvas.toDataURL("image/jpeg", 0.85),
+          });
+        };
+        image.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function addDashboardIssueImages(files) {
+    const error = document.getElementById("dashboardIssueFormError");
+    const images = [...files].filter((file) => file.type.startsWith("image/"));
+    for (const file of images) {
+      try {
+        dashboardIssueDraftImages.push(await readIssueImageFile(file));
+      } catch (readError) {
+        error.textContent = readError.message;
+        error.hidden = false;
+      }
+    }
+    renderDashboardIssueAttachments();
   }
 
   function createExecutionCycleId() {
@@ -31362,6 +31769,7 @@ var __async = (__this, __arguments, generator) => {
       ? getCaseCycleResult(caseRecord, cycle).history
       : Array.isArray(caseRecord.executionHistory) ? caseRecord.executionHistory : [];
     const historyContainer = document.getElementById("qaExecutionHistory");
+    renderQaExecutionAttachments(caseRecord, project, currentStatus);
     historyContainer.innerHTML = history.length
       ? history.slice().reverse().map((entry) => {
           const timestamp = Number(entry.at);
@@ -31372,6 +31780,59 @@ var __async = (__this, __arguments, generator) => {
           </div>`;
         }).join("")
       : "Sin historial.";
+  }
+
+  function getAutoIssueForCase(caseRecord, project) {
+    return (Array.isArray(project?.issues) ? project.issues : [])
+      .find((item) => item.source === "auto" && item.caseQaId === caseRecord.qaId) || null;
+  }
+
+  function renderQaExecutionAttachments(caseRecord, project, currentStatus) {
+    const section = document.getElementById("qaExecutionAttachments");
+    const list = document.getElementById("qaExecutionAttachmentList");
+    section.hidden = currentStatus !== "failed";
+    if (section.hidden) {
+      list.replaceChildren();
+      return;
+    }
+    const attachments = getAutoIssueForCase(caseRecord, project)?.attachments || [];
+    list.innerHTML = attachments.map((item, index) =>
+      `<div class="dashboard-issue-attachment-item"><img src="${escapeHtml(item.dataUrl)}" alt="${escapeHtml(item.name || "Imagen adjunta")}" /><button type="button" data-remove-attachment="${index}" aria-label="Quitar imagen">×</button></div>`
+    ).join("");
+    list.querySelectorAll("[data-remove-attachment]").forEach((button) => {
+      button.addEventListener("click", () => updateQaExecutionAttachments(null, Number(button.dataset.removeAttachment)));
+    });
+  }
+
+  async function updateQaExecutionAttachments(files, removeIndex = -1) {
+    const caseRecord = savedCases[selectedQaCaseIndex];
+    const project = caseRecord && projects.find((item) => item.id === (caseRecord.projectId || projects[0]?.id));
+    if (!project || getCaseExecutionStatus(caseRecord) !== "failed") return;
+    const added = [];
+    for (const file of [...(files || [])].filter((item) => item.type.startsWith("image/"))) {
+      try {
+        added.push(await readIssueImageFile(file));
+      } catch (readError) {
+        showTransientStatus(readError.message, 4000);
+      }
+    }
+    if (removeIndex < 0 && !added.length) return;
+    const previousIssues = Array.isArray(project.issues) ? project.issues.slice() : [];
+    const note = document.getElementById("qaExecutionNote").value.trim();
+    syncAutoIssueForCase(caseRecord, true, note);
+    const issue = getAutoIssueForCase(caseRecord, project);
+    if (!issue) return;
+    const previousAttachments = Array.isArray(issue.attachments) ? issue.attachments : [];
+    const nextAttachments = removeIndex >= 0
+      ? previousAttachments.filter((_, index) => index !== removeIndex)
+      : [...previousAttachments, ...added];
+    issue.attachments = nextAttachments;
+    if (!(await saveProjectsToDB())) {
+      project.issues = previousIssues;
+      showTransientStatus("No se pudieron guardar las imágenes. Inténtalo de nuevo.", 5000);
+    }
+    renderDashboard();
+    renderQaExecutionDialog(caseRecord);
   }
 
   async function persistPendingQaExecutionNote() {
@@ -31394,6 +31855,10 @@ var __async = (__this, __arguments, generator) => {
       noteInput.value = "";
       return;
     }
+    const previousResult = cycle?.results?.[caseRecord.qaId];
+    const previousStatus = caseRecord.executionStatus;
+    const previousHistoryLength = Array.isArray(caseRecord.executionHistory) ? caseRecord.executionHistory.length : 0;
+    const previousIssues = Array.isArray(project?.issues) ? project.issues.slice() : [];
     if (cycle) {
       if (!cycle.results || typeof cycle.results !== "object") cycle.results = {};
       cycle.results[caseRecord.qaId] = {
@@ -31405,8 +31870,22 @@ var __async = (__this, __arguments, generator) => {
       caseRecord.executionStatus = currentStatus;
       caseRecord.executionHistory.push({ status: currentStatus, note, at: Date.now() });
     }
-    const saved = cycle ? await saveProjectsToDB() : await saveCasesToDB();
-    if (!saved) return;
+    if (currentStatus === "failed") syncAutoIssueForCase(caseRecord, true, note);
+    const saved = currentStatus === "failed"
+      ? await saveCasesAndProjectsToDB()
+      : cycle ? await saveProjectsToDB() : await saveCasesToDB();
+    if (!saved) {
+      if (cycle) {
+        if (previousResult) cycle.results[caseRecord.qaId] = previousResult;
+        else delete cycle.results[caseRecord.qaId];
+      } else {
+        caseRecord.executionStatus = previousStatus;
+        if (Array.isArray(caseRecord.executionHistory)) caseRecord.executionHistory.length = previousHistoryLength;
+      }
+      if (project && currentStatus === "failed") project.issues = previousIssues;
+      showTransientStatus("No se pudo guardar la nota de ejecución. Inténtalo de nuevo.", 5000);
+      return;
+    }
     noteInput.value = "";
     renderDashboard();
     renderCasesList();
@@ -31451,6 +31930,8 @@ var __async = (__this, __arguments, generator) => {
     const noteInput = document.getElementById("qaExecutionNote");
     const note = noteInput.value.trim();
     const project = projects.find((item) => item.id === (caseRecord.projectId || projects[0]?.id));
+    if (!project) return;
+    const previousIssues = Array.isArray(project.issues) ? project.issues.slice() : [];
     const cycle = project?.qaCyclesEnabled ? getActiveExecutionCycle(project) : null;
     let rollback;
     if (cycle) {
@@ -31476,9 +31957,11 @@ var __async = (__this, __arguments, generator) => {
       caseRecord.executionStatus = status;
       caseRecord.executionHistory.push({ status, note, at: Date.now() });
     }
-    const saved = cycle ? await saveProjectsToDB() : await saveCasesToDB();
+    if (status === "failed") syncAutoIssueForCase(caseRecord, true, note);
+    const saved = await saveCasesAndProjectsToDB();
     if (!saved) {
       rollback();
+      project.issues = previousIssues;
       renderQaExecutionDialog(caseRecord);
       document.getElementById("qaExecutionHistory").insertAdjacentHTML(
         "beforeend",
@@ -31532,6 +32015,9 @@ var __async = (__this, __arguments, generator) => {
       if (item.id !== project.id) return item;
       return {
         ...item,
+        issues: (Array.isArray(item.issues) ? item.issues : []).filter((issue) =>
+          issue.source !== "auto" || !removedQaIds.has(issue.caseQaId)
+        ),
         suites: (Array.isArray(item.suites) ? item.suites : []).filter((candidate) => candidate.id !== suite.id),
         executionCycles: Array.isArray(item.executionCycles)
           ? item.executionCycles.map((cycle) => {
@@ -31868,85 +32354,394 @@ var __async = (__this, __arguments, generator) => {
     return casesToDisplay;
   }
 
-  function renderDashboardIssueLog(caseRecords) {
-    const section = document.getElementById("dashboardIssueLog");
-    const count = document.getElementById("dashboardIssueLogCount");
-    const list = document.getElementById("dashboardIssueLogList");
-    if (!section || !count || !list) return;
+  function getFilteredDashboardIssues(project) {
+    const issues = Array.isArray(project?.issues) ? project.issues : [];
+    const query = dashboardIssueFilters.query
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase()
+      .trim();
+    return issues.filter((issue) => {
+      const relatedCase = getDashboardIssueCase(issue, project);
+      const suiteId = issue.suiteId || relatedCase?.suiteId || "";
+      const searchText = [issue.testId, issue.formName, issue.observation, issue.severity, issue.priority]
+        .filter(Boolean)
+        .join(" ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase();
+      return (!query || searchText.includes(query)) &&
+        (dashboardIssueFilters.status === "all" || issue.status === dashboardIssueFilters.status) &&
+        (dashboardIssueFilters.suiteId === "all" ||
+          (dashboardIssueFilters.suiteId === "none" ? !suiteId : suiteId === dashboardIssueFilters.suiteId));
+    });
+  }
 
-    const entries = buildIssueLogEntries(caseRecords);
-    section.hidden = entries.length === 0;
-    if (!entries.length) {
-      count.textContent = "";
-      list.innerHTML = "";
+  function renderDashboardIssueLog() {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    if (!Array.isArray(project.issues)) project.issues = [];
+    const suiteNames = new Map((Array.isArray(project.suites) ? project.suites : [])
+      .map((suite) => [suite.id, suite.name]));
+    const issues = project.issues;
+    const summary = document.getElementById("dashboardIssueSummary");
+    const statusCounts = Object.fromEntries(DASHBOARD_ISSUE_STATUSES.map((status) => [status, 0]));
+    issues.forEach((issue) => {
+      if (Object.hasOwn(statusCounts, issue.status)) statusCounts[issue.status] += 1;
+    });
+    summary.innerHTML = DASHBOARD_ISSUE_STATUSES.map((status) =>
+      `<div class="dashboard-issue-summary-item" data-status="${escapeHtml(status)}"><strong>${statusCounts[status]}</strong><span>${escapeHtml(status)}</span></div>`
+    ).join("") + `<div class="dashboard-issue-summary-item"><strong>${issues.length}</strong><span>Total</span></div>`;
+
+    const statusFilter = document.getElementById("dashboardIssueStatusFilter");
+    const selectedStatus = dashboardIssueFilters.status;
+    statusFilter.innerHTML = '<option value="all">Todos los estados</option>' +
+      DASHBOARD_ISSUE_STATUSES.map((status) =>
+        `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`
+      ).join("");
+    statusFilter.value = DASHBOARD_ISSUE_STATUSES.includes(selectedStatus) || selectedStatus === "all" ? selectedStatus : "all";
+
+    const suiteFilter = document.getElementById("dashboardIssueSuiteFilter");
+    const selectedSuite = dashboardIssueFilters.suiteId;
+    suiteFilter.innerHTML = '<option value="all">Todos los módulos</option><option value="none">Sin módulo</option>' +
+      (Array.isArray(project.suites) ? project.suites : []).map((suite) =>
+        `<option value="${escapeHtml(suite.id)}">${escapeHtml(suite.name)}</option>`
+      ).join("");
+    suiteFilter.value = [...suiteFilter.options].some((option) => option.value === selectedSuite) ? selectedSuite : "all";
+    dashboardIssueFilters.suiteId = suiteFilter.value;
+    document.getElementById("dashboardIssueSearch").value = dashboardIssueFilters.query;
+
+    const visibleIssues = getFilteredDashboardIssues(project);
+    document.getElementById("dashboardIssueResults").textContent =
+      `Mostrando ${visibleIssues.length} de ${issues.length} issues`;
+    const tableView = document.getElementById("dashboardIssueTableView");
+    const kanbanView = document.getElementById("dashboardIssueKanbanView");
+    const tableToggle = document.getElementById("dashboardIssueTableToggle");
+    const kanbanToggle = document.getElementById("dashboardIssueKanbanToggle");
+    tableView.hidden = dashboardIssueFilters.view !== "table";
+    kanbanView.hidden = dashboardIssueFilters.view !== "kanban";
+    tableToggle.classList.toggle("active", dashboardIssueFilters.view === "table");
+    kanbanToggle.classList.toggle("active", dashboardIssueFilters.view === "kanban");
+    tableToggle.setAttribute("aria-pressed", String(dashboardIssueFilters.view === "table"));
+    kanbanToggle.setAttribute("aria-pressed", String(dashboardIssueFilters.view === "kanban"));
+
+    const tableBody = document.getElementById("dashboardIssueTableBody");
+    tableBody.innerHTML = visibleIssues.map((issue) => {
+      const evidence = getDashboardIssueEvidence(issue, project);
+      const evidenceCount = evidence.length;
+      const relatedCase = getDashboardIssueCase(issue, project);
+      const suiteName = suiteNames.get(issue.suiteId || relatedCase?.suiteId) || "—";
+      const evidencePreview = evidence.map((item, evidenceIndex) => {
+        const { step } = item;
+        const image = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
+        return `<button class="dashboard-issue-evidence-preview" type="button" data-issue-image-preview="${escapeHtml(issue.id)}" data-evidence-index="${evidenceIndex}" aria-label="Ampliar imagen: ${getDashboardEvidenceLabel(item)} de ${escapeHtml(issue.testId || "issue")}">
+          <img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" />
+          <span>${getDashboardEvidenceLabel(item)}</span>
+        </button>`;
+      }).join("");
+      return `<tr>
+        <td><span class="dashboard-issue-test-id">${escapeHtml(issue.testId || "—")}</span></td>
+        <td>${escapeHtml(issue.formName || "Caso de prueba")}<br><small>${escapeHtml(suiteName)}</small></td>
+        <td><div class="dashboard-issue-observation">${escapeHtml(issue.observation || "Sin observación")}</div></td>
+        <td>${evidenceCount
+          ? `<div class="dashboard-issue-evidence-previews">${evidencePreview}</div>`
+          : "—"}</td>
+        <td>${issue.qaResult
+          ? `<span class="dashboard-issue-status-pill ${getDashboardIssueStatusClass(issue.qaResult)}">${escapeHtml(issue.qaResult)}</span>`
+          : "—"}</td>
+        <td>${escapeHtml(issue.severity || "Medium")}</td>
+        <td>${escapeHtml(issue.priority || "Medium")}</td>
+        <td><span class="dashboard-issue-status-pill ${getDashboardIssueStatusClass(issue.status)}">${escapeHtml(issue.status || "Open")}</span></td>
+        <td>${formatDashboardIssueDate(issue.createdAt)}</td>
+        <td>${formatDashboardIssueDate(issue.closedAt)}</td>
+        <td>${formatDashboardIssueDate(issue.lastValidationAt)}</td>
+        <td><div class="dashboard-issue-table-actions"><button type="button" data-issue-edit="${escapeHtml(issue.id)}">Editar</button></div></td>
+      </tr>`;
+    }).join("") || `<tr><td colspan="12"><div class="dashboard-issue-empty">${issues.length ? "No hay issues que coincidan con los filtros." : "Aún no hay issues. Se crearán automáticamente cuando se registre un fallo o una novedad con severidad, o puedes registrar uno manualmente."}</div></td></tr>`;
+
+    const kanban = document.getElementById("dashboardIssueKanbanView");
+    kanban.innerHTML = DASHBOARD_ISSUE_STATUSES.map((status) => {
+      const columnIssues = visibleIssues.filter((issue) => issue.status === status);
+      return `<section class="dashboard-issue-column">
+        <div class="dashboard-issue-column-heading"><span>${escapeHtml(status)}</span><span>${columnIssues.length}</span></div>
+        <div class="dashboard-issue-kanban-list">${columnIssues.map((issue) => {
+          const evidence = getDashboardIssueEvidence(issue, project);
+          const evidencePreview = evidence.map((item, evidenceIndex) => {
+            const { step } = item;
+            const image = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
+            return `<button class="dashboard-issue-evidence-preview" type="button" data-issue-image-preview="${escapeHtml(issue.id)}" data-evidence-index="${evidenceIndex}" aria-label="Ampliar imagen: ${getDashboardEvidenceLabel(item)} de ${escapeHtml(issue.testId || "issue")}">
+              <img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" />
+              <span>${getDashboardEvidenceLabel(item)}</span>
+            </button>`;
+          }).join("");
+          return `<article class="dashboard-issue-kanban-card">
+            <strong>${escapeHtml(issue.testId || "Caso sin ID")}</strong>
+            <span>${escapeHtml(issue.formName || "Caso de prueba")}</span>
+            ${issue.qaResult ? `<span>Resultado QA: ${escapeHtml(issue.qaResult)}</span>` : ""}
+            <span>${escapeHtml(issue.observation || "Sin observación")}</span>
+            ${evidencePreview ? `<div class="dashboard-issue-evidence-previews" aria-label="Evidencias del caso">${evidencePreview}</div>` : ""}
+            <button type="button" data-issue-edit="${escapeHtml(issue.id)}">Editar</button>
+          </article>`;
+        }).join("") || '<div class="dashboard-issue-empty">Sin issues</div>'}</div>
+      </section>`;
+    }).join("");
+
+    document.querySelectorAll("[data-issue-edit]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const issue = issues.find((item) => item.id === button.dataset.issueEdit);
+        if (issue) openDashboardIssueEditor(issue, button);
+      });
+    });
+    document.querySelectorAll("[data-issue-evidence]").forEach((button) => {
+      const issue = issues.find((item) => item.id === button.dataset.issueEvidence);
+      if (issue) openDashboardIssueEvidence(issue, button);
+    });
+    document.querySelectorAll("[data-issue-image-preview]").forEach((button) => {
+      const issue = issues.find((item) => item.id === button.dataset.issueImagePreview);
+      if (!issue) return;
+      const evidence = getDashboardIssueEvidence(issue, project);
+      const item = evidence[Number(button.dataset.evidenceIndex)];
+      const image = item?.step.renderedDataUrl || item?.step.dataUrl || item?.step.thumbnailDataUrl;
+      if (image) button.addEventListener("click", () => openZoom(image, button));
+    });
+  }
+
+  function openDashboardIssueEditor(issue, opener) {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    const form = document.getElementById("dashboardIssueForm");
+    const caseSelect = document.getElementById("dashboardIssueCase");
+    caseSelect.replaceChildren(new Option("Sin caso relacionado", ""));
+    getActiveProjectCases().forEach((caseRecord) => {
+      const label = [caseRecord.caseId, caseRecord.description].filter(Boolean).join(" · ") || "Caso sin ID";
+      caseSelect.append(new Option(label, caseRecord.qaId));
+    });
+    form.reset();
+    dashboardIssueDraftImages = Array.isArray(issue?.attachments) ? issue.attachments.map((item) => ({ ...item })) : [];
+    renderDashboardIssueAttachments();
+    document.getElementById("dashboardIssueId").value = issue?.id || "";
+    document.getElementById("dashboardIssueEditorTitle").textContent = issue ? "Editar issue" : "Registrar issue";
+    document.getElementById("dashboardIssueSaveBtn").textContent = issue ? "Guardar cambios" : "Registrar issue";
+    document.getElementById("dashboardIssueFormError").hidden = true;
+    document.getElementById("dashboardIssueFormError").textContent = "";
+    caseSelect.value = issue?.caseQaId || "";
+    document.getElementById("dashboardIssueTestId").value = issue?.testId || "";
+    document.getElementById("dashboardIssueFormName").value = issue?.formName || "";
+    document.getElementById("dashboardIssueObservation").value = issue?.observation || "";
+    document.getElementById("dashboardIssueSeverity").value = DASHBOARD_ISSUE_PRIORITIES.includes(issue?.severity) ? issue.severity : "Medium";
+    document.getElementById("dashboardIssuePriority").value = DASHBOARD_ISSUE_PRIORITIES.includes(issue?.priority) ? issue.priority : "Medium";
+    document.getElementById("dashboardIssueStatus").value = DASHBOARD_ISSUE_STATUSES.includes(issue?.status) ? issue.status : "Open";
+    const overlay = document.getElementById("dashboardIssueEditorOverlay");
+    openOverlay(overlay, {
+      opener,
+      display: "flex",
+      initialFocus: document.getElementById("dashboardIssueTestId"),
+      onEscape: () => closeDashboardIssueEditor(),
+    });
+  }
+
+  function closeDashboardIssueEditor() {
+    const overlay = document.getElementById("dashboardIssueEditorOverlay");
+    if (overlay.style.display !== "none") closeOverlay(overlay);
+  }
+
+  async function saveDashboardIssue(event) {
+    event.preventDefault();
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    const error = document.getElementById("dashboardIssueFormError");
+    const caseQaId = document.getElementById("dashboardIssueCase").value;
+    const relatedCase = caseQaId ? getActiveProjectCases().find((item) => item.qaId === caseQaId) : null;
+    const issueId = document.getElementById("dashboardIssueId").value;
+    const issuesBefore = Array.isArray(project.issues) ? project.issues : [];
+    const existing = issuesBefore.find((item) => item.id === issueId);
+    const testId = document.getElementById("dashboardIssueTestId").value.trim();
+    const formName = document.getElementById("dashboardIssueFormName").value.trim();
+    const observation = document.getElementById("dashboardIssueObservation").value.trim();
+    const severity = document.getElementById("dashboardIssueSeverity").value;
+    const priority = document.getElementById("dashboardIssuePriority").value;
+    const status = document.getElementById("dashboardIssueStatus").value;
+    if (!testId || !formName || !observation ||
+        !DASHBOARD_ISSUE_STATUSES.includes(status) ||
+        !DASHBOARD_ISSUE_PRIORITIES.includes(severity) ||
+        !DASHBOARD_ISSUE_PRIORITIES.includes(priority)) {
+      error.textContent = "Completa el Test ID, el formulario y la observación con valores válidos.";
+      error.hidden = false;
       return;
     }
 
-    const project = projects.find((item) => item.id === activeProjectId);
-    const suiteNames = new Map((Array.isArray(project?.suites) ? project.suites : [])
-      .map((suite) => [suite.id, suite.name]));
-    const issueSteps = [];
-    const stepStatusLabels = {
-      aprobado: "Aprobado",
-      fallo: "Falló",
-      observado: "Observado",
-      pendiente: "Pendiente",
+    const timestamp = Date.now();
+    const previousStatus = existing?.status || "";
+    const nextIssue = {
+      ...(existing || {}),
+      id: existing?.id || createQaIssueId(),
+      source: existing?.source || "manual",
+      caseQaId: relatedCase?.qaId || "",
+      suiteId: relatedCase?.suiteId || "",
+      testId,
+      formName,
+      observation,
+      severity,
+      priority,
+      status,
+      attachments: dashboardIssueDraftImages.map((item) => ({ ...item })),
+      createdAt: existing?.createdAt || timestamp,
+      closedAt: status === "Closed"
+        ? (previousStatus === "Closed" && existing?.closedAt ? existing.closedAt : timestamp)
+        : (previousStatus === "Closed" ? null : existing?.closedAt || null),
+      lastValidationAt: status === "Closed" && previousStatus !== "Closed"
+        ? timestamp
+        : existing?.lastValidationAt || null,
+      statusHistory: Array.isArray(existing?.statusHistory) ? existing.statusHistory.slice() : [],
+      observationEdited: existing?.source === "auto" ? observation !== existing.observation || !!existing.observationEdited : false,
+      severityEdited: existing?.source === "auto" ? severity !== existing.severity || !!existing.severityEdited : false,
+      priorityEdited: existing?.source === "auto" ? priority !== existing.priority || !!existing.priorityEdited : false,
     };
-    const stepCount = entries.reduce((total, entry) => total + entry.steps.length, 0);
-    count.textContent = `${entries.length} ${entries.length === 1 ? "caso" : "casos"} · ${stepCount} ${stepCount === 1 ? "paso" : "pasos"}`;
-    list.innerHTML = entries.map(({ caseRecord, steps: relevantSteps }) => {
-      const suiteName = suiteNames.get(caseRecord.suiteId);
-      const caseMeta = [suiteName, caseRecord.tester ? `Documentado por ${caseRecord.tester}` : ""]
-        .filter(Boolean)
-        .join(" · ");
-      const renderedSteps = relevantSteps.map(({ step, index }) => {
-        const issueIndex = issueSteps.push({ caseRecord, step, index }) - 1;
-        const status = caseUtils.normalizeStepStatus(step.stepStatus || step.status);
-        const severity = getStepSeverity(step) || "";
-        const image = step.renderedDataUrl || step.dataUrl || step.thumbnailDataUrl;
-        const comment = String(step.comment || "").trim() || "Sin comentario registrado.";
-        return `<article class="dashboard-issue-step status-${status}${severity ? ` sev-${severity}` : ""}">
-          <div class="dashboard-issue-step-heading">
-            <span class="dashboard-issue-step-number">Paso ${index + 1}</span>
-            <span class="dashboard-issue-step-badge">${stepStatusLabels[status] || "Pendiente"}</span>
-            ${severity ? `<span class="dashboard-issue-step-badge sev-${severity}">Novedad ${severity}</span>` : ""}
-          </div>
-          <div class="dashboard-issue-step-comment">${escapeHtml(comment)}</div>
-          ${image
-            ? `<button class="dashboard-issue-image" type="button" data-issue-image="${issueIndex}" aria-label="Ampliar evidencia del caso ${escapeHtml(caseRecord.caseId || "sin ID")}, paso ${index + 1}">
-                <img src="${escapeHtml(image)}" alt="Evidencia del paso ${index + 1}" loading="lazy" decoding="async" />
-              </button>`
-            : '<div class="dashboard-issue-image"><span class="dashboard-issue-image-empty">Este paso no tiene evidencia adjunta.</span></div>'}
-          <div class="dashboard-issue-step-actions">
-            <button class="dashboard-issue-open" type="button" data-issue-open="${issueIndex}">Abrir paso</button>
-          </div>
-        </article>`;
-      }).join("");
-      return `<article class="dashboard-issue-case">
-        <div class="dashboard-issue-case-heading">
-          <div class="dashboard-issue-case-copy">
-            <strong class="dashboard-issue-case-id">${escapeHtml(caseRecord.caseId || "Caso sin ID")}</strong>
-            <span class="dashboard-issue-case-description">${escapeHtml(caseRecord.description || "Caso de prueba")}</span>
-            ${caseMeta ? `<span class="dashboard-issue-case-meta">${escapeHtml(caseMeta)}</span>` : ""}
-          </div>
-          <span class="dashboard-issue-case-count">${relevantSteps.length} ${relevantSteps.length === 1 ? "issue" : "issues"}</span>
-        </div>
-        <div class="dashboard-issue-steps">${renderedSteps}</div>
-      </article>`;
-    }).join("");
+    if (!existing || status !== previousStatus) nextIssue.statusHistory.push({ status, at: timestamp });
+    project.issues = existing
+      ? issuesBefore.map((item) => item.id === existing.id ? nextIssue : item)
+      : [...issuesBefore, nextIssue];
+    const saveButton = document.getElementById("dashboardIssueSaveBtn");
+    saveButton.disabled = true;
+    try {
+      if (!(await saveProjectsToDB())) {
+        project.issues = issuesBefore;
+        throw new Error("No se pudo guardar el issue en el almacenamiento local.");
+      }
+      closeDashboardIssueEditor();
+      renderDashboard();
+      showTransientStatus(existing ? "Issue actualizado." : "Issue registrado.", 3000);
+    } catch (saveError) {
+      console.error("No se pudo guardar el issue:", saveError);
+      error.textContent = saveError.message || "No se pudo guardar el issue. Inténtalo de nuevo.";
+      error.hidden = false;
+    } finally {
+      saveButton.disabled = false;
+    }
+  }
 
-    list.querySelectorAll("[data-issue-open]").forEach((button) => {
-      const issue = issueSteps[Number(button.dataset.issueOpen)];
-      if (issue) button.addEventListener("click", () => openDashboardIssueStep(issue));
-    });
-    list.querySelectorAll("[data-issue-image]").forEach((button) => {
-      const issue = issueSteps[Number(button.dataset.issueImage)];
-      if (!issue) return;
+  function openDashboardIssueEvidence(issue, opener) {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    const evidence = getDashboardIssueEvidence(issue, project);
+    const list = document.getElementById("dashboardIssueEvidenceList");
+    if (!evidence.length) {
+      showTransientStatus("Este issue no tiene evidencia disponible.", 3000);
+      return;
+    }
+    document.getElementById("dashboardIssueEvidenceTitle").textContent = `Evidencias · ${issue.testId || "Issue"}`;
+    list.innerHTML = evidence.map((item, evidenceIndex) => {
+      const { step, index } = item;
+      const image = step.renderedDataUrl || step.dataUrl || step.thumbnailDataUrl;
+      return `<button class="dashboard-issue-evidence-item" type="button" data-evidence-index="${evidenceIndex}">
+        <img src="${escapeHtml(step.thumbnailDataUrl || image)}" alt="Evidencia: ${getDashboardEvidenceLabel(item)}" loading="lazy" decoding="async" />
+        <span>${getDashboardEvidenceLabel(item)} · ${escapeHtml(String(step.comment || "").trim() || "Sin comentario")}</span>
+        <span>${item.attachment ? "Ampliar" : "Abrir paso"}</span>
+      </button>`;
+    }).join("");
+    list.querySelectorAll("[data-evidence-index]").forEach((button) => {
+      const item = evidence[Number(button.dataset.evidenceIndex)];
       button.addEventListener("click", () => {
-        const image = issue.step.renderedDataUrl || issue.step.dataUrl || issue.step.thumbnailDataUrl;
-        if (image) openZoom(image, button);
-        else showTransientStatus("No se encontró una imagen válida para ampliar.", 3500);
+        closeOverlay(document.getElementById("dashboardIssueEvidenceOverlay"));
+        const image = item.step.renderedDataUrl || item.step.dataUrl || item.step.thumbnailDataUrl;
+        if (image) openZoom(image, opener);
+        if (!item.attachment) openDashboardIssueStep({ caseRecord: getDashboardIssueCase(issue, project), step: item.step });
       });
+    });
+    openOverlay(document.getElementById("dashboardIssueEvidenceOverlay"), {
+      opener,
+      display: "flex",
+      initialFocus: list.querySelector("button"),
+      onEscape: () => closeOverlay(document.getElementById("dashboardIssueEvidenceOverlay")),
+    });
+  }
+
+  function exportDashboardIssues() {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    const issues = getFilteredDashboardIssues(project);
+    const headers = ["Test ID", "Formulario", "Observación", "Severidad", "Prioridad", "Estado", "Fecha registro", "Fecha cierre", "Última validación"];
+    const csvCell = (value) => {
+      let text = String(value ?? "").replace(/\r\n?/g, "\n");
+      if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
+      return `"${text.replace(/"/g, '""')}"`;
+    };
+    const rows = [headers, ...issues.map((issue) => [
+      issue.testId,
+      issue.formName,
+      issue.observation,
+      issue.severity,
+      issue.priority,
+      issue.status,
+      formatDashboardIssueDate(issue.createdAt),
+      formatDashboardIssueDate(issue.closedAt),
+      formatDashboardIssueDate(issue.lastValidationAt),
+    ])];
+    const blob = new Blob(["\uFEFF" + rows.map((row) => row.map(csvCell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Bitacora_Issues_${sanitizeFilenamePart(project.name, "proyecto")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    showTransientStatus(`Bitácora exportada (${issues.length} issue${issues.length === 1 ? "" : "s"}).`, 3000);
+  }
+
+  function bindDashboardIssueLogControls() {
+    document.getElementById("dashboardIssueSearch").addEventListener("input", (event) => {
+      dashboardIssueFilters.query = event.currentTarget.value;
+      renderDashboardIssueLog();
+    });
+    document.getElementById("dashboardIssueStatusFilter").addEventListener("change", (event) => {
+      dashboardIssueFilters.status = event.currentTarget.value;
+      renderDashboardIssueLog();
+    });
+    document.getElementById("dashboardIssueSuiteFilter").addEventListener("change", (event) => {
+      dashboardIssueFilters.suiteId = event.currentTarget.value;
+      renderDashboardIssueLog();
+    });
+    document.getElementById("dashboardIssueTableToggle").addEventListener("click", () => {
+      dashboardIssueFilters.view = "table";
+      renderDashboardIssueLog();
+    });
+    document.getElementById("dashboardIssueKanbanToggle").addEventListener("click", () => {
+      dashboardIssueFilters.view = "kanban";
+      renderDashboardIssueLog();
+    });
+    document.getElementById("dashboardIssueCreateBtn").addEventListener("click", (event) => {
+      openDashboardIssueEditor(null, event.currentTarget);
+    });
+    document.getElementById("dashboardIssueExportBtn").addEventListener("click", exportDashboardIssues);
+    document.getElementById("dashboardIssueForm").addEventListener("submit", saveDashboardIssue);
+    document.getElementById("dashboardIssueCancelBtn").addEventListener("click", closeDashboardIssueEditor);
+    document.getElementById("dashboardIssueEditorOverlay").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeDashboardIssueEditor();
+    });
+    document.getElementById("dashboardIssueEvidenceCloseBtn").addEventListener("click", () =>
+      closeOverlay(document.getElementById("dashboardIssueEvidenceOverlay"))
+    );
+    document.getElementById("dashboardIssueEvidenceOverlay").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeOverlay(event.currentTarget);
+    });
+    document.getElementById("dashboardIssueCase").addEventListener("change", (event) => {
+      const caseRecord = getActiveProjectCases().find((item) => item.qaId === event.currentTarget.value);
+      if (!caseRecord) return;
+      if (!document.getElementById("dashboardIssueTestId").value.trim()) {
+        document.getElementById("dashboardIssueTestId").value = caseRecord.caseId || "";
+      }
+      if (!document.getElementById("dashboardIssueFormName").value.trim()) {
+        document.getElementById("dashboardIssueFormName").value = caseRecord.description || "";
+      }
+    });
+    document.getElementById("dashboardIssueImages").addEventListener("change", async (event) => {
+      await addDashboardIssueImages(event.currentTarget.files);
+      event.currentTarget.value = "";
+    });
+    document.getElementById("dashboardIssueEditorOverlay").addEventListener("paste", (event) => {
+      const files = [...(event.clipboardData?.files || [])].filter((file) => file.type.startsWith("image/"));
+      if (!files.length) return;
+      event.preventDefault();
+      addDashboardIssueImages(files);
     });
   }
 
@@ -31977,7 +32772,7 @@ var __async = (__this, __arguments, generator) => {
     sortFilter.value = dashboardNoveltyFilters.sort;
 
     const casesToDisplay = getDashboardCasesWithDraft(projectCases);
-    renderDashboardIssueLog(casesToDisplay);
+    renderDashboardIssueLog();
 
     const allNovelties = casesToDisplay.flatMap((caseRecord) =>
       (Array.isArray(caseRecord.steps) ? caseRecord.steps : [])
@@ -32239,6 +33034,10 @@ var __async = (__this, __arguments, generator) => {
         project.executionCycles = [];
         migratedSuites = true;
       }
+      if (!Array.isArray(project.issues)) {
+        project.issues = [];
+        migratedSuites = true;
+      }
       if (project.qaCyclesEnabled !== true) project.qaCyclesEnabled = false;
     });
     if (migratedSuites) await saveProjectsToDB();
@@ -32258,6 +33057,16 @@ var __async = (__this, __arguments, generator) => {
       seenQaIds.add(item.qaId);
     });
     if (migratedCases) await saveCasesToDB();
+    let migratedIssues = false;
+    savedCases.forEach((caseRecord) => {
+      if (getCaseExecutionStatus(caseRecord) === "failed" ||
+          (Array.isArray(caseRecord.steps) && caseRecord.steps.some((step) =>
+            normalizeStepStatus(step.stepStatus || step.status) === "fallo" || getStepSeverity(step)
+          ))) {
+        migratedIssues = syncAutoIssueForCase(caseRecord, getCaseExecutionStatus(caseRecord) === "failed") || migratedIssues;
+      }
+    });
+    if (migratedIssues || migratedSuites) await saveProjectsToDB();
     document.body.classList.add("dashboard-view");
     if (localStorage.getItem("dashboardSidebarCollapsed") === "1") {
       document.body.classList.add("dashboard-sidebar-collapsed");
@@ -32301,6 +33110,7 @@ var __async = (__this, __arguments, generator) => {
   }
 
   function initDashboardNavigation() {
+    bindDashboardIssueLogControls();
     const toggle = document.getElementById("dashboardSidebarToggle");
     document.getElementById("documenterCasePicker").addEventListener("change", async (event) => {
       const value = event.currentTarget.value;
@@ -32513,6 +33323,16 @@ var __async = (__this, __arguments, generator) => {
       button.addEventListener("click", () => updateQaExecutionStatus(button.dataset.status));
     });
     document.getElementById("qaCloseExecutionBtn").addEventListener("click", closeQaExecutionDialog);
+    document.getElementById("qaExecutionImages").addEventListener("change", async (event) => {
+      await updateQaExecutionAttachments(event.currentTarget.files);
+      event.currentTarget.value = "";
+    });
+    document.getElementById("qaExecutionOverlay").addEventListener("paste", (event) => {
+      const files = [...(event.clipboardData?.files || [])].filter((file) => file.type.startsWith("image/"));
+      if (!files.length) return;
+      event.preventDefault();
+      updateQaExecutionAttachments(files);
+    });
     document.getElementById("qaExecutionOverlay").addEventListener("click", (event) => {
       if (event.target === event.currentTarget) closeQaExecutionDialog();
     });
@@ -32874,16 +33694,32 @@ var __async = (__this, __arguments, generator) => {
       savedAt: Date.now(),
       steps: steps.slice(),
     };
+    const previousCases = savedCases;
+    const previousIssues = projects.find((item) => item.id === updatedCase.projectId)?.issues?.slice();
+    const project = projects.find((item) => item.id === updatedCase.projectId);
     if (editingCaseIndex !== null && savedCases[editingCaseIndex]) {
+      savedCases = savedCases.slice();
       savedCases[editingCaseIndex] = { ...savedCases[editingCaseIndex], ...updatedCase };
     } else {
-      savedCases.push(updatedCase);
+      savedCases = [...savedCases, updatedCase];
+    }
+    const savedCase = editingCaseIndex !== null
+      ? savedCases[editingCaseIndex]
+      : savedCases[savedCases.length - 1];
+    if (savedCase) {
+      const failed = getCaseExecutionStatus(savedCase) === "failed";
+      syncAutoIssueForCase(savedCase, failed, failed ? getLatestQaExecutionNote(savedCase) : "");
+    }
+    if (!(await saveCasesAndProjectsToDB())) {
+      savedCases = previousCases;
+      if (project) project.issues = previousIssues || [];
+      await showAppAlert("No se pudo guardar el caso ni sincronizar su issue. Inténtalo nuevamente.", document.getElementById("addToBatchBtn"));
+      return;
     }
     resetCurrentCaseUI({ clearFields: true });
     renderCasesList();
     renderDashboard();
     document.getElementById("documenterCasePicker").value = MANUAL_CASE_PICKER_VALUE;
-    await saveCasesToDB();
     saveStateToDB();
     autosaveStatus.textContent = "✅ Caso agregado al lote. Listo para el siguiente.";
   });

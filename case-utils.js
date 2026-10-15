@@ -353,6 +353,57 @@
     });
   }
 
+  function buildAutoIssueSnapshot(caseRecord = {}, forceFailed = false, fallbackNote = "") {
+    const steps = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
+    const issueSteps = steps
+      .map((step, index) => ({ step, index }))
+      .filter(({ step }) => step && (
+        normalizeStepStatus(step.stepStatus || step.status) === "fallo" ||
+        getStepSeverity(step)
+      ));
+    const failedSteps = issueSteps.filter(({ step }) =>
+      normalizeStepStatus(step.stepStatus || step.status) === "fallo"
+    );
+    if (!issueSteps.length && !forceFailed) return null;
+
+    const severityRank = { alta: 3, media: 2, baja: 1 };
+    const highestSeverity = issueSteps
+      .map(({ step }) => getStepSeverity(step))
+      .filter(Boolean)
+      .sort((left, right) => severityRank[right] - severityRank[left])[0];
+    const severity = highestSeverity === "alta" ? "High" : highestSeverity === "baja" ? "Low" : "Medium";
+    const statusLabels = { pendiente: "Pendiente", aprobado: "Aprobado", fallo: "Fallido", observado: "Observado" };
+    const severityLabels = { alta: "Alta", media: "Media", baja: "Baja" };
+    const observations = issueSteps.map(({ step, index }) => {
+      const status = normalizeStepStatus(step.stepStatus || step.status);
+      const stepSeverity = getStepSeverity(step);
+      const metadata = [
+        statusLabels[status],
+        stepSeverity ? `Severidad ${severityLabels[stepSeverity]}` : "",
+      ].filter(Boolean).join(" · ");
+      const fallback = status === "fallo" ? "Falló sin observación registrada." : "Novedad sin observación registrada.";
+      return `Paso ${index + 1} (${metadata}): ${String(step.comment || "").trim() || fallback}`;
+    });
+    if (!observations.length) {
+      observations.push(String(fallbackNote || "").trim() || "El caso fue marcado como Failed durante la ejecución QA.");
+    } else if (String(fallbackNote || "").trim()) {
+      observations.push(`Nota de ejecución: ${String(fallbackNote).trim()}`);
+    }
+
+    return {
+      testId: String(caseRecord.caseId || "").trim() || "Caso sin ID",
+      formName: String(caseRecord.description || "").trim() || "Caso de prueba",
+      observation: observations.join("\n"),
+      qaResult: forceFailed || failedSteps.length ? "Failed" : "Novedad",
+      evidenceStepIds: issueSteps
+        .map(({ step }) => step.id)
+        .filter((stepId) => stepId !== undefined && stepId !== null)
+        .map(String),
+      severity,
+      priority: severity,
+    };
+  }
+
   function getStepSeverity(step) {
     const severity = typeof step?.severity === "string" ? step.severity.trim().toLowerCase() : "";
     if (["alta", "media", "baja"].includes(severity)) return severity;
@@ -378,6 +429,7 @@
     parseQaCaseImportRows,
     parseQaCaseIdAndDescription,
     buildIssueLogEntries,
+    buildAutoIssueSnapshot,
     getStepSeverity,
   };
 

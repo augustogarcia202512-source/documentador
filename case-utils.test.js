@@ -15,6 +15,7 @@ const {
   parseQaCaseImportRows,
   parseQaCaseIdAndDescription,
   buildIssueLogEntries,
+  buildAutoIssueSnapshot,
 } = require('./case-utils.js');
 
 test('normalizeStepStatus returns a valid fallback', () => {
@@ -225,4 +226,60 @@ test('buildIssueLogEntries recognizes legacy novelty flags without severity', ()
 
   assert.equal(entries.length, 1);
   assert.deepEqual(entries[0].steps.map(({ index }) => index), [0]);
+});
+
+test('buildAutoIssueSnapshot groups failed steps into one issue and derives severity', () => {
+  const issue = buildAutoIssueSnapshot({
+    caseId: 'TC-12',
+    description: 'Guardar comprobante',
+    steps: [
+      { id: 'step-1', stepStatus: 'fallo', severity: 'media', comment: 'No guarda el archivo.' },
+      { id: 'step-2', stepStatus: 'fallo', severity: 'alta', comment: 'Se pierde la sesión.' },
+      { id: 'step-3', stepStatus: 'aprobado', comment: 'Paso correcto.' },
+      { id: 'step-4', stepStatus: 'aprobado', severity: 'baja', comment: 'El texto está desalineado.' },
+    ],
+  });
+
+  assert.equal(issue.testId, 'TC-12');
+  assert.equal(issue.formName, 'Guardar comprobante');
+  assert.match(issue.observation, /Paso 1 \(Fallido · Severidad Media\): No guarda el archivo\./);
+  assert.match(issue.observation, /Paso 2 \(Fallido · Severidad Alta\): Se pierde la sesión\./);
+  assert.match(issue.observation, /Paso 4 \(Aprobado · Severidad Baja\): El texto está desalineado\./);
+  assert.deepEqual(issue.evidenceStepIds, ['step-1', 'step-2', 'step-4']);
+  assert.equal(issue.qaResult, 'Failed');
+  assert.equal(issue.severity, 'High');
+  assert.equal(issue.priority, 'High');
+});
+
+test('buildAutoIssueSnapshot creates a novelty issue from a severity-tagged documenter step', () => {
+  const issue = buildAutoIssueSnapshot({
+    caseId: 'TC-15',
+    description: 'Validar alineación',
+    steps: [
+      { id: 'step-1', stepStatus: 'aprobado', severity: 'media', comment: 'El texto queda desalineado.' },
+    ],
+  });
+
+  assert.equal(issue.qaResult, 'Novedad');
+  assert.equal(issue.observation, 'Paso 1 (Aprobado · Severidad Media): El texto queda desalineado.');
+  assert.deepEqual(issue.evidenceStepIds, ['step-1']);
+  assert.equal(issue.severity, 'Medium');
+});
+
+test('buildAutoIssueSnapshot supports a failed execution without failed steps', () => {
+  const issue = buildAutoIssueSnapshot({
+    caseId: 'TC-13',
+    description: 'Proceso manual',
+    steps: [],
+  }, true, 'La validación del servicio falló.');
+
+  assert.equal(issue.observation, 'La validación del servicio falló.');
+  assert.deepEqual(issue.evidenceStepIds, []);
+});
+
+test('buildAutoIssueSnapshot skips cases without failures', () => {
+  assert.equal(buildAutoIssueSnapshot({
+    caseId: 'TC-14',
+    steps: [{ stepStatus: 'aprobado' }],
+  }), null);
 });
