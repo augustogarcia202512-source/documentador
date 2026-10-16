@@ -326,7 +326,7 @@
 
   function parseQaCaseIdAndDescription(input) {
     const value = String(input || "").trim();
-    const match = value.match(/^(\S+)\s+(.+?)\s*$/);
+    const match = value.match(/^(\S+?)(?:\s+[-–—:|]+\s+|\s+)(.+?)\s*$/);
     if (!match) {
       return {
         caseId: "",
@@ -390,9 +390,14 @@
       observations.push(`Nota de ejecución: ${String(fallbackNote).trim()}`);
     }
 
+    const parsedCase = parseQaCaseIdAndDescription(caseRecord.caseId);
+    const issueTestId = parsedCase.caseId || String(caseRecord.caseId || "").trim();
+    const issueDescription = String(caseRecord.description || parsedCase.description || "")
+      .trim().replace(/^[-–—:|]+\s*/, "");
+
     return {
-      testId: String(caseRecord.caseId || "").trim() || "Caso sin ID",
-      formName: String(caseRecord.description || "").trim() || "Caso de prueba",
+      testId: issueTestId || "Caso sin ID",
+      formName: issueDescription || "Caso de prueba",
       observation: observations.join("\n"),
       qaResult: forceFailed || failedSteps.length ? "Failed" : "Novedad",
       evidenceStepIds: issueSteps

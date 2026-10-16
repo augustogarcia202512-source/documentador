@@ -176,10 +176,27 @@ test('parseQaCaseImportRows supports CSV quoted commas and reports invalid rows'
   ]);
 });
 
+test('buildAutoIssueSnapshot splits an ID with a combined description', () => {
+  const snapshot = buildAutoIssueSnapshot({
+    caseId: 'TC-01 - Ingresar un usuario inválido',
+    description: '',
+    steps: [{ stepStatus: 'fallo', comment: 'x' }],
+  });
+  assert.equal(snapshot.testId, 'TC-01');
+  assert.equal(snapshot.formName, 'Ingresar un usuario inválido');
+  const legacy = buildAutoIssueSnapshot({ caseId: 'TC-01', description: '- Ingresar', steps: [{ stepStatus: 'fallo' }] });
+  assert.equal(legacy.formName, 'Ingresar');
+});
+
 test('parseQaCaseIdAndDescription separates the first token from the remaining description', () => {
   assert.deepEqual(parseQaCaseIdAndDescription('  TC-1   Login incorrecto  '), {
     caseId: 'TC-1',
     description: 'Login incorrecto',
+    error: '',
+  });
+  assert.deepEqual(parseQaCaseIdAndDescription('TC-01 - Ingresar un usuario inválido'), {
+    caseId: 'TC-01',
+    description: 'Ingresar un usuario inválido',
     error: '',
   });
   assert.deepEqual(parseQaCaseIdAndDescription('TC-1'), {

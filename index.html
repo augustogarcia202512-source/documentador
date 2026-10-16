@@ -1091,12 +1091,27 @@
   .qa-cycle-toolbar select, .qa-cycle-form input { min-width: 0; min-height: 36px; padding: 7px 9px; border: 1px solid #d9e0e8; border-radius: 7px; background: #fff; color: #263445; font: 12px var(--sans); }
   .qa-cycle-toolbar select { flex: 1 1 220px; }
   .qa-cycle-toolbar button, .qa-cycle-form button { min-height: 36px; padding: 7px 10px; border: 1px solid #d9e0e8; border-radius: 7px; background: #fff; color: #263445; font-size: 11px; font-weight: 700; }
+  #qaCycleReportBtn { background: #1f3a5f; color: #fff; border-color: #1f3a5f; }
   .qa-cycle-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 18px 14px; padding: 10px; border: 1px solid #d9e0e8; border-radius: 9px; background: rgba(255,255,255,.65); }
   .qa-cycle-form[hidden] { display: none; }
   .qa-cycle-form input { width: 100%; box-sizing: border-box; }
   .qa-cycle-form .qa-cycle-form-actions { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: 8px; }
   .qa-cycle-form .qa-cycle-form-save { background: #198f52; color: #fff; border-color: #168149; }
   .qa-cycle-context { flex: 1 1 100%; color: #718096; font-size: 10px; }
+  .qa-cycle-comparison { margin: 0 18px 14px; padding: 10px; border: 1px solid #d9e0e8; border-radius: 9px; background: rgba(255,255,255,.65); }
+  .qa-cycle-comparison[hidden] { display: none; }
+  .qa-cycle-comparison-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 12px; margin-bottom: 8px; }
+  .qa-cycle-comparison-heading strong { color: #263445; font-size: 12px; }
+  .qa-cycle-comparison-heading span { color: #718096; font-size: 10px; }
+  .qa-cycle-comparison-table-wrap { overflow-x: auto; }
+  .qa-cycle-comparison-table { width: 100%; border-collapse: collapse; color: #263445; font-size: 10px; text-align: center; }
+  .qa-cycle-comparison-table th, .qa-cycle-comparison-table td { padding: 7px 8px; border-bottom: 1px solid #e4e9ef; white-space: nowrap; }
+  .qa-cycle-comparison-table thead th { color: #718096; font-size: 9px; text-transform: uppercase; }
+  .qa-cycle-comparison-table tbody th { min-width: 150px; text-align: left; white-space: normal; }
+  .qa-cycle-comparison-table tbody th small { display: block; margin-top: 3px; color: #718096; font-size: 9px; font-weight: 400; }
+  .qa-cycle-delta { font-weight: 700; }
+  .qa-cycle-delta.positive { color: #168149; }
+  .qa-cycle-delta.negative { color: #d64545; }
   @media (max-width: 560px) {
     .qa-cycle-form { grid-template-columns: 1fr; }
     .qa-cycle-form .qa-cycle-form-actions { grid-column: auto; }
@@ -1626,6 +1641,20 @@
   .dashboard-novelty-case { overflow: hidden; color: var(--text); font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
   .dashboard-novelty-comment { display: -webkit-box; overflow: hidden; color: var(--text-muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
   .dashboard-novelty-open { justify-self: start; padding: 4px 7px; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--panel-2); color: var(--text); font-size: 9px; }
+  .dashboard-novelty-case-summary { display: grid; align-content: start; gap: 9px; min-width: 0; padding: 11px; border: 1px solid var(--line-soft); border-left: 3px solid #d65a52; border-radius: 9px; background: var(--bg-soft); }
+  .dashboard-novelty-case-summary.sev-media { border-left-color: #d9952f; }
+  .dashboard-novelty-case-summary.sev-baja { border-left-color: #39a88e; }
+  .dashboard-novelty-case-summary-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px; }
+  .dashboard-novelty-case-summary-title { color: var(--text); font-size: 11px; font-weight: 750; }
+  .dashboard-novelty-case-summary-title small { display: block; margin-top: 3px; color: var(--text-faint); font-size: 9px; font-weight: 400; }
+  .dashboard-novelty-case-summary-counts { display: flex; flex-wrap: wrap; gap: 5px; }
+  .dashboard-novelty-case-summary-counts span { padding: 3px 6px; border-radius: 999px; background: var(--panel-3); color: var(--text-muted); font-size: 9px; }
+  .dashboard-novelty-case-summary-counts .failed { background: rgba(218,81,72,.14); color: #ffaba2; }
+  .dashboard-novelty-case-summary-counts .observed { background: rgba(217,149,47,.14); color: #f4cb7d; }
+  .dashboard-novelty-step-list { display: grid; gap: 7px; }
+  .dashboard-novelty-step-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 7px; padding-top: 7px; border-top: 1px solid var(--line-soft); }
+  .dashboard-novelty-step-row .dashboard-novelty-image { width: 48px; height: 40px; grid-column: 2; grid-row: 1 / span 2; }
+  .dashboard-novelty-step-row .dashboard-novelty-open { grid-column: 1; }
   .step-card.novelty-focus { animation: novelty-focus-pulse 1.4s ease-in-out 2; }
   @keyframes novelty-focus-pulse {
     0%, 100% { box-shadow: var(--shadow-soft); }
@@ -2185,6 +2214,43 @@
   .dashboard-issue-status-pill.status-in-progress { color: #d88900; }
   .dashboard-issue-status-pill.status-closed { color: #18a857; }
   .dashboard-issue-status-pill.status-re-open { color: #e87920; }
+  .dashboard-issue-aging-config { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 8px 12px; color: var(--muted, #9bb0c9); font-size: 11px; }
+  .dashboard-issue-aging-config input { width: 56px; padding: 3px 5px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--panel-2); color: var(--text); }
+  .dashboard-issue-age { white-space: nowrap; }
+  .dashboard-issue-trend { margin: 0 0 10px; padding: 10px; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--panel-2); }
+  .dashboard-issue-trend-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 11px; }
+  .dashboard-issue-trend-head strong { font-size: 12px; }
+  .dashboard-issue-trend-kpis { display: flex; gap: 12px; color: var(--text-muted); }
+  .dashboard-issue-trend-kpis b { color: var(--text); }
+  .dashboard-issue-trend svg { display: block; width: 100%; height: 150px; }
+  .dashboard-issue-trend-legend { display: flex; gap: 12px; margin-top: 4px; font-size: 10px; color: var(--text-muted); }
+  .dashboard-issue-trend-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 4px; border-radius: 2px; }
+  .dashboard-issue-distributions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 10px; }
+  .dashboard-issue-distribution { min-width: 0; padding: 10px; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--panel-2); }
+  .dashboard-issue-distribution h3 { margin: 0 0 9px; font-size: 12px; }
+  .dashboard-issue-distribution-list { display: grid; gap: 8px; }
+  .dashboard-issue-distribution-row { display: grid; grid-template-columns: minmax(75px, 1fr) minmax(55px, 2fr) auto; align-items: center; gap: 8px; font-size: 10px; }
+  .dashboard-issue-distribution-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dashboard-issue-distribution-track { height: 8px; overflow: hidden; border-radius: 5px; background: var(--panel); }
+  .dashboard-issue-distribution-fill { height: 100%; min-width: 0; border-radius: inherit; }
+  .dashboard-issue-distribution-count { min-width: 22px; color: var(--text-muted); text-align: right; }
+  @media (max-width: 720px) { .dashboard-issue-distributions { grid-template-columns: 1fr; } }
+  .dashboard-issue-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px; padding: 8px; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--panel-2); font-size: 11px; }
+  .dashboard-issue-bulk[hidden] { display: none; }
+  .dashboard-issue-bulk select, .dashboard-issue-bulk input, .dashboard-issue-bulk button { padding: 4px 7px; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--panel); color: var(--text); font-size: 11px; }
+  .dashboard-issue-bulk button { cursor: pointer; }
+  .dashboard-issue-comments { display: grid; gap: 6px; }
+  .dashboard-issue-comments-title { font-size: 12px; font-weight: 600; }
+  .dashboard-issue-comment-list { display: grid; gap: 6px; max-height: 160px; overflow: auto; }
+  .dashboard-issue-comment { padding: 6px 8px; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--panel-2); font-size: 11px; }
+  .dashboard-issue-comment small { display: flex; justify-content: space-between; gap: 6px; color: var(--text-muted); }
+  .dashboard-issue-comment p { margin: 3px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .dashboard-issue-comment button { border: 0; background: none; color: #f87171; cursor: pointer; }
+  .dashboard-issue-comments textarea { width: 100%; padding: 6px; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--panel-2); color: var(--text); resize: vertical; }
+  .dashboard-issue-comments > button { justify-self: start; padding: 5px 9px; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--panel-2); color: var(--text); cursor: pointer; }
+  .dashboard-issue-meta { display: block; margin-top: 3px; color: var(--text-muted); font-size: 9px; }
+  .dashboard-issue-age.overdue { padding: 2px 6px; border-radius: 10px; background: rgba(239,68,68,.18); color: #f87171; font-weight: 700; }
+  .dashboard-issue-summary-overdue strong { color: #f87171; }
   .dashboard-issue-table-actions { display: flex; gap: 5px; }
   .dashboard-issue-table-actions button { min-height: 27px; padding: 4px 7px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--panel-2); color: var(--text); font-size: 9px; }
   .dashboard-issue-evidence-button { min-height: 26px; padding: 4px 6px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--panel-2); color: var(--text); font-size: 9px; }
@@ -2472,8 +2538,10 @@
             <select id="qaExecutionCycleSelect" aria-label="Seleccionar ciclo de ejecución" hidden></select>
             <button id="qaCreateCycleBtn" type="button">+ Nuevo ciclo</button>
             <button id="qaCycleModeToggle" type="button" hidden>Activar ciclos</button>
+            <button id="qaCycleReportBtn" type="button" hidden>Informe PDF del ciclo</button>
             <span class="qa-cycle-context" id="qaCycleContext"></span>
           </div>
+          <section class="qa-cycle-comparison" id="qaCycleComparison" aria-labelledby="qaCycleComparisonTitle"></section>
           <form id="qaCycleForm" class="qa-cycle-form" hidden>
             <input id="qaCycleName" type="text" maxlength="100" placeholder="Nombre del ciclo (ej.: Versión 2.4.1)" aria-label="Nombre del ciclo" required />
             <input id="qaCycleVersion" type="text" maxlength="40" placeholder="Versión (opcional)" aria-label="Versión del ciclo" />
@@ -2528,7 +2596,7 @@
 
         <section class="dashboard-card dashboard-novedades-section" id="dashboardNovedadesSection" aria-labelledby="dashboardNovedadesTitle">
           <div class="dashboard-card-heading">
-            <strong id="dashboardNovedadesTitle">Novedades de los pasos</strong>
+            <strong id="dashboardNovedadesTitle">Fallos y observaciones por caso</strong>
             <span id="dashboardNovedadesCount">0 novedades</span>
           </div>
           <div class="dashboard-novelty-filters" aria-label="Filtros de novedades">
@@ -2565,11 +2633,15 @@
             <div class="dashboard-issue-heading-actions">
               <button class="btn-primary" id="dashboardIssueCreateBtn" type="button">+ Registrar issue</button>
               <button class="btn-secondary" id="dashboardIssueExportBtn" type="button">Exportar CSV</button>
+              <button class="btn-secondary" id="dashboardIssueExportExcelBtn" type="button">Exportar Excel</button>
+              <button class="btn-secondary" id="dashboardIssueExportPdfBtn" type="button">Exportar PDF</button>
             </div>
           </div>
           <div class="dashboard-issue-summary" id="dashboardIssueSummary" aria-label="Resumen de issues"></div>
+          <div class="dashboard-issue-trend" id="dashboardIssueTrend" aria-label="Tendencia semanal de issues"></div>
+          <div class="dashboard-issue-distributions" id="dashboardIssueDistributions" aria-label="Distribución de issues por severidad y módulo"></div>
           <div class="dashboard-issue-toolbar" aria-label="Filtros de issues">
-            <input id="dashboardIssueSearch" type="search" placeholder="Buscar por Test ID, formulario o escenario" aria-label="Buscar issues" />
+            <input id="dashboardIssueSearch" type="search" placeholder="Buscar por Test ID o caso de prueba" aria-label="Buscar issues" />
             <select id="dashboardIssueStatusFilter" aria-label="Filtrar issues por estado">
               <option value="all">Todos los estados</option>
             </select>
@@ -2582,19 +2654,31 @@
             </div>
           </div>
           <div class="dashboard-issue-results" id="dashboardIssueResults" aria-live="polite"></div>
+          <div class="dashboard-issue-bulk" id="dashboardIssueBulkBar" hidden>
+            <strong id="dashboardIssueBulkCount">0 seleccionados</strong>
+            <select id="dashboardIssueBulkStatus"><option value="">Estado: sin cambio</option></select>
+            <select id="dashboardIssueBulkSeverity"><option value="">Severidad: sin cambio</option></select>
+            <input id="dashboardIssueBulkAssignee" type="text" maxlength="80" placeholder="Asignado a: sin cambio" />
+            <button type="button" id="dashboardIssueBulkApplyBtn">Aplicar a seleccionados</button>
+            <button type="button" id="dashboardIssueBulkClearBtn">Quitar selección</button>
+          </div>
+          <label class="dashboard-issue-aging-config">Alerta si un issue abierto supera <input type="number" id="dashboardIssueAgingLimit" min="1" max="365" step="1" /> días</label>
           <div class="dashboard-issue-table-wrap" id="dashboardIssueTableView">
             <table class="dashboard-issue-table">
               <thead>
                 <tr>
+                  <th><input type="checkbox" id="dashboardIssueSelectAll" aria-label="Seleccionar todos los issues visibles" /></th>
                   <th>Test ID</th>
-                  <th>Formulario</th>
+                  <th>Caso de prueba</th>
                   <th>Observación</th>
                   <th>Evidencia</th>
                   <th>Resultado QA</th>
                   <th>Severidad</th>
                   <th>Prioridad</th>
                   <th>Estado</th>
+                  <th>Asignado a</th>
                   <th>Fecha registro</th>
+                  <th>Antigüedad</th>
                   <th>Fecha cierre</th>
                   <th>Última validación</th>
                   <th>Acciones</th>
@@ -2619,7 +2703,7 @@
                 <label for="dashboardIssueTestId">Test ID
                   <input id="dashboardIssueTestId" type="text" maxlength="100" required />
                 </label>
-                <label for="dashboardIssueFormName">Formulario / escenario
+                <label for="dashboardIssueFormName">Caso de prueba
                   <input id="dashboardIssueFormName" type="text" maxlength="180" required />
                 </label>
               </div>
@@ -2644,6 +2728,9 @@
                   </select>
                 </label>
               </div>
+              <label for="dashboardIssueAssignee">Asignado a
+                <input id="dashboardIssueAssignee" type="text" maxlength="80" placeholder="Nombre del responsable" />
+              </label>
               <label for="dashboardIssueStatus">Estado
                 <select id="dashboardIssueStatus">
                   <option>Open</option>
@@ -2653,6 +2740,18 @@
                   <option>Re-Open</option>
                 </select>
               </label>
+              <label for="dashboardIssueCreatedAt">Fecha de registro
+                <input id="dashboardIssueCreatedAt" type="datetime-local" />
+              </label>
+              <label for="dashboardIssueClosedAt">Fecha de cierre
+                <input id="dashboardIssueClosedAt" type="datetime-local" />
+              </label>
+              <div class="dashboard-issue-comments">
+                <span class="dashboard-issue-comments-title">Comentarios</span>
+                <div class="dashboard-issue-comment-list" id="dashboardIssueCommentList"></div>
+                <textarea id="dashboardIssueCommentInput" rows="2" placeholder="Escribe un comentario..."></textarea>
+                <button type="button" id="dashboardIssueCommentAddBtn">Agregar comentario</button>
+              </div>
               <div class="dashboard-issue-attachments">
                 <label for="dashboardIssueImages">Imágenes adjuntas (puedes pegar con Ctrl+V)
                   <input id="dashboardIssueImages" type="file" accept="image/*" multiple />
@@ -26186,6 +26285,7 @@ var __async = (__this, __arguments, generator) => {
   exports.uniqueId = uniqueId;
   exports.uniqueNumericIdCreator = uniqueNumericIdCreator;
   exports.uniqueUuid = uniqueUuid;
+  exports.JSZip = JSZip;
   exports.universalMeasureValue = universalMeasureValue;
   exports.unsignedDecimalNumber = unsignedDecimalNumber;
   Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
@@ -26265,9 +26365,13 @@ var __async = (__this, __arguments, generator) => {
       if (!observations.length) observations.push(String(fallbackNote || "").trim() || "El caso fue marcado como Failed durante la ejecución QA.");
       else if (String(fallbackNote || "").trim()) observations.push(`Nota de ejecución: ${String(fallbackNote).trim()}`);
       const severity = highestSeverity === "alta" ? "High" : highestSeverity === "baja" ? "Low" : "Medium";
+      const issueCaseText = parseQaCaseIdAndDescription(caseRecord.caseId);
+      const issueTestId = issueCaseText.caseId || String(caseRecord.caseId || "").trim();
+      const issueDescription = String(caseRecord.description || issueCaseText.description || "")
+        .trim().replace(/^[-–—:|]+\s*/, "");
       return {
-        testId: String(caseRecord.caseId || "").trim() || "Caso sin ID",
-        formName: String(caseRecord.description || "").trim() || "Caso de prueba",
+        testId: issueTestId || "Caso sin ID",
+        formName: issueDescription || "Caso de prueba",
         observation: observations.join("\n"),
         qaResult: forceFailed || failedSteps.length ? "Failed" : "Novedad",
         evidenceStepIds: issueSteps.map(({ step }) => step.id).filter((id) => id !== undefined && id !== null).map(String),
@@ -26276,7 +26380,7 @@ var __async = (__this, __arguments, generator) => {
       };
     });
     const parseQaCaseIdAndDescription = caseUtils.parseQaCaseIdAndDescription || ((input) => {
-      const match = String(input || "").trim().match(/^(\S+)\s+(.+?)\s*$/);
+      const match = String(input || "").trim().match(/^(\S+?)(?:\s+[-–—:|]+\s+|\s+)(.+?)\s*$/);
       return match
         ? { caseId: match[1], description: match[2], error: "" }
         : { caseId: "", description: "", error: "Escribe el ID seguido de la descripción, por ejemplo: TC-1 Login incorrecto." };
@@ -30276,7 +30380,7 @@ var __async = (__this, __arguments, generator) => {
     const parsed = (typeof caseUtils !== "undefined" && caseUtils.parseQaCaseIdAndDescription)
       ? caseUtils.parseQaCaseIdAndDescription(rawValue)
       : (() => {
-          const match = rawValue.match(/^(\S+)\s+(.+?)\s*$/);
+          const match = rawValue.match(/^(\S+?)(?:\s+[-–—:|]+\s+|\s+)(.+?)\s*$/);
           return match ? { caseId: match[1], description: match[2], error: "" } : { caseId: rawValue, description: String(fallbackDescription || "").trim(), error: "" };
         })();
 
@@ -31296,6 +31400,30 @@ var __async = (__this, __arguments, generator) => {
   }
 
   let dashboardIssueDraftImages = [];
+  let dashboardIssueDraftComments = [];
+
+  function renderDashboardIssueComments() {
+    const list = document.getElementById("dashboardIssueCommentList");
+    list.innerHTML = dashboardIssueDraftComments.map((comment, index) =>
+      `<div class="dashboard-issue-comment"><small><span>${escapeHtml(formatDashboardIssueDate(comment.at))}</span><button type="button" data-remove-comment="${index}" aria-label="Eliminar comentario">×</button></small><p>${escapeHtml(comment.text)}</p></div>`
+    ).join("") || '<small class="dashboard-issue-meta">Sin comentarios.</small>';
+    list.querySelectorAll("[data-remove-comment]").forEach((button) => {
+      button.addEventListener("click", () => {
+        dashboardIssueDraftComments.splice(Number(button.dataset.removeComment), 1);
+        renderDashboardIssueComments();
+      });
+    });
+  }
+
+  function addDashboardIssueDraftComment() {
+    const input = document.getElementById("dashboardIssueCommentInput");
+    const text = input.value.trim();
+    if (!text) return false;
+    dashboardIssueDraftComments.push({ id: createQaIssueId(), text, at: Date.now() });
+    input.value = "";
+    renderDashboardIssueComments();
+    return true;
+  }
 
   function renderDashboardIssueAttachments() {
     const list = document.getElementById("dashboardIssueAttachmentList");
@@ -31372,6 +31500,12 @@ var __async = (__this, __arguments, generator) => {
     };
   }
 
+  function getCasesInCycleScope(cycle, caseRecords) {
+    if (!Array.isArray(cycle?.retryCaseIds)) return caseRecords;
+    const retryCaseIds = new Set(cycle.retryCaseIds);
+    return caseRecords.filter((caseRecord) => retryCaseIds.has(caseRecord.qaId));
+  }
+
   function getCaseExecutionStatus(caseRecord) {
     const project = projects.find((item) => item.id === (caseRecord.projectId || projects[0]?.id));
     if (project?.qaCyclesEnabled) {
@@ -31425,12 +31559,155 @@ var __async = (__this, __arguments, generator) => {
     modeToggle.hidden = cycles.length === 0;
     modeToggle.textContent = cycleEnabled ? "Volver al modo actual" : "Activar ciclos";
     modeToggle.setAttribute("aria-pressed", String(cycleEnabled));
+    const reportButton = document.getElementById("qaCycleReportBtn");
+    reportButton.hidden = !cycleEnabled || !activeCycle;
     context.textContent = cycleEnabled && activeCycle
-      ? [activeCycle.version && `Versión ${activeCycle.version}`, activeCycle.environment, activeCycle.tester && `Ejecuta: ${activeCycle.tester}`]
+      ? [
+          activeCycle.version && `Versión ${activeCycle.version}`,
+          activeCycle.environment,
+          activeCycle.tester && `Ejecuta: ${activeCycle.tester}`,
+          Array.isArray(activeCycle.retryCaseIds) &&
+            `Reejecución de ${cycles.find((cycle) => cycle.id === activeCycle.retryFromCycleId)?.name || "ciclo anterior"}: ${activeCycle.retryCaseIds.length} ${activeCycle.retryCaseIds.length === 1 ? "caso fallido" : "casos fallidos"}`,
+        ]
         .filter(Boolean).join(" · ")
       : cycles.length
         ? "Los ciclos se conservan; el modo actual muestra los estados habituales."
         : "Crea ciclos independientes sin modificar los estados actuales.";
+  }
+
+  function getQaCycleSummary(cycle, projectCases) {
+    const counts = { pass: 0, failed: 0, blocked: 0, "in-progress": 0, "not-executed": 0 };
+    getCasesInCycleScope(cycle, projectCases).forEach((caseRecord) => {
+      const status = getCaseCycleResult(caseRecord, cycle).status;
+      if (Object.hasOwn(counts, status)) counts[status] += 1;
+    });
+    const evaluated = counts.pass + counts.failed;
+    return {
+      ...counts,
+      evaluated,
+      passRate: evaluated ? (counts.pass / evaluated) * 100 : null,
+    };
+  }
+
+  function renderQaCycleComparison(project, projectCases) {
+    const container = document.getElementById("qaCycleComparison");
+    if (!container) return;
+    const cycles = (Array.isArray(project.executionCycles) ? project.executionCycles : [])
+      .slice()
+      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    if (!cycles.length) {
+      container.innerHTML = "";
+      container.hidden = true;
+      return;
+    }
+    container.hidden = false;
+    const summaries = cycles.map((cycle) => ({ cycle, summary: getQaCycleSummary(cycle, projectCases) }));
+    const rows = summaries.map(({ cycle, summary }, index) => {
+      const previousRate = index > 0 ? summaries[index - 1].summary.passRate : null;
+      const delta = summary.passRate === null || previousRate === null ? null : summary.passRate - previousRate;
+      const comparison = delta === null
+        ? "—"
+        : `<span class="qa-cycle-delta ${delta > 0 ? "positive" : delta < 0 ? "negative" : ""}">${delta > 0 ? "+" : ""}${delta.toFixed(1)} pp</span>`;
+      return `<tr>
+        <th scope="row">${escapeHtml(cycle.name || "Ciclo sin nombre")}<small>${escapeHtml([cycle.version && `Versión ${cycle.version}`, cycle.environment].filter(Boolean).join(" · ") || "—")}</small></th>
+        <td>${summary.pass}</td>
+        <td>${summary.failed}</td>
+        <td>${summary.blocked}</td>
+        <td>${summary.evaluated}</td>
+        <td>${summary.passRate === null ? "—" : `${summary.passRate.toFixed(1)}%`}</td>
+        <td>${comparison}</td>
+      </tr>`;
+    }).join("");
+    container.innerHTML = `<div class="qa-cycle-comparison-heading">
+        <strong id="qaCycleComparisonTitle">Comparación entre ciclos</strong>
+        <span>Tasa de aprobación = Pass / (Pass + Failed). El cambio compara cada ciclo con el anterior.</span>
+      </div>
+      <div class="qa-cycle-comparison-table-wrap"><table class="qa-cycle-comparison-table">
+        <thead><tr><th scope="col">Ciclo</th><th scope="col">Pasaron</th><th scope="col">Fallaron</th><th scope="col">Bloqueados</th><th scope="col">Evaluados</th><th scope="col">Tasa de aprobación</th><th scope="col">Cambio</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+  }
+
+  function buildQaCycleClosureReport(project, cycle, projectCases) {
+    const cycleCases = getCasesInCycleScope(cycle, projectCases);
+    const summary = getQaCycleSummary(cycle, projectCases);
+    const openIssues = (Array.isArray(project.issues) ? project.issues : [])
+      .filter((issue) => issue.status !== "Closed");
+    const issuesBySeverity = Object.fromEntries(
+      DASHBOARD_ISSUE_PRIORITIES.map((severity) => [
+        severity,
+        openIssues.filter((issue) => (issue.severity || "Medium") === severity).length,
+      ])
+    );
+    const criticalOpen = issuesBySeverity.Critical || 0;
+    const passPercent = summary.evaluated
+      ? (summary.pass / summary.evaluated) * 100
+      : null;
+    return {
+      projectName: project.name || "Proyecto",
+      cycleName: cycle.name || "Ciclo sin nombre",
+      version: cycle.version || "",
+      environment: cycle.environment || "",
+      tester: cycle.tester || "",
+      generatedAt: new Date().toLocaleString("es-CO"),
+      cycleCaseCount: cycleCases.length,
+      pass: summary.pass,
+      failed: summary.failed,
+      blocked: summary.blocked,
+      inProgress: summary["in-progress"],
+      notExecuted: summary["not-executed"],
+      evaluated: summary.evaluated,
+      passPercent,
+      issuesBySeverity,
+      openIssueCount: openIssues.length,
+      criticalOpen,
+      exitCriterion: "Sin issues críticos abiertos",
+      exitCriterionMet: criticalOpen === 0,
+    };
+  }
+
+  function exportQaCycleClosureReport() {
+    const project = projects.find((item) => item.id === activeProjectId);
+    const cycle = project && getActiveExecutionCycle(project);
+    if (!project || !cycle) return;
+    const report = buildQaCycleClosureReport(project, cycle, getActiveProjectCases());
+    const printable = window.open("", "_blank");
+    if (!printable) {
+      showTransientStatus("El navegador bloqueó la ventana del informe. Permite las ventanas emergentes e inténtalo de nuevo.", 5000);
+      return;
+    }
+    const esc = (value) => escapeHtml(String(value ?? ""));
+    const percentage = report.passPercent === null ? "Sin casos evaluados" : `${report.passPercent.toFixed(1)}%`;
+    const criterionClass = report.exitCriterionMet ? "pass" : "fail";
+    const severityRows = DASHBOARD_ISSUE_PRIORITIES.map((severity) =>
+      `<tr><th>${esc(severity)}</th><td>${report.issuesBySeverity[severity]}</td></tr>`
+    ).join("");
+    printable.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Informe de cierre · ${esc(report.cycleName)}</title>
+      <style>
+        @page{size:A4;margin:18mm}*{box-sizing:border-box}body{font:14px Arial,sans-serif;color:#263445;line-height:1.45}
+        h1{margin:0;color:#1f3a5f;font-size:24px}h2{margin:22px 0 8px;font-size:16px;color:#1f3a5f}
+        .subtitle{color:#65758a;margin:5px 0 18px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;padding:12px;background:#f3f6f9;border-radius:8px}
+        .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:14px}.kpi{padding:12px;border:1px solid #d9e0e8;border-radius:8px}.kpi b{display:block;font-size:20px;color:#1f3a5f}
+        table{width:100%;border-collapse:collapse;margin-top:8px}th,td{text-align:left;padding:8px;border-bottom:1px solid #d9e0e8}thead th{background:#1f3a5f;color:white}
+        .criterion{padding:12px;border-radius:8px;font-weight:bold}.criterion.pass{background:#e9f7ef;color:#168149}.criterion.fail{background:#fff0ef;color:#c0392b}
+        footer{margin-top:28px;color:#718096;font-size:10px}
+        @media print{.kpi,.meta,.criterion{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+      </style></head><body>
+      <h1>Informe de cierre de ciclo</h1><p class="subtitle">${esc(report.projectName)} · Generado ${esc(report.generatedAt)}</p>
+      <div class="meta"><span><b>Ciclo:</b> ${esc(report.cycleName)}</span><span><b>Versión:</b> ${esc(report.version || "—")}</span>
+        <span><b>Ambiente:</b> ${esc(report.environment || "—")}</span><span><b>Ejecutado por:</b> ${esc(report.tester || "—")}</span>
+        <span><b>Casos en alcance:</b> ${report.cycleCaseCount}</span><span><b>Evaluados (Pass + Failed):</b> ${report.evaluated}</span></div>
+      <div class="kpis"><div class="kpi"><b>${percentage}</b>Aprobación sobre evaluados</div>
+        <div class="kpi"><b>${report.pass}</b>Pasaron</div><div class="kpi"><b>${report.failed}</b>Fallaron</div>
+        <div class="kpi"><b>${report.notExecuted + report.inProgress + report.blocked}</b>Pendientes / bloqueados</div></div>
+      <h2>Issues abiertos por severidad</h2><p>Total abiertos: <b>${report.openIssueCount}</b></p>
+      <table><thead><tr><th>Severidad</th><th>Issues abiertos</th></tr></thead><tbody>${severityRows}</tbody></table>
+      <h2>Criterio de salida</h2><div class="criterion ${criterionClass}">${esc(report.exitCriterion)}: ${report.exitCriterionMet ? "CUMPLE" : `NO CUMPLE (${report.criticalOpen} abiertos)`}</div>
+      <footer>El informe considera abiertos todos los issues del proyecto cuyo estado no sea Closed. La aprobación se calcula como Pass / (Pass + Failed).</footer>
+      </body></html>`);
+    printable.document.close();
+    printable.focus();
+    setTimeout(() => printable.print(), 250);
   }
 
   function bindQaCycleControls() {
@@ -31444,6 +31721,7 @@ var __async = (__this, __arguments, generator) => {
       cycleForm.hidden = false;
       cycleName.focus();
     });
+    document.getElementById("qaCycleReportBtn").addEventListener("click", exportQaCycleClosureReport);
     document.getElementById("qaCycleCancelBtn").addEventListener("click", () => {
       cycleForm.reset();
       cycleForm.hidden = true;
@@ -31455,6 +31733,11 @@ var __async = (__this, __arguments, generator) => {
       if (!project || !name) return;
 
       if (!Array.isArray(project.executionCycles)) project.executionCycles = [];
+      const previousCycle = getActiveExecutionCycle(project);
+      const projectCases = getActiveProjectCases();
+      const cycleCases = previousCycle
+        ? projectCases.filter((caseRecord) => getCaseCycleResult(caseRecord, previousCycle).status === "failed")
+        : projectCases;
       const cycle = {
         id: createExecutionCycleId(),
         name,
@@ -31462,7 +31745,9 @@ var __async = (__this, __arguments, generator) => {
         environment: document.getElementById("qaCycleEnvironment").value.trim(),
         tester: document.getElementById("qaCycleTester").value.trim(),
         createdAt: Date.now(),
-        results: Object.fromEntries(getActiveProjectCases().map((caseRecord) => [
+        retryFromCycleId: previousCycle?.id || null,
+        retryCaseIds: previousCycle ? cycleCases.map((caseRecord) => caseRecord.qaId) : null,
+        results: Object.fromEntries(cycleCases.map((caseRecord) => [
           caseRecord.qaId,
           { status: "not-executed", history: [] },
         ])),
@@ -32062,18 +32347,23 @@ var __async = (__this, __arguments, generator) => {
     renderQaCycleControls(project);
     const suites = Array.isArray(project.suites) ? project.suites : [];
     const projectCases = getActiveProjectCases();
+    renderQaCycleComparison(project, projectCases);
+    const activeCycle = getActiveExecutionCycle(project);
+    const cycleCases = project.qaCyclesEnabled
+      ? getCasesInCycleScope(activeCycle, projectCases)
+      : projectCases;
     const counts = { pass: 0, "not-executed": 0, "in-progress": 0, failed: 0, blocked: 0 };
-    projectCases.forEach((caseRecord) => { counts[getCaseExecutionStatus(caseRecord)] += 1; });
+    cycleCases.forEach((caseRecord) => { counts[getCaseExecutionStatus(caseRecord)] += 1; });
 
     document.getElementById("qaPassCount").textContent = counts.pass;
     document.getElementById("qaNotExecutedCount").textContent = counts["not-executed"];
     document.getElementById("qaInProgressCount").textContent = counts["in-progress"];
     document.getElementById("qaFailedCount").textContent = counts.failed;
     document.getElementById("qaBlockedCount").textContent = counts.blocked;
-    const executed = projectCases.length - counts["not-executed"];
-    const passPercent = projectCases.length ? Math.round((counts.pass / projectCases.length) * 100) : 0;
+    const executed = cycleCases.length - counts["not-executed"];
+    const passPercent = cycleCases.length ? Math.round((counts.pass / cycleCases.length) * 100) : 0;
     document.getElementById("qaPanelSummary").textContent =
-      `${executed}/${projectCases.length} ejecutados · ${passPercent}% pass`;
+      `${executed}/${cycleCases.length} ejecutados · ${passPercent}% pass`;
 
     const grid = document.getElementById("qaSuiteGrid");
     const detail = document.getElementById("qaSuiteDetail");
@@ -32089,9 +32379,12 @@ var __async = (__this, __arguments, generator) => {
 
     if (!selectedSuite) {
       const query = suiteSearch.value.trim().toLocaleLowerCase();
-      const visibleSuites = suites.filter((suite) => suite.name.toLocaleLowerCase().includes(query));
+      const visibleSuites = suites.filter((suite) =>
+        suite.name.toLocaleLowerCase().includes(query) &&
+        (!Array.isArray(activeCycle?.retryCaseIds) || cycleCases.some((caseRecord) => caseRecord.suiteId === suite.id))
+      );
       grid.innerHTML = visibleSuites.map((suite) => {
-        const suiteCases = projectCases.filter((item) => item.suiteId === suite.id);
+        const suiteCases = cycleCases.filter((item) => item.suiteId === suite.id);
         const suiteStatuses = [
           { key: "pass", label: "Pass" },
           { key: "failed", label: "Failed" },
@@ -32129,7 +32422,9 @@ var __async = (__this, __arguments, generator) => {
           </span>
           <span class="qa-suite-status-list" aria-hidden="true">${statusBreakdown}</span>
         </button>`;
-      }).join("") || '<div class="qa-suite-empty">No hay suites que coincidan con la búsqueda.</div>';
+      }).join("") || (project.qaCyclesEnabled && Array.isArray(activeCycle?.retryCaseIds) && !cycleCases.length
+        ? '<div class="qa-suite-empty">No hay casos fallidos del ciclo anterior para reejecutar.</div>'
+        : '<div class="qa-suite-empty">No hay suites que coincidan con la búsqueda.</div>');
       grid.querySelectorAll("[data-suite-id]").forEach((button) => {
         button.addEventListener("click", () => {
           activeSuiteId = button.dataset.suiteId;
@@ -32141,7 +32436,7 @@ var __async = (__this, __arguments, generator) => {
     }
 
     document.getElementById("qaSuiteDetailName").textContent = selectedSuite.name;
-    const suiteCases = projectCases.filter((item) => item.suiteId === selectedSuite.id);
+    const suiteCases = cycleCases.filter((item) => item.suiteId === selectedSuite.id);
     const caseQuery = document.getElementById("qaCaseSearch").value.trim().toLocaleLowerCase();
     const visibleCases = suiteCases.filter((item) =>
       `${item.caseId || ""} ${item.description || ""} ${item.details || ""}`.toLocaleLowerCase().includes(caseQuery)
@@ -32158,7 +32453,9 @@ var __async = (__this, __arguments, generator) => {
         </span>
         <span class="qa-suite-case-status">${getQaExecutionStatusLabel(status)}</span>
       </button>`;
-    }).join("") || '<div class="qa-suite-empty">Esta suite todavía no tiene casos. Pulsa “+ Caso” para agregar el primero.</div>';
+    }).join("") || (project.qaCyclesEnabled && Array.isArray(activeCycle?.retryCaseIds)
+      ? '<div class="qa-suite-empty">No hay casos fallidos del ciclo anterior para reejecutar.</div>'
+      : '<div class="qa-suite-empty">Esta suite todavía no tiene casos. Pulsa “+ Caso” para agregar el primero.</div>');
     list.querySelectorAll("[data-case-index]").forEach((button) => {
       button.addEventListener("click", () => openQaExecutionDialog(Number(button.dataset.caseIndex), button));
     });
@@ -32364,7 +32661,7 @@ var __async = (__this, __arguments, generator) => {
     return issues.filter((issue) => {
       const relatedCase = getDashboardIssueCase(issue, project);
       const suiteId = issue.suiteId || relatedCase?.suiteId || "";
-      const searchText = [issue.testId, issue.formName, issue.observation, issue.severity, issue.priority]
+      const searchText = [issue.testId, issue.formName, issue.observation, issue.severity, issue.priority, issue.assignee]
         .filter(Boolean)
         .join(" ")
         .normalize("NFD")
@@ -32375,6 +32672,205 @@ var __async = (__this, __arguments, generator) => {
         (dashboardIssueFilters.suiteId === "all" ||
           (dashboardIssueFilters.suiteId === "none" ? !suiteId : suiteId === dashboardIssueFilters.suiteId));
     });
+  }
+
+  const dashboardIssueSelection = new Set();
+  const DASHBOARD_TREND_WEEKS = 8;
+
+  function getDashboardIssueTrend(issues, now = Date.now()) {
+    const current = new Date(now);
+    current.setHours(0, 0, 0, 0);
+    current.setDate(current.getDate() - ((current.getDay() + 6) % 7));
+    const weekMs = 7 * 86400000;
+    const firstStart = current.getTime() - (DASHBOARD_TREND_WEEKS - 1) * weekMs;
+    const weeks = Array.from({ length: DASHBOARD_TREND_WEEKS }, (_, index) => ({
+      start: firstStart + index * weekMs, opened: 0, closed: 0,
+    }));
+    const bucket = (time) => {
+      const value = Number(new Date(time));
+      if (!Number.isFinite(value) || value < firstStart) return null;
+      return weeks[Math.min(DASHBOARD_TREND_WEEKS - 1, Math.floor((value - firstStart) / weekMs))];
+    };
+    const durations = [];
+    issues.forEach((issue) => {
+      const opened = bucket(issue.createdAt);
+      if (opened) opened.opened += 1;
+      if (issue.status === "Closed" && issue.closedAt) {
+        const closed = bucket(issue.closedAt);
+        if (closed) closed.closed += 1;
+        const days = (new Date(issue.closedAt) - new Date(issue.createdAt)) / 86400000;
+        if (Number.isFinite(days) && days >= 0) durations.push(days);
+      }
+    });
+    const averageCloseDays = durations.length ? durations.reduce((sum, d) => sum + d, 0) / durations.length : null;
+    return { weeks, averageCloseDays, closedCount: durations.length };
+  }
+
+  function renderDashboardIssueTrend(issues) {
+    const container = document.getElementById("dashboardIssueTrend");
+    if (!container) return;
+    const { weeks, averageCloseDays, closedCount } = getDashboardIssueTrend(issues);
+    const max = Math.max(1, ...weeks.map((week) => Math.max(week.opened, week.closed)));
+    const width = 600, height = 150, top = 14, bottom = 22, plotH = height - top - bottom;
+    const slot = width / weeks.length, barW = Math.min(22, slot / 2 - 4);
+    const bars = weeks.map((week, index) => {
+      const x = index * slot + slot / 2;
+      const oh = (week.opened / max) * plotH, ch = (week.closed / max) * plotH;
+      const label = new Date(week.start).toLocaleDateString("es-CO", { day: "2-digit", month: "short" });
+      return `<g><title>Semana del ${label}: ${week.opened} abiertos, ${week.closed} cerrados</title>
+        <rect x="${x - barW - 1}" y="${top + plotH - oh}" width="${barW}" height="${oh}" rx="2" fill="#e7463e"/>
+        <rect x="${x + 1}" y="${top + plotH - ch}" width="${barW}" height="${ch}" rx="2" fill="#34c38f"/>
+        ${week.opened ? `<text x="${x - barW / 2 - 1}" y="${top + plotH - oh - 3}" font-size="9" text-anchor="middle" fill="#9bb0c9">${week.opened}</text>` : ""}
+        ${week.closed ? `<text x="${x + barW / 2 + 1}" y="${top + plotH - ch - 3}" font-size="9" text-anchor="middle" fill="#9bb0c9">${week.closed}</text>` : ""}
+        <text x="${x}" y="${height - 6}" font-size="9" text-anchor="middle" fill="#9bb0c9">${escapeHtml(label)}</text></g>`;
+    }).join("");
+    const avg = averageCloseDays === null ? "—" : `${averageCloseDays.toFixed(1)} días`;
+    container.innerHTML = `<div class="dashboard-issue-trend-head"><strong>Tendencia semanal (últimas ${DASHBOARD_TREND_WEEKS} semanas)</strong>
+      <div class="dashboard-issue-trend-kpis"><span>Tiempo promedio de cierre: <b>${avg}</b></span><span>Issues cerrados: <b>${closedCount}</b></span></div></div>
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Issues abiertos y cerrados por semana">
+        <line x1="0" y1="${top + plotH}" x2="${width}" y2="${top + plotH}" stroke="#3a4a5f"/>${bars}</svg>
+      <div class="dashboard-issue-trend-legend"><span><i style="background:#e7463e"></i>Abiertos (registrados)</span><span><i style="background:#34c38f"></i>Cerrados</span></div>`;
+  }
+
+  function renderDashboardIssueDistributions(issues, project) {
+    const container = document.getElementById("dashboardIssueDistributions");
+    if (!container) return;
+    const severityCounts = new Map();
+    const moduleCounts = new Map();
+    const severityColors = { Critical: "#e7463e", High: "#f39c12", Medium: "#4b9fea", Low: "#34c38f" };
+    issues.forEach((issue) => {
+      const severity = issue.severity || "Sin severidad";
+      severityCounts.set(severity, (severityCounts.get(severity) || 0) + 1);
+      const relatedCase = getDashboardIssueCase(issue, project);
+      const suiteId = issue.suiteId || relatedCase?.suiteId || "";
+      const moduleName = (project.suites || []).find((suite) => suite.id === suiteId)?.name || "Sin módulo";
+      moduleCounts.set(moduleName, (moduleCounts.get(moduleName) || 0) + 1);
+    });
+
+    const renderRows = (counts, colorFor = () => "#7890aa") => {
+      const entries = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"));
+      const max = Math.max(1, ...entries.map(([, count]) => count));
+      return entries.length ? entries.map(([label, count]) => {
+        const percent = Math.round((count / max) * 100);
+        const color = colorFor(label);
+        return `<div class="dashboard-issue-distribution-row" title="${escapeHtml(label)}: ${count}">
+          <span class="dashboard-issue-distribution-label">${escapeHtml(label)}</span>
+          <div class="dashboard-issue-distribution-track" aria-hidden="true"><div class="dashboard-issue-distribution-fill" style="width:${percent}%;background:${color}"></div></div>
+          <span class="dashboard-issue-distribution-count">${count}</span>
+        </div>`;
+      }).join("") : '<div class="dashboard-issue-empty">Sin issues para mostrar.</div>';
+    };
+
+    container.innerHTML = `<section class="dashboard-issue-distribution" aria-label="Issues por severidad">
+      <h3>Distribución por severidad</h3>
+      <div class="dashboard-issue-distribution-list">${renderRows(severityCounts, (severity) => severityColors[severity] || "#7890aa")}</div>
+    </section>
+    <section class="dashboard-issue-distribution" aria-label="Issues por módulo">
+      <h3>Distribución por módulo</h3>
+      <div class="dashboard-issue-distribution-list">${renderRows(moduleCounts)}</div>
+    </section>`;
+  }
+
+  function renderDashboardIssueBulkBar(visibleIssues) {
+    const project = projects.find((item) => item.id === activeProjectId);
+    const existingIds = new Set((project?.issues || []).map((issue) => issue.id));
+    [...dashboardIssueSelection].forEach((id) => { if (!existingIds.has(id)) dashboardIssueSelection.delete(id); });
+    const bar = document.getElementById("dashboardIssueBulkBar");
+    bar.hidden = dashboardIssueSelection.size === 0 || dashboardIssueFilters.view !== "table";
+    document.getElementById("dashboardIssueBulkCount").textContent =
+      `${dashboardIssueSelection.size} ${dashboardIssueSelection.size === 1 ? "seleccionado" : "seleccionados"}`;
+    const statusSelect = document.getElementById("dashboardIssueBulkStatus");
+    if (statusSelect.options.length <= 1) {
+      DASHBOARD_ISSUE_STATUSES.forEach((status) => statusSelect.add(new Option(status, status)));
+      const severitySelect = document.getElementById("dashboardIssueBulkSeverity");
+      DASHBOARD_ISSUE_PRIORITIES.forEach((value) => severitySelect.add(new Option(value, value)));
+    }
+    const selectAll = document.getElementById("dashboardIssueSelectAll");
+    const selectedVisible = visibleIssues.filter((issue) => dashboardIssueSelection.has(issue.id)).length;
+    selectAll.checked = visibleIssues.length > 0 && selectedVisible === visibleIssues.length;
+    selectAll.indeterminate = selectedVisible > 0 && selectedVisible < visibleIssues.length;
+    document.querySelectorAll("[data-issue-select]").forEach((box) => {
+      box.addEventListener("change", () => {
+        if (box.checked) dashboardIssueSelection.add(box.dataset.issueSelect);
+        else dashboardIssueSelection.delete(box.dataset.issueSelect);
+        renderDashboardIssueLog();
+      });
+    });
+  }
+
+  async function applyDashboardIssueBulkEdit() {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project || !dashboardIssueSelection.size) return;
+    const status = document.getElementById("dashboardIssueBulkStatus").value;
+    const severity = document.getElementById("dashboardIssueBulkSeverity").value;
+    const assigneeInput = document.getElementById("dashboardIssueBulkAssignee").value.trim();
+    if (!status && !severity && !assigneeInput) {
+      showTransientStatus("Elige al menos un cambio para aplicar.", 3000);
+      return;
+    }
+    const before = project.issues;
+    const timestamp = Date.now();
+    project.issues = before.map((issue) => {
+      if (!dashboardIssueSelection.has(issue.id)) return issue;
+      const next = { ...issue };
+      if (severity) {
+        next.severity = severity;
+        if (issue.source === "auto") next.severityEdited = true;
+      }
+      if (assigneeInput) next.assignee = assigneeInput;
+      if (status && status !== issue.status) {
+        next.status = status;
+        next.statusHistory = [...(Array.isArray(issue.statusHistory) ? issue.statusHistory : []), { status, at: timestamp }];
+        if (status === "Closed") {
+          next.closedAt = timestamp;
+          next.lastValidationAt = timestamp;
+        } else if (issue.status === "Closed") {
+          next.closedAt = null;
+        }
+      }
+      return next;
+    });
+    if (!(await saveProjectsToDB())) {
+      project.issues = before;
+      showTransientStatus("No se pudieron guardar los cambios masivos.", 4000);
+      return;
+    }
+    const count = dashboardIssueSelection.size;
+    dashboardIssueSelection.clear();
+    document.getElementById("dashboardIssueBulkStatus").value = "";
+    document.getElementById("dashboardIssueBulkSeverity").value = "";
+    document.getElementById("dashboardIssueBulkAssignee").value = "";
+    renderDashboard();
+    showTransientStatus(`${count} ${count === 1 ? "issue actualizado" : "issues actualizados"}.`, 3000);
+  }
+
+  function getDashboardIssueAgingLimit() {
+    const value = parseInt(localStorage.getItem("dashboardIssueAgingLimit"), 10);
+    return value > 0 ? value : 7;
+  }
+
+  function getDashboardIssueAgeDays(issue) {
+    const start = new Date(issue.createdAt).getTime();
+    if (!Number.isFinite(start)) return null;
+    const closed = issue.status === "Closed";
+    const end = closed ? new Date(issue.closedAt).getTime() : Date.now();
+    if (!Number.isFinite(end)) return null;
+    return Math.max(0, Math.floor((end - start) / 86400000));
+  }
+
+  function isDashboardIssueOverdue(issue) {
+    const days = getDashboardIssueAgeDays(issue);
+    return issue.status !== "Closed" && days !== null && days > getDashboardIssueAgingLimit();
+  }
+
+  function renderDashboardIssueAge(issue) {
+    const days = getDashboardIssueAgeDays(issue);
+    if (days === null) return "—";
+    const label = `${days} ${days === 1 ? "día" : "días"}`;
+    if (issue.status === "Closed") return `<span class="dashboard-issue-age">${label}</span>`;
+    return isDashboardIssueOverdue(issue)
+      ? `<span class="dashboard-issue-age overdue" title="Supera el límite de ${getDashboardIssueAgingLimit()} días">⚠ ${label}</span>`
+      : `<span class="dashboard-issue-age">${label}</span>`;
   }
 
   function renderDashboardIssueLog() {
@@ -32391,7 +32887,10 @@ var __async = (__this, __arguments, generator) => {
     });
     summary.innerHTML = DASHBOARD_ISSUE_STATUSES.map((status) =>
       `<div class="dashboard-issue-summary-item" data-status="${escapeHtml(status)}"><strong>${statusCounts[status]}</strong><span>${escapeHtml(status)}</span></div>`
-    ).join("") + `<div class="dashboard-issue-summary-item"><strong>${issues.length}</strong><span>Total</span></div>`;
+    ).join("") + `<div class="dashboard-issue-summary-item"><strong>${issues.length}</strong><span>Total</span></div>` +
+      `<div class="dashboard-issue-summary-item dashboard-issue-summary-overdue"><strong>${issues.filter(isDashboardIssueOverdue).length}</strong><span>Vencidos</span></div>`;
+    const agingInput = document.getElementById("dashboardIssueAgingLimit");
+    if (agingInput && document.activeElement !== agingInput) agingInput.value = getDashboardIssueAgingLimit();
 
     const statusFilter = document.getElementById("dashboardIssueStatusFilter");
     const selectedStatus = dashboardIssueFilters.status;
@@ -32440,9 +32939,10 @@ var __async = (__this, __arguments, generator) => {
         </button>`;
       }).join("");
       return `<tr>
+        <td><input type="checkbox" data-issue-select="${escapeHtml(issue.id)}" aria-label="Seleccionar issue ${escapeHtml(issue.testId || "")}" ${dashboardIssueSelection.has(issue.id) ? "checked" : ""} /></td>
         <td><span class="dashboard-issue-test-id">${escapeHtml(issue.testId || "—")}</span></td>
         <td>${escapeHtml(issue.formName || "Caso de prueba")}<br><small>${escapeHtml(suiteName)}</small></td>
-        <td><div class="dashboard-issue-observation">${escapeHtml(issue.observation || "Sin observación")}</div></td>
+        <td><div class="dashboard-issue-observation">${escapeHtml(issue.observation || "Sin observación")}</div>${Array.isArray(issue.comments) && issue.comments.length ? `<span class="dashboard-issue-meta">💬 ${issue.comments.length} ${issue.comments.length === 1 ? "comentario" : "comentarios"}</span>` : ""}</td>
         <td>${evidenceCount
           ? `<div class="dashboard-issue-evidence-previews">${evidencePreview}</div>`
           : "—"}</td>
@@ -32452,13 +32952,18 @@ var __async = (__this, __arguments, generator) => {
         <td>${escapeHtml(issue.severity || "Medium")}</td>
         <td>${escapeHtml(issue.priority || "Medium")}</td>
         <td><span class="dashboard-issue-status-pill ${getDashboardIssueStatusClass(issue.status)}">${escapeHtml(issue.status || "Open")}</span></td>
+        <td>${escapeHtml(issue.assignee || "—")}</td>
         <td>${formatDashboardIssueDate(issue.createdAt)}</td>
+        <td>${renderDashboardIssueAge(issue)}</td>
         <td>${formatDashboardIssueDate(issue.closedAt)}</td>
         <td>${formatDashboardIssueDate(issue.lastValidationAt)}</td>
         <td><div class="dashboard-issue-table-actions"><button type="button" data-issue-edit="${escapeHtml(issue.id)}">Editar</button></div></td>
       </tr>`;
-    }).join("") || `<tr><td colspan="12"><div class="dashboard-issue-empty">${issues.length ? "No hay issues que coincidan con los filtros." : "Aún no hay issues. Se crearán automáticamente cuando se registre un fallo o una novedad con severidad, o puedes registrar uno manualmente."}</div></td></tr>`;
+    }).join("") || `<tr><td colspan="15"><div class="dashboard-issue-empty">${issues.length ? "No hay issues que coincidan con los filtros." : "Aún no hay issues. Se crearán automáticamente cuando se registre un fallo o una novedad con severidad, o puedes registrar uno manualmente."}</div></td></tr>`;
 
+    renderDashboardIssueBulkBar(visibleIssues);
+    renderDashboardIssueTrend(issues);
+    renderDashboardIssueDistributions(issues, project);
     const kanban = document.getElementById("dashboardIssueKanbanView");
     kanban.innerHTML = DASHBOARD_ISSUE_STATUSES.map((status) => {
       const columnIssues = visibleIssues.filter((issue) => issue.status === status);
@@ -32479,6 +32984,8 @@ var __async = (__this, __arguments, generator) => {
             <span>${escapeHtml(issue.formName || "Caso de prueba")}</span>
             ${issue.qaResult ? `<span>Resultado QA: ${escapeHtml(issue.qaResult)}</span>` : ""}
             <span>${escapeHtml(issue.observation || "Sin observación")}</span>
+            ${issue.assignee ? `<span>👤 ${escapeHtml(issue.assignee)}</span>` : ""}
+            ${Array.isArray(issue.comments) && issue.comments.length ? `<span>💬 ${issue.comments.length}</span>` : ""}
             ${evidencePreview ? `<div class="dashboard-issue-evidence-previews" aria-label="Evidencias del caso">${evidencePreview}</div>` : ""}
             <button type="button" data-issue-edit="${escapeHtml(issue.id)}">Editar</button>
           </article>`;
@@ -32518,6 +33025,10 @@ var __async = (__this, __arguments, generator) => {
     });
     form.reset();
     dashboardIssueDraftImages = Array.isArray(issue?.attachments) ? issue.attachments.map((item) => ({ ...item })) : [];
+    dashboardIssueDraftComments = Array.isArray(issue?.comments) ? issue.comments.map((item) => ({ ...item })) : [];
+    document.getElementById("dashboardIssueAssignee").value = issue?.assignee || "";
+    document.getElementById("dashboardIssueCommentInput").value = "";
+    renderDashboardIssueComments();
     renderDashboardIssueAttachments();
     document.getElementById("dashboardIssueId").value = issue?.id || "";
     document.getElementById("dashboardIssueEditorTitle").textContent = issue ? "Editar issue" : "Registrar issue";
@@ -32531,6 +33042,8 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("dashboardIssueSeverity").value = DASHBOARD_ISSUE_PRIORITIES.includes(issue?.severity) ? issue.severity : "Medium";
     document.getElementById("dashboardIssuePriority").value = DASHBOARD_ISSUE_PRIORITIES.includes(issue?.priority) ? issue.priority : "Medium";
     document.getElementById("dashboardIssueStatus").value = DASHBOARD_ISSUE_STATUSES.includes(issue?.status) ? issue.status : "Open";
+    document.getElementById("dashboardIssueCreatedAt").value = toDateTimeLocalValue(issue?.createdAt || Date.now());
+    document.getElementById("dashboardIssueClosedAt").value = issue?.status === "Closed" ? toDateTimeLocalValue(issue.closedAt) : "";
     const overlay = document.getElementById("dashboardIssueEditorOverlay");
     openOverlay(overlay, {
       opener,
@@ -32538,6 +33051,13 @@ var __async = (__this, __arguments, generator) => {
       initialFocus: document.getElementById("dashboardIssueTestId"),
       onEscape: () => closeDashboardIssueEditor(),
     });
+  }
+
+  function toDateTimeLocalValue(value) {
+    const date = new Date(value);
+    if (!value || Number.isNaN(date.getTime())) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
 
   function closeDashboardIssueEditor() {
@@ -32565,12 +33085,30 @@ var __async = (__this, __arguments, generator) => {
         !DASHBOARD_ISSUE_STATUSES.includes(status) ||
         !DASHBOARD_ISSUE_PRIORITIES.includes(severity) ||
         !DASHBOARD_ISSUE_PRIORITIES.includes(priority)) {
-      error.textContent = "Completa el Test ID, el formulario y la observación con valores válidos.";
+      error.textContent = "Completa el Test ID, el caso de prueba y la observación con valores válidos.";
       error.hidden = false;
       return;
     }
 
+    addDashboardIssueDraftComment();
     const timestamp = Date.now();
+    const createdInput = document.getElementById("dashboardIssueCreatedAt").value;
+    const typedCreated = createdInput ? new Date(createdInput).getTime() : NaN;
+    const createdUnchanged = existing?.createdAt && createdInput === toDateTimeLocalValue(existing.createdAt);
+    const createdAtValue = createdUnchanged ? existing.createdAt : Number.isFinite(typedCreated) ? typedCreated : (existing?.createdAt || timestamp);
+    const closedInput = document.getElementById("dashboardIssueClosedAt").value;
+    let closedAtValue = null;
+    if (status === "Closed") {
+      const typed = closedInput ? new Date(closedInput).getTime() : NaN;
+      const unchanged = existing?.closedAt && closedInput === toDateTimeLocalValue(existing.closedAt);
+      closedAtValue = unchanged ? existing.closedAt : Number.isFinite(typed) ? typed : timestamp;
+      const created = new Date(createdAtValue).getTime();
+      if (Number.isFinite(created) && closedAtValue < created) {
+        error.textContent = "La fecha de cierre no puede ser anterior a la fecha de registro.";
+        error.hidden = false;
+        return;
+      }
+    }
     const previousStatus = existing?.status || "";
     const nextIssue = {
       ...(existing || {}),
@@ -32585,10 +33123,10 @@ var __async = (__this, __arguments, generator) => {
       priority,
       status,
       attachments: dashboardIssueDraftImages.map((item) => ({ ...item })),
-      createdAt: existing?.createdAt || timestamp,
-      closedAt: status === "Closed"
-        ? (previousStatus === "Closed" && existing?.closedAt ? existing.closedAt : timestamp)
-        : (previousStatus === "Closed" ? null : existing?.closedAt || null),
+      assignee: document.getElementById("dashboardIssueAssignee").value.trim(),
+      comments: dashboardIssueDraftComments.map((item) => ({ ...item })),
+      createdAt: createdAtValue,
+      closedAt: closedAtValue,
       lastValidationAt: status === "Closed" && previousStatus !== "Closed"
         ? timestamp
         : existing?.lastValidationAt || null,
@@ -32656,37 +33194,192 @@ var __async = (__this, __arguments, generator) => {
     });
   }
 
-  function exportDashboardIssues() {
-    const project = projects.find((item) => item.id === activeProjectId);
-    if (!project) return;
-    const issues = getFilteredDashboardIssues(project);
-    const headers = ["Test ID", "Formulario", "Observación", "Severidad", "Prioridad", "Estado", "Fecha registro", "Fecha cierre", "Última validación"];
-    const csvCell = (value) => {
-      let text = String(value ?? "").replace(/\r\n?/g, "\n");
-      if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
-      return `"${text.replace(/"/g, '""')}"`;
+  function buildDashboardIssueExportData(project, issues) {
+    const suiteNames = new Map((Array.isArray(project.suites) ? project.suites : []).map((suite) => [suite.id, suite.name]));
+    const headers = ["Test ID", "Caso de prueba", "Módulo", "Observación", "Resultado QA", "Severidad", "Prioridad", "Estado", "Asignado a", "Origen", "Fecha registro", "Antigüedad (días)", "Fecha cierre", "Última validación", "Comentarios", "Imágenes"];
+    const rows = issues.map((issue) => {
+      const relatedCase = getDashboardIssueCase(issue, project);
+      return [
+        issue.testId,
+        issue.formName,
+        suiteNames.get(issue.suiteId || relatedCase?.suiteId) || "",
+        issue.observation,
+        issue.qaResult || "",
+        issue.severity,
+        issue.priority,
+        issue.status,
+        issue.assignee || "",
+        issue.source === "auto" ? "Automático" : "Manual",
+        formatDashboardIssueDate(issue.createdAt),
+        getDashboardIssueAgeDays(issue) ?? "",
+        formatDashboardIssueDate(issue.closedAt),
+        formatDashboardIssueDate(issue.lastValidationAt),
+        (Array.isArray(issue.comments) ? issue.comments : [])
+          .map((comment) => `[${formatDashboardIssueDate(comment.at)}] ${comment.text}`).join(" | "),
+        getDashboardIssueEvidence(issue, project).length,
+      ];
+    });
+    return { headers, rows };
+  }
+
+  function downloadDashboardIssueFile(content, mimeType, filename) {
+    const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function downloadDashboardIssuesXlsx(project, issues, headers, rows, filename) {
+    const xmlEscape = (value) => String(value ?? "")
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const columnName = (index) => {
+      let name = "";
+      for (let n = index + 1; n > 0; n = Math.floor((n - 1) / 26)) name = String.fromCharCode(65 + ((n - 1) % 26)) + name;
+      return name;
     };
-    const rows = [headers, ...issues.map((issue) => [
-      issue.testId,
-      issue.formName,
-      issue.observation,
-      issue.severity,
-      issue.priority,
-      issue.status,
-      formatDashboardIssueDate(issue.createdAt),
-      formatDashboardIssueDate(issue.closedAt),
-      formatDashboardIssueDate(issue.lastValidationAt),
-    ])];
-    const blob = new Blob(["\uFEFF" + rows.map((row) => row.map(csvCell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const EMU = 9525;
+    const BOX_W = 160;
+    const BOX_H = 120;
+
+    const toJpeg = (src) => new Promise((resolve) => {
+      const image = new Image();
+      image.onerror = () => resolve(null);
+      image.onload = () => {
+        const scale = Math.min(1, 900 / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve({ base64: canvas.toDataURL("image/jpeg", 0.85).split(",")[1], width: image.width, height: image.height });
+      };
+      image.src = src;
+    });
+
+    const issueImages = [];
+    for (const issue of issues) {
+      const list = [];
+      for (const { step } of getDashboardIssueEvidence(issue, project)) {
+        const src = step.renderedDataUrl || step.dataUrl || step.thumbnailDataUrl;
+        const converted = src ? await toJpeg(src) : null;
+        if (converted) list.push(converted);
+      }
+      issueImages.push(list);
+    }
+    const maxImages = Math.max(0, ...issueImages.map((list) => list.length));
+    const allHeaders = [...headers, ...Array.from({ length: maxImages }, (_, index) => `Evidencia ${index + 1}`)];
+    const textColumns = headers.length;
+    const widths = [12, 30, 16, 45, 12, 11, 11, 16, 11, 13, 13, 15, 10];
+
+    const cellXml = (value, rowNumber, columnIndex, style) =>
+      `<c r="${columnName(columnIndex)}${rowNumber}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+    const sheetRows = [
+      `<row r="1" ht="24" customHeight="1">${allHeaders.map((header, index) => cellXml(header, 1, index, 1)).join("")}</row>`,
+      ...rows.map((row, rowIndex) => {
+        const rowNumber = rowIndex + 2;
+        const height = issueImages[rowIndex].length ? ` ht="${Math.round(BOX_H * 0.75) + 8}" customHeight="1"` : "";
+        return `<row r="${rowNumber}"${height}>${row.map((value, index) => cellXml(value, rowNumber, index, 2)).join("")}</row>`;
+      }),
+    ].join("");
+    const columnsXml = allHeaders.map((_, index) =>
+      `<col min="${index + 1}" max="${index + 1}" width="${index < textColumns ? (widths[index] || 14) : 24}" customWidth="1"/>`
+    ).join("");
+
+    const anchors = [];
+    const media = [];
+    issueImages.forEach((list, rowIndex) => {
+      list.forEach((image, imageIndex) => {
+        media.push(image.base64);
+        const ratio = Math.min(BOX_W / image.width, BOX_H / image.height, 1);
+        const cx = Math.round(image.width * ratio) * EMU;
+        const cy = Math.round(image.height * ratio) * EMU;
+        const id = media.length;
+        anchors.push(`<xdr:oneCellAnchor><xdr:from><xdr:col>${textColumns + imageIndex}</xdr:col><xdr:colOff>${3 * EMU}</xdr:colOff><xdr:row>${rowIndex + 1}</xdr:row><xdr:rowOff>${3 * EMU}</xdr:rowOff></xdr:from><xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${id + 1}" name="Imagen ${id}"/><xdr:cNvPicPr/></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId${id}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>`);
+      });
+    });
+
+    const zip = new docx.JSZip();
+    const addFile = (name, data, options) => zip.file(name, data, { ...options, createFolders: false });
+    const header = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+    addFile("[Content_Types].xml", `${header}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/></Types>`);
+    addFile("_rels/.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`);
+    addFile("xl/workbook.xml", `${header}<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Bitácora" sheetId="1" r:id="rId1"/></sheets></workbook>`);
+    addFile("xl/_rels/workbook.xml.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`);
+    addFile("xl/styles.xml", `${header}<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F3A5F"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFBBBBBB"/></left><right style="thin"><color rgb="FFBBBBBB"/></right><top style="thin"><color rgb="FFBBBBBB"/></top><bottom style="thin"><color rgb="FFBBBBBB"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs></styleSheet>`);
+    addFile("xl/worksheets/sheet1.xml", `${header}<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${columnsXml}</cols><sheetData>${sheetRows}</sheetData>${anchors.length ? '<drawing r:id="rId1"/>' : ""}</worksheet>`);
+    if (anchors.length) {
+      addFile("xl/worksheets/_rels/sheet1.xml.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/></Relationships>`);
+      addFile("xl/drawings/drawing1.xml", `${header}<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${anchors.join("")}</xdr:wsDr>`);
+      addFile("xl/drawings/_rels/drawing1.xml.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${media.map((_, index) =>
+        `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${index + 1}.jpeg"/>`).join("")}</Relationships>`);
+      media.forEach((base64, index) => addFile(`xl/media/image${index + 1}.jpeg`, base64, { base64: true }));
+    }
+    const blob = await zip.generateAsync({
+      type: "blob",
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      compression: "DEFLATE",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Bitacora_Issues_${sanitizeFilenamePart(project.name, "proyecto")}.csv`;
+    link.download = filename;
     link.click();
-    URL.revokeObjectURL(url);
-    showTransientStatus(`Bitácora exportada (${issues.length} issue${issues.length === 1 ? "" : "s"}).`, 3000);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  async function exportDashboardIssues(format = "csv") {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    const issues = getFilteredDashboardIssues(project);
+    const { headers, rows } = buildDashboardIssueExportData(project, issues);
+    const baseName = `Bitacora_Issues_${sanitizeFilenamePart(project.name, "proyecto")}`;
+    const countLabel = `${issues.length} issue${issues.length === 1 ? "" : "s"}`;
+
+    if (format === "csv") {
+      const csvCell = (value) => {
+        let text = String(value ?? "").replace(/\r\n?/g, "\n");
+        if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
+        return `"${text.replace(/"/g, '""')}"`;
+      };
+      const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
+      downloadDashboardIssueFile("\uFEFF" + csv, "text/csv;charset=utf-8", `${baseName}.csv`);
+    } else {
+      const cell = (value, tag = "td") => `<${tag}>${escapeHtml(String(value ?? "")).replace(/\n/g, "<br>")}</${tag}>`;
+      const summary = DASHBOARD_ISSUE_STATUSES
+        .map((status) => `${status}: ${issues.filter((issue) => issue.status === status).length}`).join(" · ");
+      const table = `<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px">
+        <thead><tr style="background:#1f3a5f;color:#fff">${headers.map((header) => cell(header, "th")).join("")}</tr></thead>
+        <tbody>${rows.map((row) => `<tr style="vertical-align:top">${row.map((value) => cell(value)).join("")}</tr>`).join("")}</tbody>
+      </table>`;
+      if (format === "excel") {
+        await downloadDashboardIssuesXlsx(project, issues, headers, rows, `${baseName}.xlsx`);
+      } else {
+        const printable = window.open("", "_blank");
+        if (!printable) {
+          showTransientStatus("El navegador bloqueó la ventana del PDF. Permite las ventanas emergentes e inténtalo de nuevo.", 5000);
+          return;
+        }
+        const images = issues.map((issue) => {
+          const evidence = getDashboardIssueEvidence(issue, project);
+          if (!evidence.length) return "";
+          return `<section style="page-break-inside:avoid;margin-top:14px"><strong>${escapeHtml(issue.testId || "")} · ${escapeHtml(issue.formName || "")}</strong><div>${evidence.map(({ step }) => {
+            const src = step.renderedDataUrl || step.dataUrl || step.thumbnailDataUrl;
+            return src ? `<img src="${escapeHtml(src)}" style="max-width:300px;max-height:220px;margin:6px 6px 0 0;border:1px solid #ccc" />` : "";
+          }).join("")}</div></section>`;
+        }).join("");
+        printable.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(baseName)}</title><style>@page{size:landscape;margin:12mm}body{font-family:Arial,sans-serif;font-size:11px}th{background:#1f3a5f!important;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body><h2>Bitácora de issues · ${escapeHtml(project.name)}</h2><p>${escapeHtml(summary)} · Total: ${issues.length} · ${escapeHtml(new Date().toLocaleDateString("es-CO"))}</p>${table}${images ? `<h3>Evidencias</h3>${images}` : ""}</body></html>`);
+        printable.document.close();
+        printable.focus();
+        setTimeout(() => printable.print(), 400);
+      }
+    }
+    showTransientStatus(`Bitácora exportada (${countLabel}).`, 3000);
+  }
   function bindDashboardIssueLogControls() {
     document.getElementById("dashboardIssueSearch").addEventListener("input", (event) => {
       dashboardIssueFilters.query = event.currentTarget.value;
@@ -32711,7 +33404,33 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("dashboardIssueCreateBtn").addEventListener("click", (event) => {
       openDashboardIssueEditor(null, event.currentTarget);
     });
-    document.getElementById("dashboardIssueExportBtn").addEventListener("click", exportDashboardIssues);
+    document.getElementById("dashboardIssueAgingLimit").addEventListener("change", (event) => {
+      const value = parseInt(event.target.value, 10);
+      localStorage.setItem("dashboardIssueAgingLimit", String(value > 0 ? value : 7));
+      renderDashboardIssueLog();
+    });
+    document.getElementById("dashboardIssueExportBtn").addEventListener("click", () => exportDashboardIssues("csv"));
+    document.getElementById("dashboardIssueExportExcelBtn").addEventListener("click", () => exportDashboardIssues("excel"));
+    document.getElementById("dashboardIssueExportPdfBtn").addEventListener("click", () => exportDashboardIssues("pdf"));
+    document.getElementById("dashboardIssueStatus").addEventListener("change", (event) => {
+      const closedField = document.getElementById("dashboardIssueClosedAt");
+      if (event.target.value === "Closed" && !closedField.value) closedField.value = toDateTimeLocalValue(Date.now());
+      if (event.target.value !== "Closed") closedField.value = "";
+    });
+    document.getElementById("dashboardIssueSelectAll").addEventListener("change", (event) => {
+      const project = projects.find((item) => item.id === activeProjectId);
+      getFilteredDashboardIssues(project).forEach((issue) => {
+        if (event.target.checked) dashboardIssueSelection.add(issue.id);
+        else dashboardIssueSelection.delete(issue.id);
+      });
+      renderDashboardIssueLog();
+    });
+    document.getElementById("dashboardIssueBulkApplyBtn").addEventListener("click", applyDashboardIssueBulkEdit);
+    document.getElementById("dashboardIssueBulkClearBtn").addEventListener("click", () => {
+      dashboardIssueSelection.clear();
+      renderDashboardIssueLog();
+    });
+    document.getElementById("dashboardIssueCommentAddBtn").addEventListener("click", addDashboardIssueDraftComment);
     document.getElementById("dashboardIssueForm").addEventListener("submit", saveDashboardIssue);
     document.getElementById("dashboardIssueCancelBtn").addEventListener("click", closeDashboardIssueEditor);
     document.getElementById("dashboardIssueEditorOverlay").addEventListener("click", (event) => {
@@ -32832,7 +33551,14 @@ var __async = (__this, __arguments, generator) => {
       }
       return severityPriority[left.severity] - severityPriority[right.severity];
     });
-    if (results) results.textContent = `Mostrando ${novelties.length} de ${allNovelties.length} novedades`;
+    const issueCounts = allNovelties.reduce((totals, novelty) => {
+      const status = normalizeStepStatus(novelty.step.stepStatus || novelty.step.status);
+      if (status === "fallo") totals.failed += 1;
+      if (status === "observado") totals.observed += 1;
+      return totals;
+    }, { failed: 0, observed: 0 });
+    const totalCases = new Set(allNovelties.map(({ caseRecord }) => caseRecord.qaId || caseRecord.caseId)).size;
+    count.textContent = `${totalCases} ${totalCases === 1 ? "caso" : "casos"} · ${issueCounts.failed} ${issueCounts.failed === 1 ? "fallo" : "fallos"} · ${issueCounts.observed} ${issueCounts.observed === 1 ? "observación" : "observaciones"}`;
     if (!novelties.length) {
       list.innerHTML = '<div class="dashboard-novelty-empty">No hay novedades que coincidan con estos filtros.</div>';
       return;
@@ -32844,25 +33570,57 @@ var __async = (__this, __arguments, generator) => {
       observado: "Observado",
       pendiente: "Pendiente",
     };
-    list.innerHTML = novelties.map(({ caseRecord, step, index, severity }, noveltyIndex) => {
-      const status = normalizeStepStatus(step.stepStatus || step.status);
-      const image = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
-      const comment = String(step.comment || "").trim() || "Sin comentario registrado.";
-      return `<article class="dashboard-novelty-card sev-${severity}">
-        ${image
-          ? `<button class="dashboard-novelty-image" type="button" data-novelty-image="${noveltyIndex}" aria-label="Ampliar imagen del caso ${escapeHtml(caseRecord.caseId || "sin ID")}, paso ${index + 1}">
-              <img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" />
-            </button>`
-          : ""}
-        <div class="dashboard-novelty-content">
-          <div class="dashboard-novelty-meta">
-            <span class="dashboard-novelty-badge">${severity.charAt(0).toUpperCase()}${severity.slice(1)}</span>
-            <span class="dashboard-novelty-status">${stepStatusLabels[status] || "Pendiente"}</span>
+    const groups = new Map();
+    novelties.forEach((novelty, index) => {
+      const key = novelty.caseRecord.qaId || novelty.caseRecord.caseId || novelty.caseRecord;
+      if (!groups.has(key)) groups.set(key, { caseRecord: novelty.caseRecord, novelties: [] });
+      groups.get(key).novelties.push({ ...novelty, noveltyIndex: index });
+    });
+    const suiteNamesForCards = new Map(suites.map((suite) => [suite.id, suite.name]));
+    const summaries = [...groups.values()];
+    if (dashboardNoveltyFilters.sort !== "case") {
+      summaries.sort((left, right) => severityPriority[left.novelties[0].severity] - severityPriority[right.novelties[0].severity]);
+    } else {
+      summaries.sort((left, right) => String(left.caseRecord.caseId || "")
+        .localeCompare(String(right.caseRecord.caseId || ""), undefined, { numeric: true }));
+    }
+    if (results) results.textContent = `Mostrando ${summaries.length} de ${totalCases} casos con novedades`;
+    list.innerHTML = summaries.map(({ caseRecord, novelties: caseNovelties }) => {
+      const suiteName = suiteNamesForCards.get(caseRecord.suiteId) || "Sin suite";
+      const failures = caseNovelties.filter(({ step }) =>
+        normalizeStepStatus(step.stepStatus || step.status) === "fallo").length;
+      const observations = caseNovelties.filter(({ step }) =>
+        normalizeStepStatus(step.stepStatus || step.status) === "observado").length;
+      const topSeverity = caseNovelties.reduce((top, item) =>
+        severityPriority[item.severity] < severityPriority[top] ? item.severity : top, caseNovelties[0].severity);
+      const stepRows = caseNovelties.map(({ step, index, severity, noveltyIndex }) => {
+        const status = normalizeStepStatus(step.stepStatus || step.status);
+        const image = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
+        const comment = String(step.comment || step.actualResult || step.result || step.resultado || "").trim() ||
+          "Sin comentario registrado.";
+        return `<div class="dashboard-novelty-step-row">
+          <div class="dashboard-novelty-content">
+            <div class="dashboard-novelty-meta"><span class="dashboard-novelty-badge">${severity.charAt(0).toUpperCase()}${severity.slice(1)}</span>
+              <span class="dashboard-novelty-status">${stepStatusLabels[status] || "Pendiente"}</span></div>
+            <div class="dashboard-novelty-case">Paso ${index + 1}</div>
+            <div class="dashboard-novelty-comment">${escapeHtml(comment)}</div>
+            <button class="dashboard-novelty-open" type="button" data-novelty-open="${noveltyIndex}">Abrir paso</button>
           </div>
-          <div class="dashboard-novelty-case">${escapeHtml(`${caseRecord.caseId || "Caso sin ID"} · Paso ${index + 1}`)}</div>
-          <div class="dashboard-novelty-comment">${escapeHtml(comment)}</div>
-          <button class="dashboard-novelty-open" type="button" data-novelty-open="${noveltyIndex}">Abrir paso</button>
+          ${image ? `<button class="dashboard-novelty-image" type="button" data-novelty-image="${noveltyIndex}" aria-label="Ampliar evidencia del paso ${index + 1}">
+            <img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" /></button>` : ""}
+        </div>`;
+      }).join("");
+      return `<article class="dashboard-novelty-case-summary sev-${topSeverity}">
+        <div class="dashboard-novelty-case-summary-head">
+          <div class="dashboard-novelty-case-summary-title">${escapeHtml(caseRecord.caseId || "Caso sin ID")} · ${escapeHtml(caseRecord.description || "Caso de prueba")}
+            <small>${escapeHtml(suiteName)}</small></div>
+          <div class="dashboard-novelty-case-summary-counts">
+            <span class="failed">${failures} ${failures === 1 ? "fallo" : "fallos"}</span>
+            <span class="observed">${observations} ${observations === 1 ? "observación" : "observaciones"}</span>
+            <span>${caseNovelties.length} pasos señalados</span>
+          </div>
         </div>
+        <div class="dashboard-novelty-step-list">${stepRows}</div>
       </article>`;
     }).join("");
 
