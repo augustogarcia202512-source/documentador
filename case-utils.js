@@ -270,7 +270,8 @@
     return parts.length ? parts.join(" · ") : "Caso sin ID";
   }
 
-  function parseQaCaseImportRows(value) {
+  function parseQaCaseImportRows(value, options = {}) {
+    const autoId = Boolean(options.autoId);
     const lines = String(value || "").replace(/^\uFEFF/, "").split(/\r\n?|\n/);
     const firstLine = lines.find((line) => line.trim());
     if (!firstLine) return { rows: [], errors: ["Pega al menos un caso para importar."] };
@@ -305,10 +306,19 @@
 
       if (index === lines.findIndex((item) => item.trim())) {
         const firstCell = cells[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
-        hasHeader = ["id", "id caso", "case id", "caseid"].includes(firstCell);
+        hasHeader = ["id", "id caso", "case id", "caseid"].includes(firstCell) ||
+          (autoId && ["nombre", "caso", "descripcion", "nombre del caso"].includes(firstCell));
         if (hasHeader) return;
       }
 
+      if (autoId && cells.length <= 2 && cells.length >= 1) {
+        if (!cells[0]) {
+          errors.push(`Línea ${index + 1}: el nombre del caso es obligatorio.`);
+          return;
+        }
+        rows.push({ row: index + 1, caseId: "", description: cells[0], suiteName: cells[1] || "" });
+        return;
+      }
       if (cells.length < 2 || cells.length > 3) {
         errors.push(`Línea ${index + 1}: se esperaban 2 o 3 columnas (ID, Nombre y Suite).`);
         return;

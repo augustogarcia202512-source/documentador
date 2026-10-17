@@ -1109,6 +1109,11 @@
   .qa-cycle-comparison-table thead th { color: #718096; font-size: 9px; text-transform: uppercase; }
   .qa-cycle-comparison-table tbody th { min-width: 150px; text-align: left; white-space: normal; }
   .qa-cycle-comparison-table tbody th small { display: block; margin-top: 3px; color: #718096; font-size: 9px; font-weight: 400; }
+  .qa-cycle-suite-breakdown { margin-top: 6px; font-size: 9px; font-weight: 400; }
+  .qa-cycle-suite-breakdown summary { color: #1f5f98; cursor: pointer; }
+  .qa-cycle-suite-breakdown table { width: 100%; margin-top: 5px; border-collapse: collapse; font-size: 9px; text-align: center; }
+  .qa-cycle-suite-breakdown th, .qa-cycle-suite-breakdown td { padding: 4px; border: 1px solid #e4e9ef; white-space: nowrap; }
+  .qa-cycle-suite-breakdown th:first-child { text-align: left; }
   .qa-cycle-delta { font-weight: 700; }
   .qa-cycle-delta.positive { color: #168149; }
   .qa-cycle-delta.negative { color: #d64545; }
@@ -2875,11 +2880,12 @@
         <h2 class="qa-new-case-title" id="qaNewCaseTitle">Nuevo caso</h2>
         <p class="qa-new-case-help">En el primer campo escribe el ID seguido de la descripción, por ejemplo: TC-1 Login incorrecto. El detalle es opcional.</p>
         <form class="qa-new-case-form" id="qaNewCaseForm">
-          <input id="qaNewCaseId" type="text" maxlength="330" placeholder="ID y descripción (ej.: TC-1 Login incorrecto)" aria-label="ID seguido de la descripción del caso" required />
+          <input id="qaNewCaseId" type="text" maxlength="240" placeholder="Descripción del caso (ej.: Login incorrecto)" aria-label="Descripción del caso" required />
           <label for="qaNewCaseDetails">Detalle, pasos o datos adicionales (opcional)</label>
           <textarea id="qaNewCaseDetails" maxlength="1000" placeholder="Agrega datos o notas adicionales del caso si los necesitas." aria-label="Detalle, pasos o datos adicionales"></textarea>
           <input id="qaNewCaseSuite" type="text" maxlength="60" list="qaSuiteOptions" placeholder="Suite" aria-label="Suite del caso" required />
           <datalist id="qaSuiteOptions"></datalist>
+          <p class="qa-new-case-hint" id="qaNewCaseIdPreview" aria-live="polite" style="margin:0;font-size:.85rem;opacity:.8"></p>
           <p class="qa-new-case-error" id="qaNewCaseError" role="alert" aria-live="polite"></p>
           <div class="qa-new-case-actions">
             <button class="btn-secondary" id="qaNewCaseCancel" type="button">Cancelar</button>
@@ -2892,8 +2898,8 @@
       <section class="qa-bulk-import-panel">
         <h2 class="qa-bulk-import-title" id="qaBulkImportTitle">Importar casos</h2>
         <p class="qa-bulk-import-help">Copia desde Excel y pega aquí una fila por caso. Se agregarán los casos sin reemplazar los que ya existen.</p>
-        <label class="qa-bulk-import-format" for="qaBulkImportText">Columnas: ID · Nombre · Suite (puedes incluir encabezados)</label>
-        <textarea id="qaBulkImportText" spellcheck="false" placeholder="TC-101&#9;Login válido&#9;Login&#10;TC-102&#9;Clave errónea&#9;Login"></textarea>
+        <label class="qa-bulk-import-format" for="qaBulkImportText">Columnas: Nombre · Suite (el ID se genera solo; opcionalmente ID · Nombre · Suite)</label>
+        <textarea id="qaBulkImportText" spellcheck="false" placeholder="Login válido&#9;Login&#10;Clave errónea&#9;Login"></textarea>
         <p class="qa-bulk-import-error" id="qaBulkImportError" role="alert" aria-live="polite"></p>
         <div class="qa-bulk-import-actions">
           <button class="btn-secondary" id="qaBulkImportCancelBtn" type="button">Cancelar</button>
@@ -31503,7 +31509,17 @@ var __async = (__this, __arguments, generator) => {
   function getCasesInCycleScope(cycle, caseRecords) {
     if (!Array.isArray(cycle?.retryCaseIds)) return caseRecords;
     const retryCaseIds = new Set(cycle.retryCaseIds);
-    return caseRecords.filter((caseRecord) => retryCaseIds.has(caseRecord.qaId));
+    const knownCaseIds = Array.isArray(cycle.knownCaseIds) ? new Set(cycle.knownCaseIds) : null;
+    const project = projects.find((item) => Array.isArray(item.executionCycles) && item.executionCycles.includes(cycle));
+    const sourceCycle = project?.executionCycles.find((item) => item.id === cycle.retryFromCycleId);
+    return caseRecords.filter((caseRecord) => {
+      const qaId = caseRecord.qaId;
+      return retryCaseIds.has(qaId) ||
+        // Casos creados después del ciclo, o ejecutados en él, también forman parte de su alcance.
+        (knownCaseIds && !knownCaseIds.has(qaId)) ||
+        Object.hasOwn(cycle.results || {}, qaId) ||
+        (sourceCycle && getCaseCycleResult(caseRecord, sourceCycle).status === "failed");
+    });
   }
 
   function getCaseExecutionStatus(caseRecord) {
@@ -31566,6 +31582,7 @@ var __async = (__this, __arguments, generator) => {
           activeCycle.version && `Versión ${activeCycle.version}`,
           activeCycle.environment,
           activeCycle.tester && `Ejecuta: ${activeCycle.tester}`,
+          "Ciclo general · resultados separados por suite",
           Array.isArray(activeCycle.retryCaseIds) &&
             `Reejecución de ${cycles.find((cycle) => cycle.id === activeCycle.retryFromCycleId)?.name || "ciclo anterior"}: ${activeCycle.retryCaseIds.length} ${activeCycle.retryCaseIds.length === 1 ? "caso fallido" : "casos fallidos"}`,
         ]
@@ -31608,8 +31625,24 @@ var __async = (__this, __arguments, generator) => {
       const comparison = delta === null
         ? "—"
         : `<span class="qa-cycle-delta ${delta > 0 ? "positive" : delta < 0 ? "negative" : ""}">${delta > 0 ? "+" : ""}${delta.toFixed(1)} pp</span>`;
+      const suiteBreakdown = (Array.isArray(project.suites) ? project.suites : [])
+        .map((suite) => {
+          const suiteCases = getCasesInCycleScope(cycle, projectCases)
+            .filter((caseRecord) => caseRecord.suiteId === suite.id);
+          if (!suiteCases.length) return "";
+          const suiteSummary = getQaCycleSummary(cycle, suiteCases);
+          return `<tr><th scope="row">${escapeHtml(suite.name)}</th>
+            <td>${suiteCases.length}</td><td>${suiteSummary.pass}</td><td>${suiteSummary.failed}</td><td>${suiteSummary.blocked}</td>
+            <td>${suiteSummary.evaluated}</td><td>${suiteSummary.passRate === null ? "—" : `${suiteSummary.passRate.toFixed(1)}%`}</td></tr>`;
+        }).filter(Boolean).join("");
+      const suiteCount = (suiteBreakdown.match(/<tr>/g) || []).length;
+      const breakdown = suiteBreakdown
+        ? `<details class="qa-cycle-suite-breakdown"><summary>Desglose por suite (${suiteCount})</summary>
+            <table><thead><tr><th>Suite</th><th>Casos</th><th>Pass</th><th>Failed</th><th>Blocked</th><th>Evaluados</th><th>Aprobación</th></tr></thead>
+            <tbody>${suiteBreakdown}</tbody></table></details>`
+        : "";
       return `<tr>
-        <th scope="row">${escapeHtml(cycle.name || "Ciclo sin nombre")}<small>${escapeHtml([cycle.version && `Versión ${cycle.version}`, cycle.environment].filter(Boolean).join(" · ") || "—")}</small></th>
+        <th scope="row">${escapeHtml(cycle.name || "Ciclo sin nombre")}<small>${getCasesInCycleScope(cycle, projectCases).length} casos en el ciclo</small><small>${escapeHtml([cycle.version && `Versión ${cycle.version}`, cycle.environment].filter(Boolean).join(" · ") || "—")}</small>${breakdown}</th>
         <td>${summary.pass}</td>
         <td>${summary.failed}</td>
         <td>${summary.blocked}</td>
@@ -31747,6 +31780,7 @@ var __async = (__this, __arguments, generator) => {
         createdAt: Date.now(),
         retryFromCycleId: previousCycle?.id || null,
         retryCaseIds: previousCycle ? cycleCases.map((caseRecord) => caseRecord.qaId) : null,
+        knownCaseIds: projectCases.map((caseRecord) => caseRecord.qaId),
         results: Object.fromEntries(cycleCases.map((caseRecord) => [
           caseRecord.qaId,
           { status: "not-executed", history: [] },
@@ -31808,6 +31842,7 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("qaNewCaseError").textContent = "";
     suiteOptions.innerHTML = suites.map((suite) => `<option value="${escapeHtml(suite.name)}"></option>`).join("");
     suiteInput.value = selectedSuite ? selectedSuite.name : "";
+    updateQaNewCaseIdPreview();
     openOverlay(document.getElementById("qaNewCaseOverlay"), {
       opener,
       display: "flex",
@@ -31848,7 +31883,7 @@ var __async = (__this, __arguments, generator) => {
       return;
     }
 
-    const parsed = caseUtils.parseQaCaseImportRows(input.value);
+    const parsed = caseUtils.parseQaCaseImportRows(input.value, { autoId: true });
     const issues = parsed.errors.slice();
     const selectedSuite = project.suites?.find((suite) => suite.id === activeSuiteId);
     const existingIds = new Set(getActiveProjectCases()
@@ -31859,6 +31894,10 @@ var __async = (__this, __arguments, generator) => {
       const suiteName = row.suiteName || selectedSuite?.name || "";
       if (!suiteName) issues.push(`Línea ${row.row}: indica la suite en la tercera columna.`);
       if (suiteName.length > 60) issues.push(`Línea ${row.row}: el nombre de la suite supera los 60 caracteres.`);
+      if (!row.caseId && suiteName) {
+        row.caseId = getNextSuiteCaseId(suiteName, importIds);
+        row.autoId = true;
+      }
       if (row.caseId.length > 80) issues.push(`Línea ${row.row}: el ID supera los 80 caracteres.`);
       if (row.description.length > 240) issues.push(`Línea ${row.row}: el nombre supera los 240 caracteres.`);
       const normalizedId = row.caseId.toLocaleLowerCase();
@@ -31936,26 +31975,52 @@ var __async = (__this, __arguments, generator) => {
     }
   }
 
+  function getSuiteCaseIdPrefix(suiteName) {
+    const words = String(suiteName || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
+    if (!words.length) return "TC";
+    if (words.length === 1) return words[0].slice(0, 3);
+    return words.map((word) => word[0]).join("").slice(0, 6);
+  }
+
+  function getNextSuiteCaseId(suiteName, reservedIds = new Set()) {
+    const prefix = getSuiteCaseIdPrefix(suiteName);
+    const pattern = new RegExp(`^${prefix}-(\\d+)$`, "i");
+    const used = getActiveProjectCases().map((item) => String(item.caseId || "").trim());
+    const max = [...used, ...reservedIds].reduce((highest, id) => {
+      const match = id.match(pattern);
+      return match ? Math.max(highest, Number(match[1])) : highest;
+    }, 0);
+    let next = max + 1;
+    const usedLower = new Set([...used.map((id) => id.toLocaleLowerCase()), ...reservedIds]);
+    while (usedLower.has(`${prefix}-${String(next).padStart(2, "0")}`.toLocaleLowerCase())) next += 1;
+    return `${prefix}-${String(next).padStart(2, "0")}`;
+  }
+
+  function updateQaNewCaseIdPreview() {
+    const suiteName = document.getElementById("qaNewCaseSuite").value.trim();
+    document.getElementById("qaNewCaseIdPreview").textContent = suiteName ? `ID automático: ${getNextSuiteCaseId(suiteName)}` : "";
+  }
+
   async function saveNewQaCase(event) {
     event.preventDefault();
     const project = projects.find((item) => item.id === activeProjectId);
     if (!project) return;
-    const parsedCase = parseQaCaseIdAndDescription(document.getElementById("qaNewCaseId").value);
-    const { caseId, description } = parsedCase;
+    const description = document.getElementById("qaNewCaseId").value.trim();
     const details = document.getElementById("qaNewCaseDetails").value.trim();
     const suiteName = document.getElementById("qaNewCaseSuite").value.trim();
     const error = document.getElementById("qaNewCaseError");
     const saveButton = document.getElementById("qaNewCaseSave");
     error.textContent = "";
-    if (!caseId || !description) {
-      error.textContent = parsedCase.error;
+    if (!description) {
+      error.textContent = "Escribe la descripción del caso.";
       document.getElementById("qaNewCaseId").focus();
       return;
     }
-    if (caseId.length > 80) {
-      error.textContent = "El ID del caso no puede superar los 80 caracteres.";
+    if (!suiteName) {
+      error.textContent = "Indica la suite del caso.";
       return;
     }
+    const caseId = getNextSuiteCaseId(suiteName);
     if (description.length > 240) {
       error.textContent = "La descripción del caso no puede superar los 240 caracteres.";
       return;
@@ -34073,6 +34138,7 @@ var __async = (__this, __arguments, generator) => {
       if (event.target === event.currentTarget) closeQaBulkImportDialog();
     });
     document.getElementById("qaNewCaseForm").addEventListener("submit", saveNewQaCase);
+    document.getElementById("qaNewCaseSuite").addEventListener("input", updateQaNewCaseIdPreview);
     document.getElementById("qaNewCaseCancel").addEventListener("click", closeQaNewCaseDialog);
     document.getElementById("qaNewCaseOverlay").addEventListener("click", (event) => {
       if (event.target === event.currentTarget) closeQaNewCaseDialog();
