@@ -1100,6 +1100,19 @@
   .qa-cycle-context { flex: 1 1 100%; color: #718096; font-size: 10px; }
   .qa-cycle-comparison { margin: 0 18px 14px; padding: 10px; border: 1px solid #d9e0e8; border-radius: 9px; background: rgba(255,255,255,.65); }
   .qa-cycle-comparison[hidden] { display: none; }
+  .qa-metrics-panel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .qa-metrics-panel[hidden] { display: none; }
+  .qa-metrics-block h3 { margin: 0 0 8px; color: #263445; font-size: 12px; }
+  .qa-metrics-empty { color: #718096; font-size: 10px; }
+  .qa-suite-progress-row { display: grid; grid-template-columns: minmax(80px, 140px) 1fr auto; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 10px; color: #263445; }
+  .qa-suite-progress-track { display: flex; height: 12px; overflow: hidden; border-radius: 6px; background: #e4e9ef; }
+  .qa-suite-progress-track span { display: block; height: 100%; }
+  .qa-metrics-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; color: #718096; font-size: 9px; }
+  .qa-metrics-legend i { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 2px; }
+  @media (max-width: 720px) { .qa-metrics-panel { grid-template-columns: 1fr; } }
+  .dashboard-issue-kpi { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 8px; }
+  .dashboard-issue-kpi strong { font-size: 26px; }
+  .dashboard-issue-kpi span { color: #9fb0c4; font-size: 11px; }
   .qa-cycle-comparison-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 12px; margin-bottom: 8px; }
   .qa-cycle-comparison-heading strong { color: #263445; font-size: 12px; }
   .qa-cycle-comparison-heading span { color: #718096; font-size: 10px; }
@@ -2547,6 +2560,7 @@
             <span class="qa-cycle-context" id="qaCycleContext"></span>
           </div>
           <section class="qa-cycle-comparison" id="qaCycleComparison" aria-labelledby="qaCycleComparisonTitle"></section>
+          <section class="qa-cycle-comparison qa-metrics-panel" id="qaMetricsPanel" aria-label="Métricas de ejecución"></section>
           <form id="qaCycleForm" class="qa-cycle-form" hidden>
             <input id="qaCycleName" type="text" maxlength="100" placeholder="Nombre del ciclo (ej.: Versión 2.4.1)" aria-label="Nombre del ciclo" required />
             <input id="qaCycleVersion" type="text" maxlength="40" placeholder="Versión (opcional)" aria-label="Versión del ciclo" />
@@ -2645,6 +2659,7 @@
           <div class="dashboard-issue-summary" id="dashboardIssueSummary" aria-label="Resumen de issues"></div>
           <div class="dashboard-issue-trend" id="dashboardIssueTrend" aria-label="Tendencia semanal de issues"></div>
           <div class="dashboard-issue-distributions" id="dashboardIssueDistributions" aria-label="Distribución de issues por severidad y módulo"></div>
+          <div class="dashboard-issue-distributions" id="dashboardIssueQuality" aria-label="Cumplimiento del plazo y reapertura"></div>
           <div class="dashboard-issue-toolbar" aria-label="Filtros de issues">
             <input id="dashboardIssueSearch" type="search" placeholder="Buscar por Test ID o caso de prueba" aria-label="Buscar issues" />
             <select id="dashboardIssueStatusFilter" aria-label="Filtrar issues por estado">
@@ -32413,6 +32428,7 @@ var __async = (__this, __arguments, generator) => {
     const suites = Array.isArray(project.suites) ? project.suites : [];
     const projectCases = getActiveProjectCases();
     renderQaCycleComparison(project, projectCases);
+    renderQaMetricsPanel(project, projectCases);
     const activeCycle = getActiveExecutionCycle(project);
     const cycleCases = project.qaCyclesEnabled
       ? getCasesInCycleScope(activeCycle, projectCases)
@@ -32836,6 +32852,84 @@ var __async = (__this, __arguments, generator) => {
     </section>`;
   }
 
+  function renderQaMetricsPanel(project, projectCases) {
+    const container = document.getElementById("qaMetricsPanel");
+    if (!container) return;
+    const colors = { pass: "#34c38f", failed: "#e7463e", blocked: "#f39c12", "in-progress": "#4b9fea", "not-executed": "#b8c2cf" };
+    const labels = { pass: "Pass", failed: "Failed", blocked: "Blocked", "in-progress": "En progreso", "not-executed": "Sin ejecutar" };
+    const activeCycle = project.qaCyclesEnabled ? getActiveExecutionCycle(project) : null;
+    const scopeCases = activeCycle ? getCasesInCycleScope(activeCycle, projectCases) : projectCases;
+    const suiteRows = (Array.isArray(project.suites) ? project.suites : []).map((suite) => {
+      const cases = scopeCases.filter((caseRecord) => caseRecord.suiteId === suite.id);
+      if (!cases.length) return "";
+      const counts = Object.fromEntries(Object.keys(colors).map((key) => [key, 0]));
+      cases.forEach((caseRecord) => {
+        const status = getCaseExecutionStatus(caseRecord);
+        counts[Object.hasOwn(counts, status) ? status : "not-executed"] += 1;
+      });
+      const segments = Object.keys(colors).filter((key) => counts[key])
+        .map((key) => `<span style="width:${(counts[key] / cases.length) * 100}%;background:${colors[key]}" title="${labels[key]}: ${counts[key]}"></span>`).join("");
+      const executed = cases.length - counts["not-executed"];
+      return `<div class="qa-suite-progress-row"><span>${escapeHtml(suite.name)}</span>
+        <div class="qa-suite-progress-track" role="img" aria-label="${escapeHtml(suite.name)}: ${Object.keys(colors).map((key) => `${labels[key]} ${counts[key]}`).join(", ")}">${segments}</div>
+        <span>${executed}/${cases.length} · ${Math.round((executed / cases.length) * 100)}%</span></div>`;
+    }).filter(Boolean).join("");
+    const legend = `<div class="qa-metrics-legend">${Object.keys(colors).map((key) => `<span><i style="background:${colors[key]}"></i>${labels[key]}</span>`).join("")}</div>`;
+    const progressBlock = `<div class="qa-metrics-block"><h3>Avance de ejecución por suite${activeCycle ? ` · ${escapeHtml(activeCycle.name || "ciclo activo")}` : ""}</h3>
+      ${suiteRows ? suiteRows + legend : '<div class="qa-metrics-empty">Aún no hay casos para mostrar.</div>'}</div>`;
+
+    const cycles = (Array.isArray(project.executionCycles) ? project.executionCycles : [])
+      .slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    const points = cycles.map((cycle) => ({ name: cycle.name || "Ciclo", rate: getQaCycleSummary(cycle, projectCases).passRate }));
+    let trendBlock;
+    if (!points.some((point) => point.rate !== null)) {
+      trendBlock = `<div class="qa-metrics-block"><h3>Tendencia de aprobación entre ciclos</h3><div class="qa-metrics-empty">Se mostrará cuando un ciclo tenga casos evaluados (Pass o Failed).</div></div>`;
+    } else {
+      const width = 360, height = 140, left = 28, right = 12, top = 16, bottom = 28;
+      const plotW = width - left - right, plotH = height - top - bottom;
+      const xFor = (index) => left + (points.length === 1 ? plotW / 2 : (plotW * index) / (points.length - 1));
+      const yFor = (rate) => top + plotH - (rate / 100) * plotH;
+      const valid = points.map((point, index) => ({ ...point, index })).filter((point) => point.rate !== null);
+      const path = valid.map((point, i) => `${i ? "L" : "M"}${xFor(point.index).toFixed(1)},${yFor(point.rate).toFixed(1)}`).join(" ");
+      const grid = [0, 50, 100].map((value) => `<line x1="${left}" y1="${yFor(value)}" x2="${width - right}" y2="${yFor(value)}" stroke="#d9e0e8" stroke-dasharray="3 3"/><text x="${left - 4}" y="${yFor(value) + 3}" text-anchor="end" font-size="9" fill="#718096">${value}%</text>`).join("");
+      const dots = valid.map((point) => `<circle cx="${xFor(point.index).toFixed(1)}" cy="${yFor(point.rate).toFixed(1)}" r="4" fill="#4b9fea"><title>${escapeHtml(point.name)}: ${point.rate.toFixed(1)}%</title></circle>
+        <text x="${xFor(point.index).toFixed(1)}" y="${(yFor(point.rate) - 7).toFixed(1)}" text-anchor="middle" font-size="9" fill="#263445">${point.rate.toFixed(0)}%</text>`).join("");
+      const xLabels = points.map((point, index) => `<text x="${xFor(index).toFixed(1)}" y="${height - 10}" text-anchor="middle" font-size="9" fill="#718096">${escapeHtml(point.name.length > 12 ? `${point.name.slice(0, 11)}…` : point.name)}</text>`).join("");
+      trendBlock = `<div class="qa-metrics-block"><h3>Tendencia de aprobación entre ciclos</h3>
+        <svg viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Porcentaje de aprobación por ciclo">${grid}<path d="${path}" fill="none" stroke="#4b9fea" stroke-width="2"/>${dots}${xLabels}</svg></div>`;
+    }
+    container.innerHTML = progressBlock + trendBlock;
+  }
+
+  function renderDashboardIssueQuality(issues) {
+    const container = document.getElementById("dashboardIssueQuality");
+    if (!container) return;
+    const limit = getDashboardIssueAgingLimit();
+    const closed = issues.filter((issue) => issue.status === "Closed");
+    const closedOnTime = closed.filter((issue) => {
+      const days = getDashboardIssueAgeDays(issue);
+      return days !== null && days <= limit;
+    }).length;
+    const overdueOpen = issues.filter(isDashboardIssueOverdue).length;
+    const compliance = closed.length ? Math.round((closedOnTime / closed.length) * 100) : null;
+    const closedIndex = (issue) => (issue.statusHistory || []).findIndex((entry) => entry.status === "Closed");
+    const everClosed = issues.filter((issue) => closedIndex(issue) >= 0);
+    const reopenedCount = everClosed.filter((issue) =>
+      (issue.statusHistory || []).slice(closedIndex(issue) + 1).some((entry) => entry.status !== "Closed")).length;
+    const reopenRate = everClosed.length ? Math.round((reopenedCount / everClosed.length) * 100) : null;
+    const kpi = (value, text) => `<div class="dashboard-issue-kpi"><strong>${value === null ? "—" : `${value}%`}</strong><span>${text}</span></div>`;
+    container.innerHTML = `<section class="dashboard-issue-distribution" aria-label="Cumplimiento del plazo">
+      <h3>Cumplimiento del plazo (${limit} días)</h3>
+      ${kpi(compliance, `${closedOnTime} de ${closed.length} cerrados dentro del plazo`)}
+      <div class="dashboard-issue-empty">${overdueOpen} abiertos fuera de plazo</div>
+    </section>
+    <section class="dashboard-issue-distribution" aria-label="Tasa de reapertura">
+      <h3>Tasa de reapertura</h3>
+      ${kpi(reopenRate, `${reopenedCount} de ${everClosed.length} issues cerrados se reabrieron`)}
+      <div class="dashboard-issue-empty">Reapertura = cambió de estado después de cerrarse.</div>
+    </section>`;
+  }
+
   function renderDashboardIssueBulkBar(visibleIssues) {
     const project = projects.find((item) => item.id === activeProjectId);
     const existingIds = new Set((project?.issues || []).map((issue) => issue.id));
@@ -32944,7 +33038,12 @@ var __async = (__this, __arguments, generator) => {
     if (!Array.isArray(project.issues)) project.issues = [];
     const suiteNames = new Map((Array.isArray(project.suites) ? project.suites : [])
       .map((suite) => [suite.id, suite.name]));
-    const issues = project.issues;
+    const allIssues = project.issues;
+    const moduleFilterId = dashboardIssueFilters.suiteId;
+    const issues = moduleFilterId === "all" ? allIssues : allIssues.filter((issue) => {
+      const suiteId = issue.suiteId || getDashboardIssueCase(issue, project)?.suiteId || "";
+      return moduleFilterId === "none" ? !suiteId : suiteId === moduleFilterId;
+    });
     const summary = document.getElementById("dashboardIssueSummary");
     const statusCounts = Object.fromEntries(DASHBOARD_ISSUE_STATUSES.map((status) => [status, 0]));
     issues.forEach((issue) => {
@@ -32977,7 +33076,7 @@ var __async = (__this, __arguments, generator) => {
 
     const visibleIssues = getFilteredDashboardIssues(project);
     document.getElementById("dashboardIssueResults").textContent =
-      `Mostrando ${visibleIssues.length} de ${issues.length} issues`;
+      `Mostrando ${visibleIssues.length} de ${issues.length} issues${issues.length !== allIssues.length ? ` del módulo (${allIssues.length} en total)` : ""}`;
     const tableView = document.getElementById("dashboardIssueTableView");
     const kanbanView = document.getElementById("dashboardIssueKanbanView");
     const tableToggle = document.getElementById("dashboardIssueTableToggle");
@@ -33029,6 +33128,7 @@ var __async = (__this, __arguments, generator) => {
     renderDashboardIssueBulkBar(visibleIssues);
     renderDashboardIssueTrend(issues);
     renderDashboardIssueDistributions(issues, project);
+    renderDashboardIssueQuality(issues);
     const kanban = document.getElementById("dashboardIssueKanbanView");
     kanban.innerHTML = DASHBOARD_ISSUE_STATUSES.map((status) => {
       const columnIssues = visibleIssues.filter((issue) => issue.status === status);
@@ -33296,6 +33396,120 @@ var __async = (__this, __arguments, generator) => {
     URL.revokeObjectURL(url);
   }
 
+  function getDashboardIssueSummarySections(project, issues) {
+    const sections = [];
+    const section = (definition) => sections.push(definition);
+      const palette = ["E7463E", "F39C12", "4B9FEA", "34C38F", "8E6BD1", "7890AA"];
+      const suites = Array.isArray(project.suites) ? project.suites : [];
+      const limit = getDashboardIssueAgingLimit();
+      const isClosed = (issue) => issue.status === "Closed";
+      const moduleOf = (issue) => {
+        const suiteId = issue.suiteId || getDashboardIssueCase(issue, project)?.suiteId || "";
+        return suites.find((suite) => suite.id === suiteId)?.name || "Sin módulo";
+      };
+      const total = issues.length;
+      section({
+        title: "Issues por estado",
+        headers: ["Estado", "Cantidad", "% del total"],
+        data: [
+          ...DASHBOARD_ISSUE_STATUSES.map((status) => {
+            const count = issues.filter((issue) => issue.status === status).length;
+            return [status, count, total ? count / total : 0];
+          }),
+          ["Total", total, total ? 1 : 0],
+        ],
+        styles: [2, 4, 5],
+        chart: {
+          title: "Issues por estado",
+          dataCount: DASHBOARD_ISSUE_STATUSES.length,
+          series: [{ column: 1, color: palette[2], pointColors: DASHBOARD_ISSUE_STATUSES.map((_, index) => palette[index % palette.length]) }],
+        },
+      });
+
+      section({
+        title: "Issues por severidad",
+        headers: ["Severidad", "Abiertos", "Cerrados", "Total"],
+        data: DASHBOARD_ISSUE_PRIORITIES.map((severity) => {
+          const list = issues.filter((issue) => (issue.severity || "Medium") === severity);
+          const closed = list.filter(isClosed).length;
+          return [severity, list.length - closed, closed, list.length];
+        }),
+        styles: [2, 4, 4, 4],
+        chart: { title: "Issues por severidad", series: [{ column: 1, color: palette[0] }, { column: 2, color: palette[3] }] },
+      });
+
+      const moduleNames = [...new Set(issues.map(moduleOf))].sort((a, b) => a.localeCompare(b, "es"));
+      section({
+        title: "Issues por módulo",
+        headers: ["Módulo", "Abiertos", "Cerrados", "Total"],
+        data: moduleNames.map((name) => {
+          const list = issues.filter((issue) => moduleOf(issue) === name);
+          const closed = list.filter(isClosed).length;
+          return [name, list.length - closed, closed, list.length];
+        }),
+        styles: [2, 4, 4, 4],
+        chart: { title: "Issues por módulo", series: [{ column: 1, color: palette[0] }, { column: 2, color: palette[3] }] },
+      });
+
+      const trend = getDashboardIssueTrend(issues);
+      section({
+        title: `Tendencia semanal (últimas ${DASHBOARD_TREND_WEEKS} semanas)`,
+        headers: ["Semana del", "Registrados", "Cerrados"],
+        data: trend.weeks.map((week) => [
+          new Date(week.start).toLocaleDateString("es-CO", { day: "2-digit", month: "short" }),
+          week.opened,
+          week.closed,
+        ]),
+        styles: [2, 4, 4],
+        chart: { title: "Issues registrados y cerrados por semana", series: [{ column: 1, color: palette[0] }, { column: 2, color: palette[3] }] },
+      });
+
+      const assignees = [...new Set(issues.map((issue) => String(issue.assignee || "").trim() || "Sin asignar"))]
+        .sort((a, b) => a.localeCompare(b, "es"));
+      section({
+        title: "Issues por responsable",
+        headers: ["Responsable", "Abiertos", "Cerrados", "Total"],
+        data: assignees.map((name) => {
+          const list = issues.filter((issue) => (String(issue.assignee || "").trim() || "Sin asignar") === name);
+          const closed = list.filter(isClosed).length;
+          return [name, list.length - closed, closed, list.length];
+        }),
+        styles: [2, 4, 4, 4],
+        chart: { title: "Issues por responsable", series: [{ column: 1, color: palette[0] }, { column: 2, color: palette[3] }] },
+      });
+
+      const closedIssues = issues.filter(isClosed);
+      const closedOnTime = closedIssues.filter((issue) => {
+        const days = getDashboardIssueAgeDays(issue);
+        return days !== null && days <= limit;
+      }).length;
+      const openIssues = issues.filter((issue) => !isClosed(issue));
+      const openAges = openIssues.map(getDashboardIssueAgeDays).filter((days) => days !== null);
+      const closedIndex = (issue) => (issue.statusHistory || []).findIndex((entry) => entry.status === "Closed");
+      const everClosed = issues.filter((issue) => closedIndex(issue) >= 0);
+      const reopened = everClosed.filter((issue) =>
+        (issue.statusHistory || []).slice(closedIndex(issue) + 1).some((entry) => entry.status !== "Closed")).length;
+      const dash = "—";
+      section({
+        title: "Indicadores de calidad y gestión",
+        headers: ["Indicador", "Valor"],
+        data: [
+          ["Tiempo promedio de cierre (días)", trend.averageCloseDays === null ? dash : Math.round(trend.averageCloseDays * 10) / 10],
+          ["Antigüedad promedio de issues abiertos (días)", openAges.length ? Math.round((openAges.reduce((sum, d) => sum + d, 0) / openAges.length) * 10) / 10 : dash],
+          ["Issue abierto más antiguo (días)", openAges.length ? Math.max(...openAges) : dash],
+          [`Límite de antigüedad configurado (días)`, limit],
+          ["Abiertos fuera de plazo", openIssues.filter(isDashboardIssueOverdue).length],
+          ["Cerrados dentro del plazo (%)", closedIssues.length ? closedOnTime / closedIssues.length : dash],
+          ["Issues críticos abiertos", openIssues.filter((issue) => (issue.severity || "Medium") === "Critical").length],
+          ["Issues abiertos sin responsable", openIssues.filter((issue) => !String(issue.assignee || "").trim()).length],
+          ["Tasa de reapertura (%)", everClosed.length ? reopened / everClosed.length : dash],
+          ["Resolución (% cerrados sobre el total)", total ? closedIssues.length / total : dash],
+        ],
+        styles: [2, 4],
+        chart: null,
+      });
+    return sections;
+  }
   async function downloadDashboardIssuesXlsx(project, issues, headers, rows, filename) {
     const xmlEscape = (value) => String(value ?? "")
       .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
@@ -33368,15 +33582,95 @@ var __async = (__this, __arguments, generator) => {
       });
     });
 
+    const buildSummarySheet = () => {
+      const cells = new Map();
+      const put = (row, column, value, style = 2) => {
+        if (!cells.has(row)) cells.set(row, new Map());
+        const ref = `${columnName(column)}${row}`;
+        cells.get(row).set(column, typeof value === "number" && Number.isFinite(value)
+          ? `<c r="${ref}" s="${style}"><v>${value}</v></c>`
+          : `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`);
+      };
+      const charts = [];
+      let row = 1;
+      put(row, 0, `Resumen de issues · ${project.name || "Proyecto"}`, 3);
+      row += 1;
+      put(row, 0, `Alcance: ${issues.length} issue${issues.length === 1 ? "" : "s"} (según los filtros aplicados) · ${new Date().toLocaleDateString("es-CO")}`, 0);
+      row += 2;
+
+      const section = ({ title, headers, data, styles, chart }) => {
+        put(row, 0, title, 3);
+        const headerRow = row + 1;
+        headers.forEach((header, index) => put(headerRow, index, header, 1));
+        data.forEach((values, rowIndex) => values.forEach((value, index) => put(headerRow + 1 + rowIndex, index, value, styles[index] ?? 4)));
+        const first = headerRow + 1;
+        const last = headerRow + data.length;
+        const chartLast = chart?.dataCount ? first + chart.dataCount - 1 : last;
+        if (chart && data.length) {
+          charts.push({
+            title: chart.title,
+            catRef: `Resumen!$A$${first}:$A$${chartLast}`,
+            series: chart.series.map((serie) => ({
+              nameRef: `Resumen!$${columnName(serie.column)}$${headerRow}`,
+              valRef: `Resumen!$${columnName(serie.column)}$${first}:$${columnName(serie.column)}$${chartLast}`,
+              color: serie.color,
+              pointColors: serie.pointColors,
+            })),
+            fromRow: row - 1,
+            toRow: Math.max(row + 15, last + 1),
+          });
+        }
+        const sectionEnd = chart ? Math.max(row + 16, last + 1) : last;
+        row = sectionEnd + 2;
+        return { first, last };
+      };
+
+      getDashboardIssueSummarySections(project, issues).forEach((definition) => section(definition));
+      // Los porcentajes de la tabla de indicadores usan formato porcentual.
+      const percentLabels = ["Cerrados dentro del plazo (%)", "Tasa de reapertura (%)", "Resolución (% cerrados sobre el total)"];
+      cells.forEach((rowCells, rowNumber) => {
+        const label = rowCells.get(0);
+        if (!label || !percentLabels.some((text) => label.includes(xmlEscape(text)))) return;
+        const valueCell = rowCells.get(1);
+        if (valueCell && valueCell.includes("<v>")) rowCells.set(1, valueCell.replace('s="4"', 's="5"'));
+      });
+
+      const rowsXml = [...cells.keys()].sort((a, b) => a - b)
+        .map((rowNumber) => `<row r="${rowNumber}">${[...cells.get(rowNumber).entries()].sort((a, b) => a[0] - b[0]).map(([, xml]) => xml).join("")}</row>`)
+        .join("");
+      return { rowsXml, charts };
+    };
+
+    const chartXml = (chart) => {
+      const colorFill = (hex) => `<c:spPr><a:solidFill><a:srgbClr val="${hex}"/></a:solidFill></c:spPr>`;
+      const series = chart.series.map((serie, index) => `<c:ser><c:idx val="${index}"/><c:order val="${index}"/>
+        <c:tx><c:strRef><c:f>${serie.nameRef}</c:f></c:strRef></c:tx>${colorFill(serie.color)}<c:invertIfNegative val="0"/>
+        ${(serie.pointColors || []).map((hex, point) => `<c:dPt><c:idx val="${point}"/><c:invertIfNegative val="0"/><c:bubble3D val="0"/>${colorFill(hex)}</c:dPt>`).join("")}
+        <c:dLbls><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>
+        <c:cat><c:strRef><c:f>${chart.catRef}</c:f></c:strRef></c:cat><c:val><c:numRef><c:f>${serie.valRef}</c:f></c:numRef></c:val></c:ser>`).join("");
+      const legend = chart.series.length > 1 ? '<c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend>' : "";
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><c:roundedCorners val="0"/><c:chart><c:title><c:tx><c:rich><a:bodyPr/><a:p><a:pPr><a:defRPr sz="1200" b="1"/></a:pPr><a:r><a:rPr lang="es-CO" sz="1200" b="1"/><a:t>${xmlEscape(chart.title)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/><c:plotArea><c:layout/><c:barChart><c:barDir val="col"/><c:grouping val="clustered"/><c:varyColors val="0"/>${series}<c:gapWidth val="80"/><c:axId val="111"/><c:axId val="112"/></c:barChart><c:catAx><c:axId val="111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="112"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx><c:valAx><c:axId val="112"/><c:scaling><c:orientation val="minMax"/><c:min val="0"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines/><c:numFmt formatCode="0" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="111"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx></c:plotArea>${legend}<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart></c:chartSpace>`;
+    };
+
+    const summary = buildSummarySheet();
     const zip = new docx.JSZip();
     const addFile = (name, data, options) => zip.file(name, data, { ...options, createFolders: false });
     const header = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
-    addFile("[Content_Types].xml", `${header}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/></Types>`);
+    addFile("[Content_Types].xml", `${header}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/drawings/drawing2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>${summary.charts.map((_, index) => `<Override PartName="/xl/charts/chart${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`).join("")}</Types>`);
     addFile("_rels/.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`);
-    addFile("xl/workbook.xml", `${header}<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Bitácora" sheetId="1" r:id="rId1"/></sheets></workbook>`);
-    addFile("xl/_rels/workbook.xml.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`);
-    addFile("xl/styles.xml", `${header}<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F3A5F"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFBBBBBB"/></left><right style="thin"><color rgb="FFBBBBBB"/></right><top style="thin"><color rgb="FFBBBBBB"/></top><bottom style="thin"><color rgb="FFBBBBBB"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs></styleSheet>`);
+    addFile("xl/workbook.xml", `${header}<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Bitácora" sheetId="1" r:id="rId1"/><sheet name="Resumen" sheetId="2" r:id="rId3"/></sheets></workbook>`);
+    addFile("xl/_rels/workbook.xml.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>`);
+    addFile("xl/styles.xml", `${header}<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font><font><b/><sz val="12"/><color rgb="FF1F3A5F"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F3A5F"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFBBBBBB"/></left><right style="thin"><color rgb="FFBBBBBB"/></right><top style="thin"><color rgb="FFBBBBBB"/></top><bottom style="thin"><color rgb="FFBBBBBB"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf><xf numFmtId="9" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf></cellXfs></styleSheet>`);
     addFile("xl/worksheets/sheet1.xml", `${header}<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${columnsXml}</cols><sheetData>${sheetRows}</sheetData>${anchors.length ? '<drawing r:id="rId1"/>' : ""}</worksheet>`);
+    addFile("xl/worksheets/sheet2.xml", `${header}<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><cols><col min="1" max="1" width="46" customWidth="1"/><col min="2" max="4" width="14" customWidth="1"/><col min="5" max="5" width="4" customWidth="1"/></cols><sheetData>${summary.rowsXml}</sheetData>${summary.charts.length ? '<drawing r:id="rId1"/>' : ""}</worksheet>`);
+    if (summary.charts.length) {
+      addFile("xl/worksheets/_rels/sheet2.xml.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing2.xml"/></Relationships>`);
+      addFile("xl/drawings/drawing2.xml", `${header}<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">${summary.charts.map((chart, index) =>
+        `<xdr:twoCellAnchor><xdr:from><xdr:col>5</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${chart.fromRow}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>14</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${chart.toRow}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to><xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${index + 2}" name="Gráfico ${index + 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart r:id="rId${index + 1}"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>`).join("")}</xdr:wsDr>`);
+      addFile("xl/drawings/_rels/drawing2.xml.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${summary.charts.map((_, index) =>
+        `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart${index + 1}.xml"/>`).join("")}</Relationships>`);
+      summary.charts.forEach((chart, index) => addFile(`xl/charts/chart${index + 1}.xml`, chartXml(chart)));
+    }
     if (anchors.length) {
       addFile("xl/worksheets/_rels/sheet1.xml.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/></Relationships>`);
       addFile("xl/drawings/drawing1.xml", `${header}<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${anchors.join("")}</xdr:wsDr>`);
@@ -33397,7 +33691,35 @@ var __async = (__this, __arguments, generator) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  async function exportDashboardIssues(format = "csv") {
+  function buildDashboardIssueSummaryHtml(project, issues) {
+    const percentLabels = ["Cerrados dentro del plazo (%)", "Tasa de reapertura (%)", "Resolución (% cerrados sobre el total)"];
+    const formatValue = (value, header, label) => {
+      if (typeof value !== "number") return String(value ?? "");
+      const isPercent = header === "% del total" || percentLabels.includes(label);
+      return isPercent ? `${Math.round(value * 1000) / 10}%` : String(value);
+    };
+    return getDashboardIssueSummarySections(project, issues).map((section) => {
+      const rows = section.data.map((values) => `<tr>${values.map((value, index) => {
+        const align = index === 0 ? "" : ' style="text-align:center"';
+        return `<td${align}>${escapeHtml(formatValue(value, section.headers[index], values[0]))}</td>`;
+      }).join("")}</tr>`).join("");
+      const table = `<table class="sum"><thead><tr>${section.headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`;
+      let chart = "";
+      if (section.chart && section.data.length) {
+        const points = section.data.slice(0, section.chart.dataCount || section.data.length);
+        const max = Math.max(1, ...points.flatMap((values) => section.chart.series.map((serie) => Number(values[serie.column]) || 0)));
+        const legend = section.chart.series.length > 1
+          ? `<div class="legend">${section.chart.series.map((serie) => `<span><i style="background:#${serie.color}"></i>${escapeHtml(section.headers[serie.column])}</span>`).join("")}</div>` : "";
+        const bars = points.map((values, pointIndex) => `<div class="barrow"><span class="barlabel">${escapeHtml(String(values[0]))}</span><div class="bartrack">${section.chart.series.map((serie) => {
+          const value = Number(values[serie.column]) || 0;
+          const color = serie.pointColors?.[pointIndex] || serie.color;
+          return `<div class="bar" style="width:${Math.max(value ? 2 : 0, (value / max) * 100)}%;background:#${color}"><b>${value}</b></div>`;
+        }).join("")}</div></div>`).join("");
+        chart = `<div class="chart"><strong>${escapeHtml(section.chart.title)}</strong>${legend}${bars}</div>`;
+      }
+      return `<section class="sumsec"><h3>${escapeHtml(section.title)}</h3><div class="sumgrid">${table}${chart}</div></section>`;
+    }).join("");
+  }  async function exportDashboardIssues(format = "csv") {
     const project = projects.find((item) => item.id === activeProjectId);
     if (!project) return;
     const issues = getFilteredDashboardIssues(project);
@@ -33437,7 +33759,7 @@ var __async = (__this, __arguments, generator) => {
             return src ? `<img src="${escapeHtml(src)}" style="max-width:300px;max-height:220px;margin:6px 6px 0 0;border:1px solid #ccc" />` : "";
           }).join("")}</div></section>`;
         }).join("");
-        printable.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(baseName)}</title><style>@page{size:landscape;margin:12mm}body{font-family:Arial,sans-serif;font-size:11px}th{background:#1f3a5f!important;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body><h2>Bitácora de issues · ${escapeHtml(project.name)}</h2><p>${escapeHtml(summary)} · Total: ${issues.length} · ${escapeHtml(new Date().toLocaleDateString("es-CO"))}</p>${table}${images ? `<h3>Evidencias</h3>${images}` : ""}</body></html>`);
+        printable.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(baseName)}</title><style>@page{size:landscape;margin:12mm}body{font-family:Arial,sans-serif;font-size:11px}th{background:#1f3a5f!important;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sumsec{page-break-inside:avoid;margin-top:12px}.sumsec h3{margin:0 0 6px;color:#1f3a5f}.sumgrid{display:flex;gap:18px;align-items:flex-start}table.sum{border-collapse:collapse;min-width:260px}table.sum th,table.sum td{border:1px solid #999;padding:3px 8px}table.sum th{background:#1f3a5f;color:#fff}.chart{flex:1}.barrow{display:flex;align-items:center;margin-top:3px}.barlabel{width:130px;font-size:10px}.bartrack{flex:1}.bar{height:13px;margin-bottom:1px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:flex-end;padding-right:3px;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}.legend span{margin-right:10px;font-size:10px}.legend i{display:inline-block;width:9px;height:9px;margin-right:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body><h2>Bitácora de issues · ${escapeHtml(project.name)}</h2><p>${escapeHtml(summary)} · Total: ${issues.length} · ${escapeHtml(new Date().toLocaleDateString("es-CO"))}</p><h2 style="margin-top:18px">Resumen de resultados</h2>${buildDashboardIssueSummaryHtml(project, issues)}<h2 style="page-break-before:always">Detalle de issues</h2>${table}${images ? `<h3>Evidencias</h3>${images}` : ""}</body></html>`);
         printable.document.close();
         printable.focus();
         setTimeout(() => printable.print(), 400);
