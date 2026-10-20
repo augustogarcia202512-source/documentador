@@ -2654,6 +2654,7 @@
               <button class="btn-secondary" id="dashboardIssueExportBtn" type="button">Exportar CSV</button>
               <button class="btn-secondary" id="dashboardIssueExportExcelBtn" type="button">Exportar Excel</button>
               <button class="btn-secondary" id="dashboardIssueExportPdfBtn" type="button">Exportar PDF</button>
+              <button class="btn-secondary" id="dashboardIssueExportPptxBtn" type="button">Presentación PowerPoint</button>
             </div>
           </div>
           <div class="dashboard-issue-summary" id="dashboardIssueSummary" aria-label="Resumen de issues"></div>
@@ -33719,7 +33720,275 @@ var __async = (__this, __arguments, generator) => {
       }
       return `<section class="sumsec"><h3>${escapeHtml(section.title)}</h3><div class="sumgrid">${table}${chart}</div></section>`;
     }).join("");
-  }  async function exportDashboardIssues(format = "csv") {
+  }  async function downloadProgressPptx(project, issues, filename) {
+    const E = (inches) => Math.round(inches * 914400);
+    const esc = (value) => String(value ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const NAVY = "1F3A5F", GREY = "5B6B7F", LIGHT = "F2F5F9";
+    const COLORS = { pass: "34C38F", failed: "E7463E", blocked: "F39C12", "in-progress": "4B9FEA", "not-executed": "B8C2CF" };
+    const LABELS = { pass: "Pass", failed: "Failed", blocked: "Blocked", "in-progress": "En progreso", "not-executed": "Sin ejecutar" };
+    const today = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric" });
+
+    const newSlide = (title) => {
+      const shapes = [];
+      let nextId = 2;
+      const api = {
+        shapes,
+        box(x, y, w, h, { fill = null, text = "", size = 14, bold = false, color = "263445", align = "l", anchor = "ctr", inset = 0.08, geom = "rect" } = {}) {
+          const paragraphs = String(text).split("\n").map((line) => line === ""
+            ? '<a:p><a:endParaRPr lang="es-CO"/></a:p>'
+            : `<a:p><a:pPr algn="${align}"/><a:r><a:rPr lang="es-CO" sz="${Math.round(size * 100)}" b="${bold ? 1 : 0}"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill></a:rPr><a:t>${esc(line)}</a:t></a:r></a:p>`).join("");
+          const id = nextId++;
+          shapes.push(`<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Forma ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${E(x)}" y="${E(y)}"/><a:ext cx="${Math.max(1, E(w))}" cy="${Math.max(1, E(h))}"/></a:xfrm><a:prstGeom prst="${geom}"><a:avLst/></a:prstGeom>${fill ? `<a:solidFill><a:srgbClr val="${fill}"/></a:solidFill>` : "<a:noFill/>"}<a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square" lIns="${E(inset)}" tIns="${E(0.03)}" rIns="${E(inset)}" bIns="${E(0.03)}" anchor="${anchor}"><a:normAutofit/></a:bodyPr><a:lstStyle/>${paragraphs}</p:txBody></p:sp>`);
+        },
+        // Barras horizontales apiladas; scale=null normaliza cada fila a su propio total.
+        hbars(x, y, w, rowH, items, { scale = null, labelW = 2.3, valueW = 1.2 } = {}) {
+          const barW = w - labelW - valueW;
+          items.forEach((item, index) => {
+            const top = y + index * rowH;
+            const total = item.segs.reduce((sum, seg) => sum + seg.v, 0);
+            const base = scale || total || 1;
+            api.box(x, top, labelW, rowH, { text: item.label, size: 12, align: "r", color: "263445" });
+            api.box(x + labelW, top + rowH * 0.18, barW, rowH * 0.64, { fill: "E8EDF3" });
+            let offset = 0;
+            item.segs.filter((seg) => seg.v > 0).forEach((seg) => {
+              const segW = (seg.v / base) * barW;
+              api.box(x + labelW + offset, top + rowH * 0.18, segW, rowH * 0.64, { fill: seg.color, text: segW > 0.35 ? String(seg.v) : "", size: 10, bold: true, color: "FFFFFF", align: "ctr", inset: 0 });
+              offset += segW;
+            });
+            api.box(x + labelW + barW + 0.1, top, valueW - 0.1, rowH, { text: item.suffix ?? String(total), size: 12, bold: true, color: NAVY });
+          });
+        },
+        legend(x, y, entries) {
+          entries.forEach((entry, index) => {
+            api.box(x + index * 1.9, y + 0.07, 0.16, 0.16, { fill: entry.color });
+            api.box(x + index * 1.9 + 0.2, y, 1.65, 0.3, { text: entry.label, size: 11, color: GREY });
+          });
+        },
+        columns(x, y, w, h, categories, series, { max = null, format = (value) => String(value) } = {}) {
+          const peak = max || Math.max(1, ...series.flatMap((serie) => serie.values.map((value) => value || 0)));
+          const labelH = 0.55, plotH = h - labelH - 0.3;
+          const groupW = w / Math.max(1, categories.length);
+          const barW = Math.min(0.7, (groupW * 0.7) / series.length);
+          api.box(x, y + 0.3 + plotH, w, 0.02, { fill: "B8C2CF" });
+          categories.forEach((category, index) => {
+            const groupX = x + index * groupW + (groupW - barW * series.length) / 2;
+            series.forEach((serie, serieIndex) => {
+              const value = serie.values[index];
+              if (value === null || value === undefined) return;
+              const barH = Math.max(0.02, (value / peak) * plotH);
+              const barX = groupX + serieIndex * barW;
+              api.box(barX, y + 0.3 + plotH - barH, barW * 0.92, barH, { fill: serie.color });
+              api.box(barX - 0.1, y + 0.3 + plotH - barH - 0.28, barW * 0.92 + 0.2, 0.26, { text: format(value), size: 10, bold: true, color: "263445", align: "ctr", inset: 0 });
+            });
+            api.box(x + index * groupW, y + 0.34 + plotH, groupW, labelH - 0.05, { text: String(category), size: 10, align: "ctr", color: GREY, anchor: "t", inset: 0.02 });
+          });
+        },
+        table(x, y, widths, rowH, headers, rows, { size = 11 } = {}) {
+          let cursor = x;
+          headers.forEach((header, column) => {
+            api.box(cursor, y, widths[column], rowH, { fill: NAVY, text: header, size, bold: true, color: "FFFFFF" });
+            cursor += widths[column];
+          });
+          rows.forEach((row, rowIndex) => {
+            cursor = x;
+            row.forEach((value, column) => {
+              api.box(cursor, y + rowH * (rowIndex + 1), widths[column], rowH, { fill: rowIndex % 2 ? "FFFFFF" : LIGHT, text: String(value ?? ""), size, align: column === 0 ? "l" : "ctr" });
+              cursor += widths[column];
+            });
+          });
+        },
+      };
+      if (title) {
+        api.box(0.5, 0.3, 12.3, 0.7, { text: title, size: 26, bold: true, color: NAVY });
+        api.box(0.5, 1.0, 1.2, 0.05, { fill: "4B9FEA" });
+        api.box(0.5, 7.05, 9, 0.3, { text: `${project.name || "Proyecto"} · ${today}`, size: 10, color: GREY });
+      }
+      return api;
+    };
+
+    const slides = [];
+    const suites = Array.isArray(project.suites) ? project.suites : [];
+    const projectCases = getActiveProjectCases();
+    const activeCycle = project.qaCyclesEnabled ? getActiveExecutionCycle(project) : null;
+    const scopeCases = activeCycle ? getCasesInCycleScope(activeCycle, projectCases) : projectCases;
+    const statusOf = (caseRecord) => {
+      const status = activeCycle ? getCaseCycleResult(caseRecord, activeCycle).status : getCaseExecutionStatus(caseRecord);
+      return Object.hasOwn(COLORS, status) ? status : "not-executed";
+    };
+    const counts = Object.fromEntries(Object.keys(COLORS).map((key) => [key, 0]));
+    scopeCases.forEach((caseRecord) => { counts[statusOf(caseRecord)] += 1; });
+    const totalCases = scopeCases.length;
+    const executed = totalCases - counts["not-executed"];
+    const evaluated = counts.pass + counts.failed;
+    const passRate = evaluated ? Math.round((counts.pass / evaluated) * 100) : null;
+    const summarySections = getDashboardIssueSummarySections(project, issues);
+    const isClosed = (issue) => issue.status === "Closed";
+    const openIssues = issues.filter((issue) => !isClosed(issue));
+    const criticalOpen = openIssues.filter((issue) => (issue.severity || "Medium") === "Critical").length;
+    const overdue = openIssues.filter(isDashboardIssueOverdue).length;
+
+    const cover = newSlide("");
+    cover.box(0, 0, 13.333, 7.5, { fill: NAVY });
+    cover.box(0.8, 2.4, 11.5, 1.2, { text: project.name || "Proyecto", size: 40, bold: true, color: "FFFFFF" });
+    cover.box(0.8, 3.6, 11.5, 0.7, { text: "Informe de avance de pruebas", size: 24, color: "BFD4EE" });
+    cover.box(0.8, 4.4, 1.5, 0.06, { fill: "4B9FEA" });
+    cover.box(0.8, 4.7, 11.5, 0.5, { text: `${today}${activeCycle ? ` · ${activeCycle.name}` : ""}`, size: 16, color: "BFD4EE" });
+    slides.push(cover);
+
+    const kpis = newSlide("Resumen ejecutivo");
+    const cards = [
+      [String(totalCases), "Casos de prueba"],
+      [totalCases ? `${Math.round((executed / totalCases) * 100)}%` : "—", "Avance de ejecución"],
+      [passRate === null ? "—" : `${passRate}%`, "Aprobación (Pass / evaluados)"],
+      [String(counts.failed), "Casos fallidos"],
+      [String(issues.length), "Issues registrados"],
+      [String(openIssues.length), "Issues abiertos"],
+      [String(criticalOpen), "Críticos abiertos"],
+      [String(overdue), "Abiertos fuera de plazo"],
+    ];
+    cards.forEach(([value, label], index) => {
+      const cx = 0.5 + (index % 4) * 3.1, cy = 1.5 + Math.floor(index / 4) * 2.4;
+      const accent = index >= 3 && index !== 4 && index !== 5 ? "E7463E" : index === 5 ? "F39C12" : "4B9FEA";
+      kpis.box(cx, cy, 2.9, 2.1, { fill: LIGHT });
+      kpis.box(cx, cy, 0.08, 2.1, { fill: accent });
+      kpis.box(cx + 0.2, cy + 0.3, 2.6, 0.9, { text: value, size: 40, bold: true, color: NAVY });
+      kpis.box(cx + 0.2, cy + 1.25, 2.6, 0.6, { text: label, size: 13, color: GREY, anchor: "t" });
+    });
+    kpis.box(0.5, 6.4, 12.3, 0.5, { text: activeCycle ? `Datos del ${activeCycle.name}. Los issues respetan los filtros activos de la bitácora.` : "Los issues respetan los filtros activos de la bitácora.", size: 11, color: GREY });
+    slides.push(kpis);
+
+    const suiteItems = suites.map((suite) => {
+      const cases = scopeCases.filter((caseRecord) => caseRecord.suiteId === suite.id);
+      if (!cases.length) return null;
+      const suiteCounts = Object.fromEntries(Object.keys(COLORS).map((key) => [key, 0]));
+      cases.forEach((caseRecord) => { suiteCounts[statusOf(caseRecord)] += 1; });
+      const done = cases.length - suiteCounts["not-executed"];
+      return {
+        label: suite.name,
+        segs: Object.keys(COLORS).map((key) => ({ v: suiteCounts[key], color: COLORS[key] })),
+        suffix: `${done}/${cases.length} · ${Math.round((done / cases.length) * 100)}%`,
+      };
+    }).filter(Boolean);
+    const progress = newSlide(`Avance de ejecución por suite${activeCycle ? ` · ${activeCycle.name}` : ""}`);
+    if (suiteItems.length) {
+      const shown = suiteItems.slice(0, 10);
+      progress.hbars(0.5, 1.4, 12.3, Math.min(0.5, 4.6 / shown.length), shown, { valueW: 1.8 });
+      progress.legend(0.8, 6.6, Object.keys(COLORS).map((key) => ({ label: LABELS[key], color: COLORS[key] })));
+      if (suiteItems.length > shown.length) progress.box(8, 6.6, 4.8, 0.3, { text: `Se muestran ${shown.length} de ${suiteItems.length} suites`, size: 10, color: GREY, align: "r" });
+    } else {
+      progress.box(0.5, 1.6, 12.3, 1, { text: "Aún no hay casos para mostrar.", size: 16, color: GREY });
+    }
+    slides.push(progress);
+
+    const cycles = (Array.isArray(project.executionCycles) ? project.executionCycles : []).slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    if (cycles.length) {
+      const cycleSummaries = cycles.map((cycle) => ({ cycle, summary: getQaCycleSummary(cycle, projectCases) }));
+      const cycleSlide = newSlide("Resultados por ciclo");
+      cycleSlide.columns(0.5, 1.3, 6.2, 4.6, cycleSummaries.map(({ cycle }) => cycle.name || "Ciclo"),
+        [{ name: "% aprobación", color: "4B9FEA", values: cycleSummaries.map(({ summary }) => summary.passRate === null ? null : Math.round(summary.passRate)) }],
+        { max: 100, format: (value) => `${value}%` });
+      cycleSlide.box(0.5, 6.0, 6.2, 0.3, { text: "Aprobación = Pass / (Pass + Failed) de cada ciclo", size: 10, color: GREY });
+      cycleSlide.table(7.0, 1.5, [1.8, 0.8, 0.8, 0.8, 1.0], 0.5, ["Ciclo", "Pass", "Failed", "Blocked", "Sin ejec."],
+        cycleSummaries.slice(-8).map(({ cycle, summary }) => [cycle.name || "Ciclo", summary.pass, summary.failed, summary.blocked, summary["not-executed"]]), { size: 11 });
+      slides.push(cycleSlide);
+    }
+
+    const pickSection = (title) => summarySections.find((section) => section.title === title);
+    const stateSection = pickSection("Issues por estado");
+    const severitySection = pickSection("Issues por severidad");
+    const stateSlide = newSlide("Issues por estado y severidad");
+    const stateColors = ["E7463E", "F39C12", "4B9FEA", "34C38F", "8E6BD1", "7890AA"];
+    if (stateSection) {
+      stateSlide.box(0.5, 1.3, 6, 0.4, { text: "Por estado", size: 16, bold: true, color: NAVY });
+      const stateRows = stateSection.data.slice(0, DASHBOARD_ISSUE_STATUSES.length);
+      stateSlide.hbars(0.5, 1.8, 6.1, 0.55, stateRows.map((row, index) => ({ label: row[0], segs: [{ v: row[1], color: stateColors[index % stateColors.length] }], suffix: `${row[1]} · ${Math.round(row[2] * 100)}%` })),
+        { scale: Math.max(1, ...stateRows.map((row) => row[1])), labelW: 1.5, valueW: 1.3 });
+    }
+    if (severitySection) {
+      stateSlide.box(7.0, 1.3, 6, 0.4, { text: "Por severidad", size: 16, bold: true, color: NAVY });
+      stateSlide.hbars(7.0, 1.8, 5.9, 0.55, severitySection.data.map((row) => ({ label: row[0], segs: [{ v: row[1], color: "E7463E" }, { v: row[2], color: "34C38F" }], suffix: String(row[3]) })),
+        { scale: Math.max(1, ...severitySection.data.map((row) => row[3])), labelW: 1.4, valueW: 0.8 });
+      stateSlide.legend(7.0, 5.3, [{ label: "Abiertos", color: "E7463E" }, { label: "Cerrados", color: "34C38F" }]);
+    }
+    slides.push(stateSlide);
+
+    const moduleSection = pickSection("Issues por módulo");
+    if (moduleSection && moduleSection.data.length) {
+      const moduleSlide = newSlide("Issues por módulo");
+      const rows = moduleSection.data.slice().sort((a, b) => b[3] - a[3]).slice(0, 10);
+      moduleSlide.hbars(0.5, 1.4, 12.3, Math.min(0.5, 4.6 / rows.length), rows.map((row) => ({ label: row[0], segs: [{ v: row[1], color: "E7463E" }, { v: row[2], color: "34C38F" }], suffix: `${row[3]} (${row[1]} abiertos)` })),
+        { scale: Math.max(1, ...rows.map((row) => row[3])), valueW: 2.4 });
+      moduleSlide.legend(0.8, 6.6, [{ label: "Abiertos", color: "E7463E" }, { label: "Cerrados", color: "34C38F" }]);
+      slides.push(moduleSlide);
+    }
+
+    const trendSection = summarySections.find((section) => section.title.startsWith("Tendencia semanal"));
+    if (trendSection && trendSection.data.length) {
+      const trendSlide = newSlide("Tendencia semanal de issues");
+      trendSlide.columns(0.5, 1.3, 12.3, 4.7, trendSection.data.map((row) => row[0]),
+        [{ name: "Registrados", color: "E7463E", values: trendSection.data.map((row) => row[1]) }, { name: "Cerrados", color: "34C38F", values: trendSection.data.map((row) => row[2]) }]);
+      trendSlide.legend(0.8, 6.5, [{ label: "Registrados", color: "E7463E" }, { label: "Cerrados", color: "34C38F" }]);
+      slides.push(trendSlide);
+    }
+
+    const indicators = pickSection("Indicadores de calidad y gestión");
+    if (indicators) {
+      const percentLabels = ["Cerrados dentro del plazo (%)", "Tasa de reapertura (%)", "Resolución (% cerrados sobre el total)"];
+      const indicatorSlide = newSlide("Indicadores de calidad y gestión");
+      indicatorSlide.table(0.5, 1.4, [8.3, 4.0], 0.46, ["Indicador", "Valor"],
+        indicators.data.map((row) => [row[0], typeof row[1] === "number" && percentLabels.includes(row[0]) ? `${Math.round(row[1] * 1000) / 10}%` : row[1]]), { size: 13 });
+      slides.push(indicatorSlide);
+    }
+
+    const attention = openIssues
+      .map((issue) => ({ issue, age: getDashboardIssueAgeDays(issue) ?? 0, rank: ["Critical", "High", "Medium", "Low"].indexOf(issue.severity || "Medium") }))
+      .sort((a, b) => a.rank - b.rank || b.age - a.age).slice(0, 8);
+    const attentionSlide = newSlide("Issues abiertos que requieren atención");
+    if (attention.length) {
+      const trim = (text, max) => { const value = String(text || "").replace(/\s+/g, " ").trim(); return value.length > max ? `${value.slice(0, max - 1)}…` : value; };
+      attentionSlide.table(0.5, 1.4, [1.3, 4.6, 1.5, 1.2, 1.0, 1.4, 1.3], 0.6, ["ID", "Caso / observación", "Severidad", "Estado", "Días", "Responsable", "Origen"],
+        attention.map(({ issue, age }) => [issue.testId || "", trim(`${issue.formName || ""}${issue.observation ? ` · ${issue.observation}` : ""}`, 80), issue.severity || "", issue.status || "", age, trim(issue.assignee, 14) || "Sin asignar", issue.source === "auto" ? "Automático" : "Manual"]), { size: 10 });
+      attentionSlide.box(0.5, 6.6, 12.3, 0.3, { text: "Ordenados por severidad y antigüedad.", size: 10, color: GREY });
+    } else {
+      attentionSlide.box(0.5, 1.6, 12.3, 1, { text: "No hay issues abiertos. ✔", size: 20, color: "34C38F", bold: true });
+    }
+    slides.push(attentionSlide);
+
+    const ns = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"';
+    const groupXml = '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>';
+    const head = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+    const rel = (id, type, target) => `<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/${type}" Target="${target}"/>`;
+    const relsFile = (items) => `${head}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${items.join("")}</Relationships>`;
+    const fillStyles = '<a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst>';
+    const accents = ["4B9FEA", "E7463E", "F39C12", "34C38F", "8E6BD1", "7890AA"].map((hex, index) => `<a:accent${index + 1}><a:srgbClr val="${hex}"/></a:accent${index + 1}>`).join("");
+    const theme = `${head}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Informe"><a:themeElements><a:clrScheme name="Informe"><a:dk1><a:srgbClr val="263445"/></a:dk1><a:lt1><a:srgbClr val="FFFFFF"/></a:lt1><a:dk2><a:srgbClr val="1F3A5F"/></a:dk2><a:lt2><a:srgbClr val="F2F5F9"/></a:lt2>${accents}<a:hlink><a:srgbClr val="4B9FEA"/></a:hlink><a:folHlink><a:srgbClr val="8E6BD1"/></a:folHlink></a:clrScheme><a:fontScheme name="Informe"><a:majorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="Informe">${fillStyles}</a:fmtScheme></a:themeElements></a:theme>`;
+
+    const zip = new docx.JSZip();
+    const addPart = (name, data) => zip.file(name, data, { createFolders: false });
+    addPart("[Content_Types].xml", `${head}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>${slides.map((_, index) => `<Override PartName="/ppt/slides/slide${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`).join("")}</Types>`);
+    addPart("_rels/.rels", relsFile([rel("rId1", "officeDocument", "ppt/presentation.xml")]));
+    addPart("ppt/presentation.xml", `${head}<p:presentation ${ns}><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slides.map((_, index) => `<p:sldId id="${256 + index}" r:id="rId${index + 3}"/>`).join("")}</p:sldIdLst><p:sldSz cx="12192000" cy="6858000"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`);
+    addPart("ppt/_rels/presentation.xml.rels", relsFile([rel("rId1", "slideMaster", "slideMasters/slideMaster1.xml"), rel("rId2", "theme", "theme/theme1.xml"), ...slides.map((_, index) => rel(`rId${index + 3}`, "slide", `slides/slide${index + 1}.xml`))]));
+    addPart("ppt/theme/theme1.xml", theme);
+    addPart("ppt/slideMasters/slideMaster1.xml", `${head}<p:sldMaster ${ns}><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>${groupXml}</p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst></p:sldMaster>`);
+    addPart("ppt/slideMasters/_rels/slideMaster1.xml.rels", relsFile([rel("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"), rel("rId2", "theme", "../theme/theme1.xml")]));
+    addPart("ppt/slideLayouts/slideLayout1.xml", `${head}<p:sldLayout ${ns} type="blank" preserve="1"><p:cSld name="En blanco"><p:spTree>${groupXml}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`);
+    addPart("ppt/slideLayouts/_rels/slideLayout1.xml.rels", relsFile([rel("rId1", "slideMaster", "../slideMasters/slideMaster1.xml")]));
+    slides.forEach((slide, index) => {
+      addPart(`ppt/slides/slide${index + 1}.xml`, `${head}<p:sld ${ns}><p:cSld><p:spTree>${groupXml}${slide.shapes.join("")}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`);
+      addPart(`ppt/slides/_rels/slide${index + 1}.xml.rels`, relsFile([rel("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml")]));
+    });
+    const blob = await zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return slides.length;
+  }
+  async function exportDashboardIssues(format = "csv") {
     const project = projects.find((item) => item.id === activeProjectId);
     if (!project) return;
     const issues = getFilteredDashboardIssues(project);
@@ -33745,6 +34014,8 @@ var __async = (__this, __arguments, generator) => {
       </table>`;
       if (format === "excel") {
         await downloadDashboardIssuesXlsx(project, issues, headers, rows, `${baseName}.xlsx`);
+      } else if (format === "pptx") {
+        await downloadProgressPptx(project, issues, `Presentacion_Avance_${sanitizeFilenamePart(project.name, "proyecto")}.pptx`);
       } else {
         const printable = window.open("", "_blank");
         if (!printable) {
@@ -33799,6 +34070,7 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("dashboardIssueExportBtn").addEventListener("click", () => exportDashboardIssues("csv"));
     document.getElementById("dashboardIssueExportExcelBtn").addEventListener("click", () => exportDashboardIssues("excel"));
     document.getElementById("dashboardIssueExportPdfBtn").addEventListener("click", () => exportDashboardIssues("pdf"));
+    document.getElementById("dashboardIssueExportPptxBtn").addEventListener("click", () => exportDashboardIssues("pptx"));
     document.getElementById("dashboardIssueStatus").addEventListener("change", (event) => {
       const closedField = document.getElementById("dashboardIssueClosedAt");
       if (event.target.value === "Closed" && !closedField.value) closedField.value = toDateTimeLocalValue(Date.now());
