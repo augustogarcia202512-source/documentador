@@ -29280,6 +29280,7 @@ var __async = (__this, __arguments, generator) => {
           <button class="mode-btn selected" data-mode="highlight" aria-pressed="true">🔲 Resaltar</button>
           <button class="mode-btn" data-mode="redact" aria-pressed="false">⬛ Ocultar</button>
           <button class="mode-btn" data-mode="crop" aria-pressed="false">✂️ Recortar</button>
+          <button class="mode-btn" data-mode="ocr" aria-pressed="false" title="Extrae el texto de una zona de la imagen">🔤 Extraer texto</button>
         </div>
         <div class="mark-controls" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
           ${COLORS.map((c) => `<button class="color-swatch${step.color === c ? " selected" : ""}" style="background:${c}" data-color="${c}" aria-pressed="${step.color === c ? "true" : "false"}" aria-label="Color ${COLOR_NAMES[c] || c}" title="Color ${COLOR_NAMES[c] || c}"></button>`).join("")}
@@ -29291,6 +29292,17 @@ var __async = (__this, __arguments, generator) => {
         <div class="crop-controls" style="display:none; gap:6px;">
           <button class="btn-primary apply-crop" disabled>✅ Aplicar recorte</button>
           <button class="btn-secondary cancel-crop">✖️ Cancelar</button>
+        </div>
+        <div class="ocr-controls" style="display:none;flex-direction:column;gap:6px;width:100%;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <button class="btn-secondary ocr-all-btn" type="button">🖼️ Extraer toda la imagen</button>
+            <span class="ocr-status" role="status" aria-live="polite" style="font-size:11px;color:var(--text-muted);"></span>
+          </div>
+          <div class="ocr-text" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Texto extraído" data-placeholder="El texto extraído aparecerá aquí (puedes corregirlo antes de usarlo)." style="display:none;min-height:70px;max-height:200px;overflow:auto;white-space:pre-wrap;padding:8px;border:1px solid var(--panel-3);border-radius:6px;font-size:13px;background:var(--bg-soft);color:var(--text);"></div>
+          <div class="ocr-actions" style="display:none;gap:6px;flex-wrap:wrap;">
+            <button class="btn-primary ocr-copy-btn" type="button">📋 Copiar texto</button>
+            <button class="btn-secondary ocr-comment-btn" type="button">💬 Agregar al comentario</button>
+          </div>
         </div>
       </div>
       <p class="edit-only mode-help" style="display:none;font-size:11px;color:var(--text-muted);margin:0 0 4px 0;">"Ocultar" tapa por completo la zona (útil para datos sensibles); "Resaltar" solo dibuja un recuadro.</p>
@@ -29596,12 +29608,16 @@ var __async = (__this, __arguments, generator) => {
           b.setAttribute("aria-pressed", selected ? "true" : "false");
         });
         const isCrop = step.currentMode === "crop";
-        card.querySelector(".mark-controls").style.display = isCrop ? "none" : "flex";
+        const isOcr = step.currentMode === "ocr";
+        card.querySelector(".mark-controls").style.display = isCrop || isOcr ? "none" : "flex";
         card.querySelector(".crop-controls").style.display = isCrop ? "flex" : "none";
+        card.querySelector(".ocr-controls").style.display = isOcr ? "flex" : "none";
         const help = card.querySelector(".mode-help");
         help.textContent = isCrop
           ? "Arrastra sobre la imagen para seleccionar el área que quieres conservar (se recorta el resto)."
-          : "\"Ocultar\" tapa por completo la zona (útil para datos sensibles); \"Resaltar\" solo dibuja un recuadro.";
+          : isOcr
+            ? "Arrastra sobre la zona que contiene el texto (o usa \"Extraer toda la imagen\"). El texto se reconoce en tu navegador."
+            : "\"Ocultar\" tapa por completo la zona (útil para datos sensibles); \"Resaltar\" solo dibuja un recuadro.";
         const canvas = card.querySelector("canvas");
         if (canvas) redrawStep(step, canvas);
       });
@@ -29639,6 +29655,32 @@ var __async = (__this, __arguments, generator) => {
       }
     });
     card.querySelector(".apply-crop").addEventListener("click", () => applyCrop(step, card));
+    card.querySelector(".ocr-all-btn").addEventListener("click", () => {
+      if (step._editImg) runStepOcr(step, card, { x: 0, y: 0, w: step._editImg.width, h: step._editImg.height });
+    });
+    card.querySelector(".ocr-copy-btn").addEventListener("click", async () => {
+      const text = card.querySelector(".ocr-text").innerText.trim();
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showTransientStatus("Texto copiado al portapapeles.", 2500);
+      } catch (error) {
+        const range = document.createRange();
+        range.selectNodeContents(card.querySelector(".ocr-text"));
+        getSelection().removeAllRanges();
+        getSelection().addRange(range);
+        showTransientStatus("Selecciona y copia con Ctrl+C.", 3500);
+      }
+    });
+    card.querySelector(".ocr-comment-btn").addEventListener("click", () => {
+      const text = card.querySelector(".ocr-text").innerText.trim();
+      if (!text) return;
+      const input = card.querySelector(".comment-block textarea");
+      input.value = input.value.trim() ? `${input.value.trim()}\n${text}` : text;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      if (card.querySelector(".comment-block").classList.contains("collapsed")) card.querySelector(".comment-toggle").click();
+      showTransientStatus("Texto agregado al comentario del paso.", 2500);
+    });
     card.querySelector(".cancel-crop").addEventListener("click", () => cancelCrop(step, card));
     refreshQuickCommentTargets(step.id);
   }
@@ -29677,6 +29719,7 @@ var __async = (__this, __arguments, generator) => {
     });
     card.querySelector(".mark-controls").style.display = "flex";
     card.querySelector(".crop-controls").style.display = "none";
+    card.querySelector(".ocr-controls").style.display = "none";
     card.querySelector(".mode-help").textContent = "\"Ocultar\" tapa por completo la zona (útil para datos sensibles); \"Resaltar\" solo dibuja un recuadro.";
     updateCropButtonState(step, card);
 
@@ -29832,6 +29875,7 @@ var __async = (__this, __arguments, generator) => {
     });
     card.querySelector(".mark-controls").style.display = "flex";
     card.querySelector(".crop-controls").style.display = "none";
+    card.querySelector(".ocr-controls").style.display = "none";
     card.querySelector(".mode-help").textContent = "\"Ocultar\" tapa por completo la zona (útil para datos sensibles); \"Resaltar\" solo dibuja un recuadro.";
     saveStateToDB();
   }
@@ -29848,6 +29892,71 @@ var __async = (__this, __arguments, generator) => {
     if (applyBtn) applyBtn.disabled = !step.pendingCrop;
   }
 
+  let ocrWorkerPromise = null;
+  let ocrProgressHandler = null;
+
+  function loadExternalScript(src) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error("No se pudo cargar el motor de reconocimiento. Verifica tu conexión a internet."));
+      document.head.appendChild(script);
+    });
+  }
+
+  async function getOcrWorker() {
+    if (!ocrWorkerPromise) {
+      ocrWorkerPromise = (async () => {
+        if (!window.Tesseract) await loadExternalScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js");
+        return window.Tesseract.createWorker("spa+eng", 1, { logger: (message) => ocrProgressHandler && ocrProgressHandler(message) });
+      })().catch((error) => {
+        ocrWorkerPromise = null;
+        throw error;
+      });
+    }
+    return ocrWorkerPromise;
+  }
+
+  async function runStepOcr(step, card, rect) {
+    if (!step._editImg || step._ocrRunning) return;
+    const status = card.querySelector(".ocr-status");
+    const output = card.querySelector(".ocr-text");
+    const actions = card.querySelector(".ocr-actions");
+    step._ocrRunning = true;
+    status.textContent = "Preparando reconocimiento…";
+    ocrProgressHandler = (message) => {
+      if (message.status === "recognizing text") status.textContent = `Reconociendo texto… ${Math.round((message.progress || 0) * 100)}%`;
+      else if (message.status) status.textContent = "Cargando motor de texto (solo la primera vez)…";
+    };
+    const region = document.createElement("canvas");
+    try {
+      const scale = Math.max(1, Math.min(3, 1400 / Math.max(rect.w, rect.h)));
+      region.width = Math.round(rect.w * scale);
+      region.height = Math.round(rect.h * scale);
+      const context = region.getContext("2d");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, region.width, region.height);
+      context.imageSmoothingQuality = "high";
+      context.drawImage(step._editImg, rect.x, rect.y, rect.w, rect.h, 0, 0, region.width, region.height);
+      const worker = await getOcrWorker();
+      const { data } = await worker.recognize(region);
+      const text = String(data.text || "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+      output.style.display = "block";
+      actions.style.display = "flex";
+      output.textContent = text || "";
+      status.textContent = text ? `Texto extraído (${text.length} caracteres). Puedes corregirlo.` : "No se detectó texto en esa zona. Prueba con una zona más amplia o nítida.";
+      if (!text) actions.style.display = "none";
+    } catch (error) {
+      console.error("No se pudo extraer el texto:", error);
+      status.textContent = error.message || "No se pudo extraer el texto.";
+    } finally {
+      step._ocrRunning = false;
+      ocrProgressHandler = null;
+      region.width = 0;
+      region.height = 0;
+    }
+  }
   function setupCanvasDrawing(step, canvas) {
     let dragging = false;
     let startPt = null;
@@ -29887,6 +29996,8 @@ var __async = (__this, __arguments, generator) => {
       const rect = currentRect(getPt(evt));
       if (step.currentMode === "crop") {
         redrawStep(step, canvas, null, rect);
+      } else if (step.currentMode === "ocr") {
+        redrawStep(step, canvas, { ...rect, color: "#ff9f1c", type: "highlight" });
       } else {
         redrawStep(step, canvas, { ...rect, color: step.color, type: step.currentMode || "highlight" });
       }
@@ -29902,6 +30013,9 @@ var __async = (__this, __arguments, generator) => {
           updateCropButtonState(step, card);
         }
         redrawStep(step, canvas);
+      } else if (step.currentMode === "ocr") {
+        redrawStep(step, canvas);
+        if (rect.w > 10 && rect.h > 10) runStepOcr(step, card, rect);
       } else {
         const box = { ...rect, color: step.color, type: step.currentMode || "highlight" };
         if (box.w > 4 && box.h > 4) {
@@ -33724,7 +33838,7 @@ var __async = (__this, __arguments, generator) => {
     const E = (inches) => Math.round(inches * 914400);
     const esc = (value) => String(value ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    const NAVY = "1F3A5F", GREY = "5B6B7F", LIGHT = "F2F5F9";
+    const NAVY = "1F3A5F", ORANGE = "E8590C", GREY = "5B6B7F", LIGHT = "FFF1E3";
     const COLORS = { pass: "34C38F", failed: "E7463E", blocked: "F39C12", "in-progress": "4B9FEA", "not-executed": "B8C2CF" };
     const LABELS = { pass: "Pass", failed: "Failed", blocked: "Blocked", "in-progress": "En progreso", "not-executed": "Sin ejecutar" };
     const today = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric" });
@@ -33734,7 +33848,7 @@ var __async = (__this, __arguments, generator) => {
       let nextId = 2;
       const api = {
         shapes,
-        box(x, y, w, h, { fill = null, text = "", size = 14, bold = false, color = "263445", align = "l", anchor = "ctr", inset = 0.08, geom = "rect" } = {}) {
+        box(x, y, w, h, { fill = null, text = "", size = 14, bold = false, color = "2B1B10", align = "l", anchor = "ctr", inset = 0.08, geom = "rect" } = {}) {
           const paragraphs = String(text).split("\n").map((line) => line === ""
             ? '<a:p><a:endParaRPr lang="es-CO"/></a:p>'
             : `<a:p><a:pPr algn="${align}"/><a:r><a:rPr lang="es-CO" sz="${Math.round(size * 100)}" b="${bold ? 1 : 0}"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill></a:rPr><a:t>${esc(line)}</a:t></a:r></a:p>`).join("");
@@ -33748,8 +33862,8 @@ var __async = (__this, __arguments, generator) => {
             const top = y + index * rowH;
             const total = item.segs.reduce((sum, seg) => sum + seg.v, 0);
             const base = scale || total || 1;
-            api.box(x, top, labelW, rowH, { text: item.label, size: 12, align: "r", color: "263445" });
-            api.box(x + labelW, top + rowH * 0.18, barW, rowH * 0.64, { fill: "E8EDF3" });
+            api.box(x, top, labelW, rowH, { text: item.label, size: 12, align: "r", color: "2B1B10" });
+            api.box(x + labelW, top + rowH * 0.18, barW, rowH * 0.64, { fill: "FBE6D3" });
             let offset = 0;
             item.segs.filter((seg) => seg.v > 0).forEach((seg) => {
               const segW = (seg.v / base) * barW;
@@ -33770,7 +33884,7 @@ var __async = (__this, __arguments, generator) => {
           const labelH = 0.55, plotH = h - labelH - 0.3;
           const groupW = w / Math.max(1, categories.length);
           const barW = Math.min(0.7, (groupW * 0.7) / series.length);
-          api.box(x, y + 0.3 + plotH, w, 0.02, { fill: "B8C2CF" });
+          api.box(x, y + 0.3 + plotH, w, 0.02, { fill: "E0C9B3" });
           categories.forEach((category, index) => {
             const groupX = x + index * groupW + (groupW - barW * series.length) / 2;
             series.forEach((serie, serieIndex) => {
@@ -33779,7 +33893,7 @@ var __async = (__this, __arguments, generator) => {
               const barH = Math.max(0.02, (value / peak) * plotH);
               const barX = groupX + serieIndex * barW;
               api.box(barX, y + 0.3 + plotH - barH, barW * 0.92, barH, { fill: serie.color });
-              api.box(barX - 0.1, y + 0.3 + plotH - barH - 0.28, barW * 0.92 + 0.2, 0.26, { text: format(value), size: 10, bold: true, color: "263445", align: "ctr", inset: 0 });
+              api.box(barX - 0.1, y + 0.3 + plotH - barH - 0.28, barW * 0.92 + 0.2, 0.26, { text: format(value), size: 10, bold: true, color: "2B1B10", align: "ctr", inset: 0 });
             });
             api.box(x + index * groupW, y + 0.34 + plotH, groupW, labelH - 0.05, { text: String(category), size: 10, align: "ctr", color: GREY, anchor: "t", inset: 0.02 });
           });
@@ -33801,7 +33915,8 @@ var __async = (__this, __arguments, generator) => {
       };
       if (title) {
         api.box(0.5, 0.3, 12.3, 0.7, { text: title, size: 26, bold: true, color: NAVY });
-        api.box(0.5, 1.0, 1.2, 0.05, { fill: "4B9FEA" });
+        api.box(0, 0, 13.333, 0.14, { fill: ORANGE });
+        api.box(0.5, 1.0, 1.2, 0.06, { fill: ORANGE });
         api.box(0.5, 7.05, 9, 0.3, { text: `${project.name || "Proyecto"} · ${today}`, size: 10, color: GREY });
       }
       return api;
@@ -33831,9 +33946,11 @@ var __async = (__this, __arguments, generator) => {
     const cover = newSlide("");
     cover.box(0, 0, 13.333, 7.5, { fill: NAVY });
     cover.box(0.8, 2.4, 11.5, 1.2, { text: project.name || "Proyecto", size: 40, bold: true, color: "FFFFFF" });
-    cover.box(0.8, 3.6, 11.5, 0.7, { text: "Informe de avance de pruebas", size: 24, color: "BFD4EE" });
-    cover.box(0.8, 4.4, 1.5, 0.06, { fill: "4B9FEA" });
-    cover.box(0.8, 4.7, 11.5, 0.5, { text: `${today}${activeCycle ? ` · ${activeCycle.name}` : ""}`, size: 16, color: "BFD4EE" });
+    cover.box(0.8, 3.6, 11.5, 0.7, { text: "Informe de avance de pruebas", size: 24, color: "CFDDF0" });
+    cover.box(0.8, 4.4, 1.5, 0.08, { fill: ORANGE });
+    cover.box(0, 0, 0.45, 7.5, { fill: ORANGE });
+    cover.box(0, 6.9, 13.333, 0.6, { fill: ORANGE });
+    cover.box(0.8, 4.7, 11.5, 0.5, { text: `${today}${activeCycle ? ` · ${activeCycle.name}` : ""}`, size: 16, color: "CFDDF0" });
     slides.push(cover);
 
     const kpis = newSlide("Resumen ejecutivo");
@@ -33849,7 +33966,7 @@ var __async = (__this, __arguments, generator) => {
     ];
     cards.forEach(([value, label], index) => {
       const cx = 0.5 + (index % 4) * 3.1, cy = 1.5 + Math.floor(index / 4) * 2.4;
-      const accent = index >= 3 && index !== 4 && index !== 5 ? "E7463E" : index === 5 ? "F39C12" : "4B9FEA";
+      const accent = index === 3 || index === 6 ? "D62828" : "FF9F1C";
       kpis.box(cx, cy, 2.9, 2.1, { fill: LIGHT });
       kpis.box(cx, cy, 0.08, 2.1, { fill: accent });
       kpis.box(cx + 0.2, cy + 0.3, 2.6, 0.9, { text: value, size: 40, bold: true, color: NAVY });
@@ -33886,7 +34003,7 @@ var __async = (__this, __arguments, generator) => {
       const cycleSummaries = cycles.map((cycle) => ({ cycle, summary: getQaCycleSummary(cycle, projectCases) }));
       const cycleSlide = newSlide("Resultados por ciclo");
       cycleSlide.columns(0.5, 1.3, 6.2, 4.6, cycleSummaries.map(({ cycle }) => cycle.name || "Ciclo"),
-        [{ name: "% aprobación", color: "4B9FEA", values: cycleSummaries.map(({ summary }) => summary.passRate === null ? null : Math.round(summary.passRate)) }],
+        [{ name: "% aprobación", color: "E8590C", values: cycleSummaries.map(({ summary }) => summary.passRate === null ? null : Math.round(summary.passRate)) }],
         { max: 100, format: (value) => `${value}%` });
       cycleSlide.box(0.5, 6.0, 6.2, 0.3, { text: "Aprobación = Pass / (Pass + Failed) de cada ciclo", size: 10, color: GREY });
       cycleSlide.table(7.0, 1.5, [1.8, 0.8, 0.8, 0.8, 1.0], 0.5, ["Ciclo", "Pass", "Failed", "Blocked", "Sin ejec."],
@@ -33898,7 +34015,7 @@ var __async = (__this, __arguments, generator) => {
     const stateSection = pickSection("Issues por estado");
     const severitySection = pickSection("Issues por severidad");
     const stateSlide = newSlide("Issues por estado y severidad");
-    const stateColors = ["E7463E", "F39C12", "4B9FEA", "34C38F", "8E6BD1", "7890AA"];
+    const stateColors = ["D62828", "FF9F1C", "E8590C", "34C38F", "8E6BD1", "7890AA"];
     if (stateSection) {
       stateSlide.box(0.5, 1.3, 6, 0.4, { text: "Por estado", size: 16, bold: true, color: NAVY });
       const stateRows = stateSection.data.slice(0, DASHBOARD_ISSUE_STATUSES.length);
@@ -33955,14 +34072,46 @@ var __async = (__this, __arguments, generator) => {
     }
     slides.push(attentionSlide);
 
+    const pct = (value, total) => (total ? Math.round((value / total) * 100) : 0);
+    const suiteStats = suites.map((suite) => {
+      const list = scopeCases.filter((caseRecord) => caseRecord.suiteId === suite.id);
+      const failed = list.filter((caseRecord) => statusOf(caseRecord) === "failed").length;
+      const pending = list.filter((caseRecord) => statusOf(caseRecord) === "not-executed").length;
+      return { name: suite.name, total: list.length, failed, pending };
+    }).filter((item) => item.total);
+    const findings = [];
+    if (totalCases) findings.push(`Avance de ejecución del ${pct(executed, totalCases)}% (${executed} de ${totalCases} casos)${passRate === null ? "." : `, con ${passRate}% de aprobación sobre los evaluados.`}`);
+    const slowest = suiteStats.filter((item) => item.pending).sort((a, b) => pct(b.pending, b.total) - pct(a.pending, a.total))[0];
+    if (slowest) findings.push(`Suite con más pendiente: ${slowest.name} (${slowest.pending} de ${slowest.total} sin ejecutar).`);
+    const riskiest = suiteStats.filter((item) => item.failed).sort((a, b) => b.failed - a.failed)[0];
+    if (riskiest) findings.push(`Mayor concentración de fallos: ${riskiest.name} (${riskiest.failed} ${riskiest.failed === 1 ? "caso fallido" : "casos fallidos"}).`);
+    const topModule = (pickSection("Issues por módulo")?.data || []).slice().sort((a, b) => b[1] - a[1])[0];
+    if (topModule && topModule[1]) findings.push(`Módulo con más issues abiertos: ${topModule[0]} (${topModule[1]}).`);
+    const lastWeek = summarySections.find((section) => section.title.startsWith("Tendencia semanal"))?.data.slice(-1)[0];
+    if (lastWeek) findings.push(`Última semana: ${lastWeek[1]} issues registrados y ${lastWeek[2]} cerrados.`);
+    const actions = [];
+    if (criticalOpen) actions.push(`Atender de inmediato ${criticalOpen === 1 ? "el issue crítico abierto" : `los ${criticalOpen} issues críticos abiertos`}.`);
+    if (overdue) actions.push(`Resolver ${overdue === 1 ? "el issue fuera de plazo" : `los ${overdue} issues fuera de plazo`}.`);
+    const unassigned = openIssues.filter((issue) => !String(issue.assignee || "").trim()).length;
+    if (unassigned) actions.push(`Asignar responsable a ${unassigned} ${unassigned === 1 ? "issue abierto" : "issues abiertos"}.`);
+    if (counts.failed) actions.push(`Reejecutar ${counts.failed === 1 ? "el caso fallido" : `los ${counts.failed} casos fallidos`} una vez corregido.`);
+    if (counts["not-executed"]) actions.push(`Completar la ejecución de ${counts["not-executed"]} casos pendientes.`);
+    if (!actions.length) actions.push("Sin acciones críticas pendientes: mantener el seguimiento.");
+    const closing = newSlide("Conclusiones y próximos pasos");
+    closing.box(0.5, 1.3, 6.0, 0.5, { text: "Hallazgos clave", size: 18, bold: true, color: ORANGE });
+    closing.box(0.5, 1.85, 6.0, 4.9, { fill: LIGHT, text: findings.map((line) => `• ${line}`).join("\n\n") || "Sin datos suficientes.", size: 14, anchor: "t", inset: 0.2 });
+    closing.box(6.9, 1.3, 6.0, 0.5, { text: "Próximos pasos", size: 18, bold: true, color: ORANGE });
+    closing.box(6.9, 1.85, 6.0, 4.9, { fill: "FFF8F0", text: actions.map((line, index) => `${index + 1}. ${line}`).join("\n\n"), size: 14, anchor: "t", inset: 0.2 });
+    closing.box(6.9, 1.85, 0.08, 4.9, { fill: ORANGE });
+    slides.push(closing);
     const ns = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"';
     const groupXml = '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>';
     const head = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
     const rel = (id, type, target) => `<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/${type}" Target="${target}"/>`;
     const relsFile = (items) => `${head}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${items.join("")}</Relationships>`;
     const fillStyles = '<a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst>';
-    const accents = ["4B9FEA", "E7463E", "F39C12", "34C38F", "8E6BD1", "7890AA"].map((hex, index) => `<a:accent${index + 1}><a:srgbClr val="${hex}"/></a:accent${index + 1}>`).join("");
-    const theme = `${head}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Informe"><a:themeElements><a:clrScheme name="Informe"><a:dk1><a:srgbClr val="263445"/></a:dk1><a:lt1><a:srgbClr val="FFFFFF"/></a:lt1><a:dk2><a:srgbClr val="1F3A5F"/></a:dk2><a:lt2><a:srgbClr val="F2F5F9"/></a:lt2>${accents}<a:hlink><a:srgbClr val="4B9FEA"/></a:hlink><a:folHlink><a:srgbClr val="8E6BD1"/></a:folHlink></a:clrScheme><a:fontScheme name="Informe"><a:majorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="Informe">${fillStyles}</a:fmtScheme></a:themeElements></a:theme>`;
+    const accents = ["E8590C", "FF9F1C", "D62828", "34C38F", "8E6BD1", "7890AA"].map((hex, index) => `<a:accent${index + 1}><a:srgbClr val="${hex}"/></a:accent${index + 1}>`).join("");
+    const theme = `${head}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Informe"><a:themeElements><a:clrScheme name="Informe"><a:dk1><a:srgbClr val="2B1B10"/></a:dk1><a:lt1><a:srgbClr val="FFFFFF"/></a:lt1><a:dk2><a:srgbClr val="1F3A5F"/></a:dk2><a:lt2><a:srgbClr val="FFF1E3"/></a:lt2>${accents}<a:hlink><a:srgbClr val="4B9FEA"/></a:hlink><a:folHlink><a:srgbClr val="8E6BD1"/></a:folHlink></a:clrScheme><a:fontScheme name="Informe"><a:majorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="Informe">${fillStyles}</a:fmtScheme></a:themeElements></a:theme>`;
 
     const zip = new docx.JSZip();
     const addPart = (name, data) => zip.file(name, data, { createFolders: false });
