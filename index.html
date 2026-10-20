@@ -3010,6 +3010,7 @@
       <button class="btn-secondary" id="pipBtn">📌 Activar botón flotante</button>
       <button class="btn-secondary" id="captureBtn">📸 Capturar ahora (Ctrl+Shift+Y)</button>
       <button class="btn-secondary" id="selectCaptureBtn" type="button">✂️ Seleccionar área</button>
+      <button class="btn-secondary" id="downloadCapturesBtn" type="button" title="Descarga todas las capturas del caso en un ZIP">⬇️ Descargar capturas</button>
       <button class="btn-secondary" id="undoBtn" title="Deshacer (Ctrl+Z)" disabled>↶ Deshacer</button>
       <button class="btn-secondary" id="redoBtn" title="Rehacer (Ctrl+Y)" disabled>↷ Rehacer</button>
       <span id="historyStatus" class="history-chip" role="status" aria-live="polite">Historial: 0/80</span>
@@ -29313,6 +29314,7 @@ var __async = (__this, __arguments, generator) => {
       <div class="step-pin-notes" aria-label="Notas ancladas a la imagen"></div>
       <div class="btn-row" style="margin-top:8px;">
         <button class="btn-secondary copy-image-btn" type="button" style="flex:1;">📋 Copiar evidencia</button>
+        <button class="btn-secondary download-image-btn" type="button" style="flex:1;">⬇️ Descargar imagen</button>
         <button class="btn-secondary defect-btn" type="button" style="flex:1;">🐞 Generar defecto</button>
         <button class="btn-secondary mark-btn" type="button" style="flex:1;">✏️ Marcar zona</button>
         <button class="btn-secondary step-pin-mode-btn" type="button" style="flex:1;" title="Coloca una nota en un punto de la imagen">📍 Nota en imagen</button>
@@ -29625,6 +29627,11 @@ var __async = (__this, __arguments, generator) => {
     card.querySelector(".copy-image-btn").addEventListener("click", async () => {
       const idx = steps.findIndex((s) => s.id === step.id);
       await copyStepEvidenceToClipboard(step, `Paso ${idx + 1}`);
+    });
+    card.querySelector(".download-image-btn").addEventListener("click", () => {
+      const src = step.renderedDataUrl || step.dataUrl;
+      if (!src) return;
+      downloadDashboardIssueFile(dataUrlToBlob(src), "image/jpeg", getStepImageFilename(steps.indexOf(step)));
     });
     card.querySelector(".defect-btn").addEventListener("click", async (event) => {
       const idx = steps.findIndex((s) => s.id === step.id);
@@ -29957,6 +29964,41 @@ var __async = (__this, __arguments, generator) => {
       region.height = 0;
     }
   }
+  function dataUrlToBlob(dataUrl) {
+    const [header, data] = String(dataUrl).split(",");
+    const mime = /data:([^;]+)/.exec(header)?.[1] || "image/jpeg";
+    const bytes = Uint8Array.from(atob(data), (char) => char.charCodeAt(0));
+    return new Blob([bytes], { type: mime });
+  }
+
+  function getStepImageFilename(index, extension = "jpg") {
+    const caseLabel = sanitizeFilenamePart(
+      document.getElementById("caseId")?.value.trim() || document.getElementById("description")?.value.trim(),
+      "caso"
+    );
+    return `${caseLabel}_paso-${String(index + 1).padStart(2, "0")}.${extension}`;
+  }
+
+  async function downloadAllStepImages() {
+    const withImage = steps.filter((step) => step.renderedDataUrl || step.dataUrl);
+    if (!withImage.length) {
+      showTransientStatus("Aún no hay capturas para descargar.", 3000);
+      return;
+    }
+    if (withImage.length === 1) {
+      downloadDashboardIssueFile(dataUrlToBlob(withImage[0].renderedDataUrl || withImage[0].dataUrl), "image/jpeg", getStepImageFilename(steps.indexOf(withImage[0])));
+      return;
+    }
+    const zip = new docx.JSZip();
+    withImage.forEach((step) => {
+      const base64 = String(step.renderedDataUrl || step.dataUrl).split(",")[1];
+      zip.file(getStepImageFilename(steps.indexOf(step)), base64, { base64: true });
+    });
+    const blob = await zip.generateAsync({ type: "blob" });
+    const caseLabel = sanitizeFilenamePart(document.getElementById("caseId")?.value.trim() || document.getElementById("description")?.value.trim(), "caso");
+    downloadDashboardIssueFile(blob, "application/zip", `Capturas_${caseLabel}.zip`);
+    showTransientStatus(`${withImage.length} capturas descargadas.`, 3000);
+  }
   function setupCanvasDrawing(step, canvas) {
     let dragging = false;
     let startPt = null;
@@ -30034,6 +30076,9 @@ var __async = (__this, __arguments, generator) => {
   }
 
   renumberSteps();
+  document.getElementById("downloadCapturesBtn").addEventListener("click", () => {
+    downloadAllStepImages().catch((error) => showAppAlert(`No se pudieron descargar las capturas. ${error.message || ""}`));
+  });
 
   function syncStepInputsToData() {
     stepsContainer.querySelectorAll(".step-card").forEach((card) => {
