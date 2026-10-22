@@ -30607,7 +30607,7 @@ var __async = (__this, __arguments, generator) => {
       columnWidths: [2552, 8505],
       rows: [new TableRow({ children: [
         new TableCell({ width: { size: 2552, type: WidthType.DXA }, children: [new Paragraph({ children: [panamLabelRun("CASO DE PRUEBAS")] })] }),
-        new TableCell({ width: { size: 8505, type: WidthType.DXA }, children: [new Paragraph({ children: [panamValueRun(caseId || "Sin ID")] })] }),
+        new TableCell({ width: { size: 8505, type: WidthType.DXA }, children: [new Paragraph({ children: [panamValueRun([caseId, description].filter(Boolean).join(" - ") || "Sin ID")] })] }),
       ] })],
     }));
     blocks.push(new Paragraph(""));
