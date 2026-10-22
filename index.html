@@ -315,6 +315,8 @@
     border-radius: 4px; font-size: 11px; padding: 2px 6px; line-height: 1.1;
   }
   .step-num { color: var(--text-muted); font-weight: 600; }
+  .step-card.step-group-cont { margin-left: 18px; border-left: 4px solid var(--accent, #2b6fe0); }
+  .step-card.step-group-cont .step-actions .group-toggle-btn { font-weight: 700; }
   .drag-handle { cursor: grab; font-size: 15px; color: var(--text-faint); user-select: none; padding: 0 2px; }
   .drag-handle:hover { color: var(--text-muted); }
   .drag-handle:active { cursor: grabbing; }
@@ -3010,6 +3012,12 @@
       <button class="btn-secondary" id="pipBtn">📌 Activar botón flotante</button>
       <button class="btn-secondary" id="captureBtn">📸 Capturar ahora (Ctrl+Shift+Y)</button>
       <button class="btn-secondary" id="selectCaptureBtn" type="button">✂️ Seleccionar área</button>
+      <label class="capture-target-label" for="captureTargetSelect" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;">Destino
+        <select id="captureTargetSelect" title="Define si la próxima captura crea un paso nuevo o se agrega como otra imagen del paso actual (Ctrl+Shift+U alterna)">
+          <option value="new">Nuevo paso</option>
+          <option value="current">Paso actual (otra imagen)</option>
+        </select>
+      </label>
       <button class="btn-secondary" id="downloadCapturesBtn" type="button" title="Descarga todas las capturas del caso en un ZIP">⬇️ Descargar capturas</button>
       <button class="btn-secondary" id="undoBtn" title="Deshacer (Ctrl+Z)" disabled>↶ Deshacer</button>
       <button class="btn-secondary" id="redoBtn" title="Rehacer (Ctrl+Y)" disabled>↷ Rehacer</button>
@@ -26567,6 +26575,7 @@ var __async = (__this, __arguments, generator) => {
         boxes: s.boxes,
         color: s.color,
         pins: Array.isArray(s.pins) ? s.pins : [],
+        sameAsPrevious: !!s.sameAsPrevious,
       }));
       const payload = {
         projectId: getSelectedProjectId(),
@@ -26654,6 +26663,7 @@ var __async = (__this, __arguments, generator) => {
       boxes: s.boxes || [],
       color: s.color || "#e02424",
       pins: Array.isArray(s.pins) ? s.pins : [],
+      sameAsPrevious: !!s.sameAsPrevious,
     };
   }
 
@@ -27152,7 +27162,7 @@ var __async = (__this, __arguments, generator) => {
     const evidenceList = document.getElementById("defectEvidenceList");
     if (evidenceList) {
       evidenceList.innerHTML = defectDraftSteps.map((candidate) => {
-        const index = steps.findIndex((item) => item.id === candidate.id) + 1;
+        const index = getStepLabelById(candidate.id);
         const checked = candidate.id === step.id ? "checked" : "";
         const label = `Paso ${index}${candidate.comment ? ` · ${candidate.comment.slice(0, 70)}` : " · Sin comentario"}`;
         return `<label style="display:flex;gap:8px;align-items:center;font-size:12px;cursor:pointer;"><input type="checkbox" value="${candidate.id}" ${checked} /> <span>${escapeHtml(label)}</span></label>`;
@@ -27188,7 +27198,7 @@ var __async = (__this, __arguments, generator) => {
     const text = getCurrentDefectText(defectDraftStep, defectDraftLabel, evidenceSteps);
     const evidenceHtml = evidenceSteps.map((step, index) => `
       <figure style="margin:14px 0;text-align:center;">
-        <figcaption data-defect-preview-editable="true" style="font-weight:700;text-align:left;margin-bottom:6px;">${escapeHtml(defectPreviewCustomLabels[index] || `Evidencia ${index + 1} · Paso ${steps.findIndex((item) => item.id === step.id) + 1}`)}</figcaption>
+        <figcaption data-defect-preview-editable="true" style="font-weight:700;text-align:left;margin-bottom:6px;">${escapeHtml(defectPreviewCustomLabels[index] || `Evidencia ${index + 1} · Paso ${getStepLabelById(step.id)}`)}</figcaption>
         <img src="${step.renderedDataUrl || step.dataUrl}" alt="Evidencia ${index + 1}" style="max-width:100%;border:1px solid #ccc;" />
         ${(Array.isArray(step.pins) && step.pins.length) ? `<ol style="text-align:left;font-size:12px;">${step.pins.map((pin, pinIndex) => `<li><b>Nota ${pinIndex + 1}:</b> ${escapeHtml(pin.text || "Sin comentario")}</li>`).join("")}</ol>` : ""}
       </figure>`).join("");
@@ -27264,7 +27274,7 @@ var __async = (__this, __arguments, generator) => {
     const priority = document.getElementById("defectPriority");
     const evidenceSteps = selectedSteps && selectedSteps.length ? selectedSteps : [step];
     const reproductionSteps = evidenceSteps.map((item) => {
-      const index = steps.findIndex((candidate) => candidate.id === item.id) + 1;
+      const index = getStepLabelById(item.id);
       const pinNotes = (Array.isArray(item.pins) ? item.pins : []).map((pin, pinIndex) =>
         `  Nota ${pinIndex + 1}: ${String(pin.text || "Sin comentario").trim()}`
       );
@@ -27284,7 +27294,7 @@ var __async = (__this, __arguments, generator) => {
       `Resultado actual: ${qaContext.actualResult || comment}`,
       `Prioridad: ${(priority && priority.value ? priority.value : "media").toUpperCase()}`,
       `Severidad: ${(step && step.severity ? step.severity : "media").toUpperCase()}`,
-      `Evidencias: ${evidenceSteps.map((item) => `Paso ${steps.findIndex((candidate) => candidate.id === item.id) + 1}`).join(", ")}.`,
+      `Evidencias: ${evidenceSteps.map((item) => `Paso ${getStepLabelById(item.id)}`).join(", ")}.`,
     ].join("\n");
   }
 
@@ -27465,7 +27475,7 @@ var __async = (__this, __arguments, generator) => {
   document.getElementById("closeDefectTopBtn").addEventListener("click", closeDefectReportPanel);
   document.getElementById("copyDefectBtn").addEventListener("click", async (event) => {
     const selectedSteps = getSelectedDefectSteps();
-    await copyDefectReport(defectDraftStep, selectedSteps.map((step) => `Paso ${steps.indexOf(step) + 1}`).join(", ") || defectDraftLabel, event.currentTarget, selectedSteps);
+    await copyDefectReport(defectDraftStep, selectedSteps.map((step) => `Paso ${getStepLabelById(step.id)}`).join(", ") || defectDraftLabel, event.currentTarget, selectedSteps);
     closeDefectReportPanel();
   });
   document.getElementById("copyDefectEvidenceBtn").addEventListener("click", async () => {
@@ -27527,6 +27537,45 @@ var __async = (__this, __arguments, generator) => {
     }
   });
 
+  // Un "paso" lógico puede tener varias imágenes: las tarjetas con sameAsPrevious
+  // continúan el paso de la tarjeta anterior (Paso 2.1, 2.2, ...).
+  function getStepGroupInfo(index) {
+    let group = 0;
+    let first = 0;
+    for (let i = 0; i <= index && i < steps.length; i++) {
+      if (i === 0 || !steps[i].sameAsPrevious) {
+        group++;
+        first = i;
+      }
+    }
+    let size = 0;
+    for (let i = first; i < steps.length && (i === first || steps[i].sameAsPrevious); i++) size++;
+    return { group: Math.max(group, 1), sub: index - first + 1, size, isContinuation: index > first };
+  }
+
+  function getStepLabel(index) {
+    if (index < 0 || index >= steps.length) return String(index + 1);
+    const info = getStepGroupInfo(index);
+    return info.size > 1 ? `${info.group}.${info.sub}` : String(info.group);
+  }
+
+  function getStepLabelById(stepId) {
+    return getStepLabel(steps.findIndex((item) => item.id === stepId));
+  }
+
+  function normalizeStepGroups() {
+    if (steps[0]) steps[0].sameAsPrevious = false;
+  }
+
+  function createCapturedStepRecord(dataUrl, thumbnailDataUrl, sameAsPrevious) {
+    return { id: Date.now() + Math.floor(Math.random() * 1000), dataUrl, thumbnailDataUrl, comment: "", commentPosition: "top", stepStatus: "pendiente", novedad: false, severity: null, boxes: [], pins: [], color: "#e02424", sameAsPrevious: !!sameAsPrevious && steps.length > 0 };
+  }
+
+  function getCaptureTarget() {
+    const select = document.getElementById("captureTargetSelect");
+    return select && select.value === "current" ? "current" : "new";
+  }
+
   // Toma cualquier fuente visual (el <video> de la pantalla compartida, o una
   // imagen pegada del portapapeles) y la convierte en un paso nuevo, con el
   // mismo tratamiento de resolución/calidad sin importar el origen.
@@ -27542,11 +27591,55 @@ var __async = (__this, __arguments, generator) => {
     const thumbnailDataUrl = createStepThumbnail(canvas);
     canvas.width = 0;
     canvas.height = 0;
-    const step = { id: Date.now(), dataUrl, thumbnailDataUrl, comment: "", commentPosition: "top", stepStatus: "pendiente", novedad: false, severity: null, boxes: [], pins: [], color: "#e02424" };
+    const step = createCapturedStepRecord(dataUrl, thumbnailDataUrl, getCaptureTarget() === "current");
     steps.push(step);
     addStepCard(step);
+    renumberSteps();
     maybeWarnLargeSession();
     saveStateToDB();
+  }
+
+  // Agrega otra imagen al mismo paso, justo después de la tarjeta indicada
+  async function addImageToStepFromFile(afterStep, file) {
+    if (!file || !file.type.startsWith("image/")) {
+      throw new Error("El archivo seleccionado no es una imagen.");
+    }
+    const imageUrl = URL.createObjectURL(file);
+    const image = new Image();
+    try {
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error("No se pudo leer la imagen seleccionada."));
+        image.src = imageUrl;
+      });
+      const scale = Math.min(1, 1920 / image.naturalWidth);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      const thumbnailDataUrl = createStepThumbnail(canvas);
+      canvas.width = 0;
+      canvas.height = 0;
+
+      pushUndoCheckpoint();
+      const step = createCapturedStepRecord(dataUrl, thumbnailDataUrl, true);
+      const afterIndex = steps.findIndex((item) => item.id === afterStep.id);
+      steps.push(step);
+      addStepCard(step);
+      steps.pop();
+      steps.splice(afterIndex + 1, 0, step);
+      const newCard = stepsContainer.querySelector(`.step-card[data-id="${step.id}"]`);
+      const afterCard = stepsContainer.querySelector(`.step-card[data-id="${afterStep.id}"]`);
+      if (newCard && afterCard) afterCard.insertAdjacentElement("afterend", newCard);
+      renumberSteps();
+      invalidateSavedPreview();
+      saveStateToDB();
+      announceA11y(`Imagen agregada al paso ${getStepLabelById(afterStep.id)}.`);
+    } finally {
+      URL.revokeObjectURL(imageUrl);
+      image.src = "";
+    }
   }
 
   async function replaceStepImage(step, card, file) {
@@ -28320,6 +28413,15 @@ var __async = (__this, __arguments, generator) => {
       e.preventDefault();
       captureFrame();
     }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && key === "u") {
+      if (isTypingTarget(e.target)) return;
+      e.preventDefault();
+      const select = document.getElementById("captureTargetSelect");
+      if (select) {
+        select.value = select.value === "current" ? "new" : "current";
+        showTransientStatus(select.value === "current" ? "🖼️ Las capturas se agregarán al paso actual." : "🆕 Las capturas crearán pasos nuevos.", 2200);
+      }
+    }
   }
   document.addEventListener("keydown", handleCaptureShortcut);
 
@@ -28812,7 +28914,7 @@ var __async = (__this, __arguments, generator) => {
       const stepId = String(card.dataset.id || "");
       const option = document.createElement("option");
       option.value = stepId;
-      option.textContent = "Paso " + (i + 1);
+      option.textContent = "Paso " + getStepLabel(i);
       stepSelect.appendChild(option);
     });
 
@@ -29270,6 +29372,9 @@ var __async = (__this, __arguments, generator) => {
         <span class="drag-handle" title="Arrastrar para reordenar" tabindex="0" aria-label="Mover paso con arrastre o con Alt más flechas">⠿</span>
         <span class="step-num">Paso ${idx}</span>
         <div class="step-actions">
+          <button class="reorder-btn group-toggle-btn" type="button" title="Une o separa esta imagen del paso anterior">🔗 Unir al paso anterior</button>
+          <button class="reorder-btn add-image-btn" type="button" title="Agrega otra imagen al mismo paso">➕ Imagen</button>
+          <input class="add-image-input" type="file" accept="image/*" hidden />
           <button class="reorder-btn move-up" aria-label="Subir paso" title="Subir paso">↑</button>
           <button class="reorder-btn move-down" aria-label="Bajar paso" title="Bajar paso">↓</button>
           <button class="delete-link">Eliminar</button>
@@ -29459,10 +29564,42 @@ var __async = (__this, __arguments, generator) => {
     card.querySelector(".delete-link").addEventListener("click", () => {
       pushUndoCheckpoint();
       if (editingId === step.id) editingId = null;
+      const removedIndex = steps.findIndex((s) => s.id === step.id);
+      const nextStep = steps[removedIndex + 1];
+      if (nextStep && nextStep.sameAsPrevious && !step.sameAsPrevious) nextStep.sameAsPrevious = false;
       steps = steps.filter((s) => s.id !== step.id);
       card.remove();
       renumberSteps();
       saveStateToDB();
+    });
+
+    card.querySelector(".group-toggle-btn").addEventListener("click", () => {
+      const index = steps.findIndex((s) => s.id === step.id);
+      if (index <= 0) return;
+      pushUndoCheckpoint();
+      step.sameAsPrevious = !step.sameAsPrevious;
+      invalidateSavedPreview();
+      renumberSteps();
+      saveStateToDB();
+      announceA11y(step.sameAsPrevious ? "Imagen unida al paso anterior." : "Imagen separada como paso nuevo.");
+    });
+
+    const addImageInput = card.querySelector(".add-image-input");
+    card.querySelector(".add-image-btn").addEventListener("click", () => addImageInput.click());
+    addImageInput.addEventListener("change", async () => {
+      const files = [...addImageInput.files];
+      addImageInput.value = "";
+      let anchor = step;
+      for (const file of files) {
+        try {
+          const before = steps.length;
+          await addImageToStepFromFile(anchor, file);
+          if (steps.length > before) anchor = steps[steps.findIndex((s) => s.id === anchor.id) + 1] || anchor;
+        } catch (error) {
+          await showAppAlert(error.message || "No se pudo agregar la imagen.", addImageInput);
+          break;
+        }
+      }
     });
 
     const commentBlock = card.querySelector(".comment-block");
@@ -29626,7 +29763,7 @@ var __async = (__this, __arguments, generator) => {
     });
     card.querySelector(".copy-image-btn").addEventListener("click", async () => {
       const idx = steps.findIndex((s) => s.id === step.id);
-      await copyStepEvidenceToClipboard(step, `Paso ${idx + 1}`);
+      await copyStepEvidenceToClipboard(step, `Paso ${getStepLabelById(step.id)}`);
     });
     card.querySelector(".download-image-btn").addEventListener("click", () => {
       const src = step.renderedDataUrl || step.dataUrl;
@@ -29635,7 +29772,7 @@ var __async = (__this, __arguments, generator) => {
     });
     card.querySelector(".defect-btn").addEventListener("click", async (event) => {
       const idx = steps.findIndex((s) => s.id === step.id);
-      openDefectReportPanel(step, `Paso ${idx + 1}`);
+      openDefectReportPanel(step, `Paso ${getStepLabelById(step.id)}`);
     });
     card.querySelector(".mark-btn").addEventListener("click", () => {
       if (editingId === step.id) {
@@ -29699,8 +29836,17 @@ var __async = (__this, __arguments, generator) => {
       applyStepsFilter();
       return;
     }
+    normalizeStepGroups();
     stepsContainer.querySelectorAll(".step-card").forEach((card, i) => {
-      card.querySelector(".step-num").textContent = "Paso " + (i + 1);
+      const info = getStepGroupInfo(i);
+      card.querySelector(".step-num").textContent = "Paso " + getStepLabel(i) + (info.size > 1 ? ` (imagen ${info.sub} de ${info.size})` : "");
+      card.classList.toggle("step-group-cont", info.isContinuation);
+      const toggle = card.querySelector(".group-toggle-btn");
+      if (toggle) {
+        toggle.style.display = i === 0 ? "none" : "";
+        toggle.textContent = info.isContinuation ? "✂️ Separar paso" : "🔗 Unir al paso anterior";
+        toggle.setAttribute("aria-pressed", info.isContinuation ? "true" : "false");
+      }
     });
     refreshQuickCommentTargets();
     applyStepsFilter();
@@ -30135,7 +30281,7 @@ var __async = (__this, __arguments, generator) => {
       ? `<div style="margin:12px 0;border:1px solid #dce6f1;background:#f7fbff;padding:10px 12px;border-radius:8px;"><strong>Notas pendientes:</strong><ul style="margin:6px 0 0 18px;padding:0;">${documentNotes.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul></div>`
       : "";
     const summaryListHtml = summary.stepSummaries
-      .map((item) => `<li><b>Paso ${item.index}:</b> ${getStepStatusLabel(item.status)} • ${item.severityLabel} • ${escapeHtml(item.comment)}</li>`)
+      .map((item) => `<li><b>Paso ${getStepLabel(item.index - 1)}:</b> ${getStepStatusLabel(item.status)} • ${item.severityLabel} • ${escapeHtml(item.comment)}</li>`)
       .join("");
     function buildAnchoredNotesHtml(pins) {
       if (!Array.isArray(pins) || pins.length === 0) return "";
@@ -30171,7 +30317,7 @@ var __async = (__this, __arguments, generator) => {
           : `${imageHtml}${commentHtml}`;
         return `
         <div style="margin-bottom:20px;">
-          <p style="font-weight:bold;">Paso ${i + 1}</p>
+          <p style="font-weight:bold;">Paso ${getStepLabel(i)}</p>
           ${content}
         </div>`;
       })
@@ -30494,7 +30640,7 @@ var __async = (__this, __arguments, generator) => {
     evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Pasos con novedad: ${summary.novedadCount}`, font: "Arial", size: 20 })] }));
     evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Estados: Pendiente ${summary.statusCounts.pendiente} • Aprobado ${summary.statusCounts.aprobado} • Falló ${summary.statusCounts.fallo} • Observado ${summary.statusCounts.observado}`, font: "Arial", size: 20 })] }));
     summary.stepSummaries.forEach((item) => {
-      evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Paso ${item.index}: ${getStepStatusLabel(item.status)} • ${item.severityLabel} • ${item.comment}`, font: "Arial", size: 18 })] }));
+      evidenceParas.push(new Paragraph({ children: [new TextRun({ text: `Paso ${getStepLabel(item.index - 1)}: ${getStepStatusLabel(item.status)} • ${item.severityLabel} • ${item.comment}`, font: "Arial", size: 18 })] }));
     });
     evidenceParas.push(new Paragraph(""));
 
@@ -30509,7 +30655,7 @@ var __async = (__this, __arguments, generator) => {
         const pinNoteParagraphs = (Array.isArray(s.pins) ? s.pins : []).map((pin, pinIndex) => new Paragraph({
           children: [new TextRun({ text: `Nota anclada ${pinIndex + 1}: ${pin.text || "Sin comentario"}`, font: "Arial", size: 18 })],
         }));
-        evidenceParas.push(new Paragraph({ children: [panamLabelRun("Paso " + (i + 1))] }));
+        evidenceParas.push(new Paragraph({ children: [panamLabelRun("Paso " + getStepLabel(i))] }));
         if ((s.commentPosition || "top") === "top") evidenceParas.push(commentParagraph);
         evidenceParas.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new ImageRun({ data: evidenceImage.data, transformation: fitted, type: "jpg" })] }));
         if ((s.commentPosition || "top") !== "top") evidenceParas.push(commentParagraph);
@@ -31346,6 +31492,7 @@ var __async = (__this, __arguments, generator) => {
           boxes: step.boxes,
           color: step.color,
           pins: Array.isArray(step.pins) ? step.pins : [],
+          sameAsPrevious: !!step.sameAsPrevious,
         })),
         savedAt: Date.now(),
       };
