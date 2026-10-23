@@ -9,6 +9,7 @@ const {
   CASE_TEMPLATES,
   getCaseTemplate,
   buildExecutiveSummary,
+  getGroupedStepLabel,
   getClipboardFallbackMessage,
   dualCaseRecord,
   buildCaseRecordTitle,
@@ -299,4 +300,10 @@ test('buildAutoIssueSnapshot skips cases without failures', () => {
     caseId: 'TC-14',
     steps: [{ stepStatus: 'aprobado' }],
   }), null);
+});
+
+test('getGroupedStepLabel numbers grouped images and auto issue uses it', () => {
+  const steps = [{}, {}, { sameAsPrevious: true }, { sameAsPrevious: true, stepStatus: 'fallo', comment: 'x' }];
+  assert.deepEqual(steps.map((_, i) => getGroupedStepLabel(steps, i)), ['1', '2.1', '2.2', '2.3']);
+  assert.match(buildAutoIssueSnapshot({ caseId: 'TC-1', steps }).observations || buildAutoIssueSnapshot({ caseId: 'TC-1', steps }).observation, /Paso 2\.3/);
 });

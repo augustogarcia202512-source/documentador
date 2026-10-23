@@ -363,6 +363,22 @@
     });
   }
 
+  function getGroupedStepLabel(steps, index) {
+    const list = Array.isArray(steps) ? steps : [];
+    if (index < 0 || index >= list.length) return String(index + 1);
+    let group = 0;
+    let first = 0;
+    for (let i = 0; i <= index; i++) {
+      if (i === 0 || !(list[i] && list[i].sameAsPrevious)) {
+        group++;
+        first = i;
+      }
+    }
+    let size = 0;
+    for (let i = first; i < list.length && (i === first || (list[i] && list[i].sameAsPrevious)); i++) size++;
+    return size > 1 ? `${group}.${index - first + 1}` : String(group);
+  }
+
   function buildAutoIssueSnapshot(caseRecord = {}, forceFailed = false, fallbackNote = "") {
     const steps = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
     const issueSteps = steps
@@ -392,7 +408,7 @@
         stepSeverity ? `Severidad ${severityLabels[stepSeverity]}` : "",
       ].filter(Boolean).join(" · ");
       const fallback = status === "fallo" ? "Falló sin observación registrada." : "Novedad sin observación registrada.";
-      return `Paso ${index + 1} (${metadata}): ${String(step.comment || "").trim() || fallback}`;
+      return `Paso ${getGroupedStepLabel(steps, index)} (${metadata}): ${String(step.comment || "").trim() || fallback}`;
     });
     if (!observations.length) {
       observations.push(String(fallbackNote || "").trim() || "El caso fue marcado como Failed durante la ejecución QA.");
@@ -445,6 +461,7 @@
     parseQaCaseIdAndDescription,
     buildIssueLogEntries,
     buildAutoIssueSnapshot,
+    getGroupedStepLabel,
     getStepSeverity,
   };
 

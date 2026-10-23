@@ -26340,7 +26340,7 @@ var __async = (__this, __arguments, generator) => {
         const metadata = [statusLabels[status], stepSeverity ? `Severidad ${severityLabels[stepSeverity]}` : ""]
           .filter(Boolean).join(" · ");
         const fallback = status === "fallo" ? "Falló sin observación registrada." : "Novedad sin observación registrada.";
-        return `Paso ${index + 1} (${metadata}): ${String(step.comment || "").trim() || fallback}`;
+        return `Paso ${caseUtils.getGroupedStepLabel ? caseUtils.getGroupedStepLabel(caseRecord.steps, index) : index + 1} (${metadata}): ${String(step.comment || "").trim() || fallback}`;
       });
       if (!observations.length) observations.push(String(fallbackNote || "").trim() || "El caso fue marcado como Failed durante la ejecución QA.");
       else if (String(fallbackNote || "").trim()) observations.push(`Nota de ejecución: ${String(fallbackNote).trim()}`);
@@ -34490,6 +34490,8 @@ var __async = (__this, __arguments, generator) => {
       return;
     }
 
+    const noveltyStepLabel = (record, index) => caseUtils.getGroupedStepLabel
+      ? caseUtils.getGroupedStepLabel(record.steps, index) : String(index + 1);
     const stepStatusLabels = {
       aprobado: "Aprobado",
       fallo: "Falló",
@@ -34528,11 +34530,11 @@ var __async = (__this, __arguments, generator) => {
           <div class="dashboard-novelty-content">
             <div class="dashboard-novelty-meta"><span class="dashboard-novelty-badge">${severity.charAt(0).toUpperCase()}${severity.slice(1)}</span>
               <span class="dashboard-novelty-status">${stepStatusLabels[status] || "Pendiente"}</span></div>
-            <div class="dashboard-novelty-case">Paso ${index + 1}</div>
+            <div class="dashboard-novelty-case">Paso ${noveltyStepLabel(caseRecord, index)}</div>
             <div class="dashboard-novelty-comment">${escapeHtml(comment)}</div>
             <button class="dashboard-novelty-open" type="button" data-novelty-open="${noveltyIndex}">Abrir paso</button>
           </div>
-          ${image ? `<button class="dashboard-novelty-image" type="button" data-novelty-image="${noveltyIndex}" aria-label="Ampliar evidencia del paso ${index + 1}">
+          ${image ? `<button class="dashboard-novelty-image" type="button" data-novelty-image="${noveltyIndex}" aria-label="Ampliar evidencia del paso ${noveltyStepLabel(caseRecord, index)}">
             <img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" /></button>` : ""}
         </div>`;
       }).join("");
