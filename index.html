@@ -536,53 +536,6 @@
     border: 0;
   }
 
-  body.theme-corporate {
-    --bg: #0f1822;
-    --bg-soft: #162332;
-    --panel: rgba(24, 35, 49, 0.9);
-    --panel-2: #213042;
-    --panel-3: #2a3c52;
-    --line: #3a4f67;
-    --line-soft: #2a3c50;
-    --amber: #d79f50;
-    --amber-dim: rgba(215, 159, 80, 0.18);
-    --teal: #5cb9c3;
-    --focus-ring: #9dd7ff;
-  }
-  body.theme-corporate {
-    background:
-      linear-gradient(180deg, #162332, #0f1822);
-  }
-
-  body.theme-minimal {
-    --bg: #121317;
-    --bg-soft: #171a20;
-    --panel: rgba(31, 34, 40, 0.9);
-    --panel-2: #262a31;
-    --panel-3: #2f343d;
-    --line: #3a3f49;
-    --line-soft: #2a2f37;
-    --amber: #c7d2de;
-    --amber-dim: rgba(199, 210, 222, 0.18);
-    --teal: #8cb5c0;
-    --red: #dd7a7a;
-    --red-dim: rgba(221, 122, 122, 0.14);
-    --focus-ring: #b8d5e4;
-    --shadow-soft: 0 10px 24px rgba(8, 10, 13, 0.2);
-  }
-  body.theme-minimal {
-    background: linear-gradient(180deg, #171a20, #121317);
-  }
-  body.theme-minimal .btn-primary {
-    background: linear-gradient(180deg, #d7dee6, #b8c2ce);
-    color: #11151a;
-    border-color: rgba(255,255,255,0.25);
-  }
-  body.theme-minimal .card::before,
-  body.theme-corporate .card::before {
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-  }
-
   body.presentation-mode {
     max-width: 1040px;
     line-height: 1.6;
@@ -2935,11 +2888,7 @@
     <button class="btn-secondary" id="backToDashboardBtn" type="button" style="margin-left:auto;">← Panel</button>
   </div>
   <div class="theme-switch" role="group" aria-label="Estilo visual">
-    <span class="theme-label">Estilo</span>
-    <button class="theme-btn active" data-theme="aurora" aria-pressed="true">Aurora</button>
-    <button class="theme-btn" data-theme="corporate" aria-pressed="false">Corporativo</button>
-    <button class="theme-btn" data-theme="minimal" aria-pressed="false">Minimal</button>
-    <span class="theme-divider" aria-hidden="true"></span>
+    <span class="theme-label">Vista</span>
     <button class="theme-btn presentation-btn" id="presentationModeBtn" aria-pressed="false" title="Alternar modo presentación (Alt+Shift+P)">Presentación: Off</button>
     <button class="theme-btn compact-btn" id="presentationCompactBtn" aria-pressed="false" title="Alternar vista compacta (Alt+Shift+C)" disabled>Compacta: Off</button>
   </div>
@@ -28683,12 +28632,10 @@ var __async = (__this, __arguments, generator) => {
     return [...list].sort((a, b) => (SEVERITY_RANK[a.severity] ?? 9) - (SEVERITY_RANK[b.severity] ?? 9));
   }
 
-  const VISUAL_THEME_KEY = "visualTheme";
   const DARK_MODE_KEY = "darkMode";
   const PRESENTATION_MODE_KEY = "presentationMode";
   const PRESENTATION_COMPACT_KEY = "presentationCompact";
   const CAPTURE_PAUSED_KEY = "capturePaused";
-  const THEMES = ["aurora", "corporate", "minimal"];
 
   function setDarkMode(enabled, options) {
     options = options || {};
@@ -28725,33 +28672,6 @@ var __async = (__this, __arguments, generator) => {
         localStorage.setItem(DARK_MODE_KEY, next ? "1" : "0");
       });
     }
-  }
-
-  function applyVisualTheme(theme) {
-    const body = document.body;
-    const nextTheme = THEMES.includes(theme) ? theme : "aurora";
-    body.classList.remove("theme-corporate", "theme-minimal");
-    if (nextTheme === "corporate") body.classList.add("theme-corporate");
-    if (nextTheme === "minimal") body.classList.add("theme-minimal");
-
-    document.querySelectorAll(".theme-btn[data-theme]").forEach((btn) => {
-      const selected = btn.dataset.theme === nextTheme;
-      btn.classList.toggle("active", selected);
-      btn.setAttribute("aria-pressed", selected ? "true" : "false");
-    });
-  }
-
-  function initVisualThemeSwitcher() {
-    const stored = localStorage.getItem(VISUAL_THEME_KEY) || "aurora";
-    applyVisualTheme(stored);
-
-    document.querySelectorAll(".theme-btn[data-theme]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const theme = btn.dataset.theme || "aurora";
-        applyVisualTheme(theme);
-        localStorage.setItem(VISUAL_THEME_KEY, theme);
-      });
-    });
   }
 
   function setPresentationCompact(enabled, options) {
@@ -35538,7 +35458,6 @@ var __async = (__this, __arguments, generator) => {
     }
   });
 
-  initVisualThemeSwitcher();
   initDarkModeToggle();
   initPresentationModeToggle();
   initCompactQuickbar();
