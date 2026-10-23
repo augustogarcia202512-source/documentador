@@ -29607,6 +29607,7 @@ var __async = (__this, __arguments, generator) => {
       autosave();
       applyStepsFilter();
       renderDashboardNovedades(getActiveProjectCases());
+      scheduleLiveIssueSync();
     });
     initDictationControl(
       stepCommentInput,
@@ -29620,6 +29621,7 @@ var __async = (__this, __arguments, generator) => {
       saveStateToDB();
       applyStepsFilter();
       renderDashboardNovedades(getActiveProjectCases());
+      scheduleLiveIssueSync();
     });
     card.querySelectorAll(".sev-btn").forEach((sb) => {
       sb.addEventListener("click", () => {
@@ -29636,6 +29638,7 @@ var __async = (__this, __arguments, generator) => {
         saveStateToDB();
         applyStepsFilter();
         renderDashboardNovedades(getActiveProjectCases());
+        scheduleLiveIssueSync();
       });
     });
     card.querySelectorAll(".color-swatch").forEach((sw) => {
@@ -35341,8 +35344,84 @@ var __async = (__this, __arguments, generator) => {
     }
   }
 
-  document.getElementById("addToBatchBtn").addEventListener("click", async () => {
-    syncStepInputsToData();
+  function buildCurrentCaseRecord(normalizedCase) {
+    return {
+      qaId: editingCaseIndex !== null && savedCases[editingCaseIndex]
+        ? savedCases[editingCaseIndex].qaId || createQaCaseId()
+        : createQaCaseId(),
+      projectId: getSelectedProjectId(),
+      ...(currentSuiteId ? { suiteId: currentSuiteId } : {}),
+      caseId: normalizedCase.caseId,
+      description: normalizedCase.description,
+      team: document.getElementById("team").value,
+      tester: document.getElementById("tester").value,
+      details: document.getElementById("caseDetails").value,
+      templateKey: getSelectedTemplateKey(),
+      qaContext: { ...savedDefectContext },
+      previewEditedHtml: savedDocumentPreviewHtml || previewEditedHtml || "",
+      documentNotes: getDocumentNotesValue(),
+      fecha: new Date().toLocaleDateString("es-CO"),
+      savedAt: Date.now(),
+      steps: steps.slice(),
+    };
+  }
+
+  // Refleja en línea las novedades del caso en curso en la bitácora de issues,
+  // guardando el caso en el lote si todavía no existe.
+  let liveIssueTimer = null;
+  let liveIssueRunning = false;
+  function scheduleLiveIssueSync() {
+    clearTimeout(liveIssueTimer);
+    liveIssueTimer = setTimeout(syncLiveIssueForCurrentCase, 700);
+  }
+
+  async function syncLiveIssueForCurrentCase() {
+    if (liveIssueRunning) {
+      scheduleLiveIssueSync();
+      return;
+    }
+    if (!document.body.classList.contains("documenter-view")) return;
+    const hasIssueStep = steps.some((step) =>
+      normalizeStepStatus(step.stepStatus || step.status) === "fallo" || getStepSeverity(step));
+    if (!hasIssueStep) return;
+    const idInput = document.getElementById("caseId");
+    const descriptionInput = document.getElementById("description");
+    if (!idInput || !String(idInput.value || "").trim()) return;
+    liveIssueRunning = true;
+    try {
+      const normalizedCase = normalizeCaseIdInputValue(idInput.value, descriptionInput ? descriptionInput.value : "");
+      if (!normalizedCase.caseId) return;
+      const record = buildCurrentCaseRecord(normalizedCase);
+      let savedCase;
+      if (editingCaseIndex !== null && savedCases[editingCaseIndex]) {
+        savedCases = savedCases.slice();
+        savedCases[editingCaseIndex] = { ...savedCases[editingCaseIndex], ...record };
+        savedCase = savedCases[editingCaseIndex];
+      } else {
+        savedCases = [...savedCases, record];
+        editingCaseIndex = savedCases.length - 1;
+        savedCase = record;
+        const saveBtn = document.getElementById("addToBatchBtn");
+        if (saveBtn) saveBtn.textContent = "💾 Guardar cambios";
+        const picker = document.getElementById("documenterCasePicker");
+        if (picker && [...picker.options].some((option) => option.value === `case:${editingCaseIndex}`)) {
+          picker.value = `case:${editingCaseIndex}`;
+        }
+      }
+      const failed = getCaseExecutionStatus(savedCase) === "failed";
+      syncAutoIssueForCase(savedCase, failed, failed ? getLatestQaExecutionNote(savedCase) : "");
+      if (await saveCasesAndProjectsToDB()) {
+        renderCasesList();
+        renderDashboard();
+      }
+    } catch (error) {
+      console.error("No se pudo sincronizar el issue en línea:", error);
+    } finally {
+      liveIssueRunning = false;
+    }
+  }
+
+  document.getElementById("addToBatchBtn").addEventListener("click", async () => {    syncStepInputsToData();
     if (document.getElementById("exportPreview")) {
       syncEditedPreviewToCaseFields();
     }
@@ -35362,25 +35441,8 @@ var __async = (__this, __arguments, generator) => {
       );
       if (!proceed) return;
     }
-    const updatedCase = {
-      qaId: editingCaseIndex !== null && savedCases[editingCaseIndex]
-        ? savedCases[editingCaseIndex].qaId || createQaCaseId()
-        : createQaCaseId(),
-      projectId: getSelectedProjectId(),
-      ...(currentSuiteId ? { suiteId: currentSuiteId } : {}),
-      caseId,
-      description: normalizedCase.description,
-      team: document.getElementById("team").value,
-      tester: document.getElementById("tester").value,
-      details: document.getElementById("caseDetails").value,
-      templateKey: getSelectedTemplateKey(),
-      qaContext: { ...savedDefectContext },
-      previewEditedHtml: savedDocumentPreviewHtml || previewEditedHtml || "",
-      documentNotes: getDocumentNotesValue(),
-      fecha: new Date().toLocaleDateString("es-CO"),
-      savedAt: Date.now(),
-      steps: steps.slice(),
-    };
+    const updatedCase = buildCurrentCaseRecord(normalizedCase);
+
     const previousCases = savedCases;
     const previousIssues = projects.find((item) => item.id === updatedCase.projectId)?.issues?.slice();
     const project = projects.find((item) => item.id === updatedCase.projectId);
