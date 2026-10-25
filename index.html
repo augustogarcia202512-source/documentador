@@ -26319,46 +26319,6 @@ var __async = (__this, __arguments, generator) => {
         return relevantSteps.length ? [{ caseRecord, steps: relevantSteps }] : [];
       })
     );
-    const buildAutoIssueSnapshot = caseUtils.buildAutoIssueSnapshot || ((caseRecord = {}, forceFailed = false, fallbackNote = "") => {
-      const issueSteps = (Array.isArray(caseRecord.steps) ? caseRecord.steps : [])
-        .map((step, index) => ({ step, index }))
-        .filter(({ step }) => step && (
-          normalizeStepStatus(step.stepStatus || step.status) === "fallo" ||
-          getStepSeverity(step)
-        ));
-      const failedSteps = issueSteps.filter(({ step }) => normalizeStepStatus(step.stepStatus || step.status) === "fallo");
-      if (!issueSteps.length && !forceFailed) return null;
-      const severityRank = { alta: 3, media: 2, baja: 1 };
-      const highestSeverity = issueSteps.map(({ step }) => getStepSeverity(step))
-        .filter(Boolean)
-        .sort((left, right) => severityRank[right] - severityRank[left])[0];
-      const statusLabels = { pendiente: "Pendiente", aprobado: "Aprobado", fallo: "Fallido", observado: "Observado" };
-      const severityLabels = { alta: "Alta", media: "Media", baja: "Baja" };
-      const observations = issueSteps.map(({ step, index }) => {
-        const status = normalizeStepStatus(step.stepStatus || step.status);
-        const stepSeverity = getStepSeverity(step);
-        const metadata = [statusLabels[status], stepSeverity ? `Severidad ${severityLabels[stepSeverity]}` : ""]
-          .filter(Boolean).join(" · ");
-        const fallback = status === "fallo" ? "Falló sin observación registrada." : "Novedad sin observación registrada.";
-        return `Paso ${caseUtils.getGroupedStepLabel ? caseUtils.getGroupedStepLabel(caseRecord.steps, index) : index + 1} (${metadata}): ${String(step.comment || "").trim() || fallback}`;
-      });
-      if (!observations.length) observations.push(String(fallbackNote || "").trim() || "El caso fue marcado como Failed durante la ejecución QA.");
-      else if (String(fallbackNote || "").trim()) observations.push(`Nota de ejecución: ${String(fallbackNote).trim()}`);
-      const severity = highestSeverity === "alta" ? "High" : highestSeverity === "baja" ? "Low" : "Medium";
-      const issueCaseText = parseQaCaseIdAndDescription(caseRecord.caseId);
-      const issueTestId = issueCaseText.caseId || String(caseRecord.caseId || "").trim();
-      const issueDescription = String(caseRecord.description || issueCaseText.description || "")
-        .trim().replace(/^[-–—:|]+\s*/, "");
-      return {
-        testId: issueTestId || "Caso sin ID",
-        formName: issueDescription || "Caso de prueba",
-        observation: observations.join("\n"),
-        qaResult: forceFailed || failedSteps.length ? "Failed" : "Novedad",
-        evidenceStepIds: issueSteps.map(({ step }) => step.id).filter((id) => id !== undefined && id !== null).map(String),
-        severity,
-        priority: severity,
-      };
-    });
     const parseQaCaseIdAndDescription = caseUtils.parseQaCaseIdAndDescription || ((input) => {
       const match = String(input || "").trim().match(/^(\S+?)(?:\s+[-–—:|]+\s+|\s+)(.+?)\s*$/);
       return match
@@ -29497,6 +29457,7 @@ var __async = (__this, __arguments, generator) => {
       card.remove();
       renumberSteps();
       saveStateToDB();
+      scheduleLiveIssueSync();
     });
 
     card.querySelector(".group-toggle-btn").addEventListener("click", () => {
@@ -29507,6 +29468,7 @@ var __async = (__this, __arguments, generator) => {
       invalidateSavedPreview();
       renumberSteps();
       saveStateToDB();
+      scheduleLiveIssueSync();
       announceA11y(step.sameAsPrevious ? "Imagen unida al paso anterior." : "Imagen separada como paso nuevo.");
     });
 
@@ -31564,55 +31526,85 @@ var __async = (__this, __arguments, generator) => {
     return savedCases.filter((item) => (item.projectId || projects[0]?.id) === activeProjectId);
   }
 
+  // Mantiene un issue automático por cada novedad (paso lógico) del caso. Devuelve true si algo cambió.
   function syncAutoIssueForCase(caseRecord, forceFailed = false, fallbackNote = "") {
     const projectId = caseRecord.projectId || projects[0]?.id;
     const project = projects.find((item) => item.id === projectId);
     if (!project) return false;
-    const snapshot = buildAutoIssueSnapshot(caseRecord, forceFailed, fallbackNote);
-    if (!snapshot) return false;
+    const snapshots = caseUtils.buildAutoIssueSnapshots(caseRecord, forceFailed, fallbackNote);
     if (!Array.isArray(project.issues)) project.issues = [];
-    const issueIndex = project.issues.findIndex((item) =>
-      item.source === "auto" && item.caseQaId === caseRecord.qaId
-    );
+    const isOwn = (item) => item.source === "auto" && item.caseQaId === caseRecord.qaId;
+    let issues = project.issues.slice();
+    let changedAny = false;
     const timestamp = Date.now();
-    if (issueIndex < 0) {
-      project.issues.push({
-        id: createQaIssueId(),
-        source: "auto",
-        caseQaId: caseRecord.qaId,
-        suiteId: caseRecord.suiteId || "",
-        ...snapshot,
-        status: "Open",
-        createdAt: timestamp,
-        closedAt: null,
-        lastValidationAt: timestamp,
-        statusHistory: [{ status: "Open", at: timestamp }],
-      });
-      return true;
+
+    // Migración: el issue único anterior (sin stepKey) pasa a ser la primera novedad.
+    const legacyIndex = issues.findIndex((item) => isOwn(item) && !item.stepKey);
+    if (legacyIndex >= 0 && snapshots.length) {
+      issues[legacyIndex] = {
+        ...issues[legacyIndex],
+        stepKey: snapshots[0].stepKey,
+        ...(snapshots[0].kind === "step" ? { noveltyNo: 1 } : {}),
+      };
+      changedAny = true;
     }
 
-    const previous = project.issues[issueIndex];
-    const next = {
-      ...previous,
-      caseQaId: caseRecord.qaId,
-      suiteId: caseRecord.suiteId || "",
-      testId: snapshot.testId,
-      formName: snapshot.formName,
-      qaResult: snapshot.qaResult,
-      evidenceStepIds: snapshot.evidenceStepIds,
-    };
-    if (!previous.observationEdited) next.observation = snapshot.observation;
-    if (!previous.severityEdited) next.severity = snapshot.severity;
-    if (!previous.priorityEdited) next.priority = snapshot.priority;
-    const changed = ["suiteId", "testId", "formName", "qaResult", "observation", "severity", "priority"]
-      .some((key) => JSON.stringify(previous[key]) !== JSON.stringify(next[key])) ||
-      JSON.stringify(previous.evidenceStepIds || []) !== JSON.stringify(next.evidenceStepIds);
-    if (!changed) return false;
-    next.lastValidationAt = timestamp;
-    project.issues[issueIndex] = next;
-    return true;
-  }
+    snapshots.forEach((snapshot) => {
+      const issueIndex = issues.findIndex((item) => isOwn(item) && item.stepKey === snapshot.stepKey);
+      if (issueIndex < 0) {
+        const noveltyNo = snapshot.kind === "step"
+          ? issues.filter(isOwn).reduce((max, item) => Math.max(max, Number(item.noveltyNo) || 0), 0) + 1
+          : 0;
+        issues.push({
+          id: createQaIssueId(),
+          source: "auto",
+          caseQaId: caseRecord.qaId,
+          stepKey: snapshot.stepKey,
+          ...(noveltyNo ? { noveltyNo } : {}),
+          suiteId: caseRecord.suiteId || "",
+          ...snapshot,
+          testId: noveltyNo ? `${snapshot.baseTestId}-N${noveltyNo}` : snapshot.baseTestId,
+          status: "Open",
+          createdAt: timestamp,
+          closedAt: null,
+          lastValidationAt: timestamp,
+          statusHistory: [{ status: "Open", at: timestamp }],
+        });
+        changedAny = true;
+        return;
+      }
+      const previous = issues[issueIndex];
+      const next = {
+        ...previous,
+        caseQaId: caseRecord.qaId,
+        suiteId: caseRecord.suiteId || "",
+        testId: previous.noveltyNo ? `${snapshot.baseTestId}-N${previous.noveltyNo}` : snapshot.baseTestId,
+        formName: snapshot.formName,
+        qaResult: snapshot.qaResult,
+        evidenceStepIds: snapshot.evidenceStepIds,
+      };
+      if (!previous.observationEdited) next.observation = snapshot.observation;
+      if (!previous.severityEdited) next.severity = snapshot.severity;
+      if (!previous.priorityEdited) next.priority = snapshot.priority;
+      const changed = ["suiteId", "testId", "formName", "qaResult", "observation", "severity", "priority"]
+        .some((key) => JSON.stringify(previous[key]) !== JSON.stringify(next[key])) ||
+        JSON.stringify(previous.evidenceStepIds || []) !== JSON.stringify(next.evidenceStepIds);
+      if (!changed) return;
+      next.lastValidationAt = timestamp;
+      issues[issueIndex] = next;
+      changedAny = true;
+    });
 
+    // Novedades retiradas: se eliminan si siguen en estado Open.
+    const activeKeys = new Set(snapshots.map((snapshot) => snapshot.stepKey));
+    const remaining = issues.filter((item) => !(isOwn(item) && item.status === "Open" && !activeKeys.has(item.stepKey)));
+    if (remaining.length !== issues.length) {
+      issues = remaining;
+      changedAny = true;
+    }
+    if (changedAny) project.issues = issues;
+    return changedAny;
+  }
   function formatDashboardIssueDate(timestamp) {
     const value = Number(timestamp);
     return Number.isFinite(value) && value > 0 ? new Date(value).toLocaleDateString("es-CO") : "—";
@@ -35383,7 +35375,11 @@ var __async = (__this, __arguments, generator) => {
     if (!document.body.classList.contains("documenter-view")) return;
     const hasIssueStep = steps.some((step) =>
       normalizeStepStatus(step.stepStatus || step.status) === "fallo" || getStepSeverity(step));
-    if (!hasIssueStep) return;
+    const currentQaId = editingCaseIndex !== null ? savedCases[editingCaseIndex]?.qaId : null;
+    const hasAutoIssues = !!currentQaId && projects.some((project) =>
+      (Array.isArray(project.issues) ? project.issues : []).some((issue) =>
+        issue.source === "auto" && issue.caseQaId === currentQaId));
+    if (!hasIssueStep && !hasAutoIssues) return;
     const idInput = document.getElementById("caseId");
     const descriptionInput = document.getElementById("description");
     if (!idInput || !String(idInput.value || "").trim()) return;

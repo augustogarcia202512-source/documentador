@@ -379,6 +379,81 @@
     return size > 1 ? `${group}.${index - first + 1}` : String(group);
   }
 
+  // Una novedad es un paso lógico (con sus imágenes agrupadas) fallido o con severidad.
+  function buildAutoIssueSnapshots(caseRecord = {}, forceFailed = false, fallbackNote = "") {
+    const steps = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
+    const statusLabels = { pendiente: "Pendiente", aprobado: "Aprobado", fallo: "Fallido", observado: "Observado" };
+    const severityLabels = { alta: "Alta", media: "Media", baja: "Baja" };
+    const severityRank = { alta: 3, media: 2, baja: 1 };
+    const parsedCase = parseQaCaseIdAndDescription(caseRecord.caseId);
+    const baseTestId = parsedCase.caseId || String(caseRecord.caseId || "").trim() || "Caso sin ID";
+    const formName = String(caseRecord.description || parsedCase.description || "")
+      .trim().replace(/^[-–—:|]+\s*/, "") || "Caso de prueba";
+    const note = String(fallbackNote || "").trim();
+
+    const groups = [];
+    steps.forEach((step, index) => {
+      if (!step) return;
+      if (index === 0 || !step.sameAsPrevious || !groups.length) groups.push([]);
+      groups[groups.length - 1].push({ step, index });
+    });
+
+    const snapshots = groups.flatMap((group) => {
+      const issueItems = group.filter(({ step }) =>
+        normalizeStepStatus(step.stepStatus || step.status) === "fallo" || getStepSeverity(step)
+      );
+      if (!issueItems.length) return [];
+      const highest = issueItems
+        .map(({ step }) => getStepSeverity(step))
+        .filter(Boolean)
+        .sort((left, right) => severityRank[right] - severityRank[left])[0];
+      const severity = highest === "alta" ? "High" : highest === "baja" ? "Low" : "Medium";
+      const observation = issueItems.map(({ step, index }) => {
+        const status = normalizeStepStatus(step.stepStatus || step.status);
+        const stepSeverity = getStepSeverity(step);
+        const metadata = [statusLabels[status], stepSeverity ? `Severidad ${severityLabels[stepSeverity]}` : ""]
+          .filter(Boolean).join(" · ");
+        const fallback = status === "fallo" ? "Falló sin observación registrada." : "Novedad sin observación registrada.";
+        return `Paso ${getGroupedStepLabel(steps, index)} (${metadata}): ${String(step.comment || "").trim() || fallback}`;
+      }).join("\n");
+      const hasFailure = issueItems.some(({ step }) => normalizeStepStatus(step.stepStatus || step.status) === "fallo");
+      const firstId = group[0].step.id;
+      return [{
+        kind: "step",
+        stepKey: firstId === undefined || firstId === null ? `idx-${group[0].index}` : String(firstId),
+        baseTestId,
+        testId: baseTestId,
+        formName,
+        observation,
+        qaResult: forceFailed || hasFailure ? "Failed" : "Novedad",
+        evidenceStepIds: group
+          .map(({ step }) => step.id)
+          .filter((stepId) => stepId !== undefined && stepId !== null)
+          .map(String),
+        severity,
+        priority: severity,
+      }];
+    });
+
+    if (snapshots.length) {
+      if (note) snapshots[0].observation += `\nNota de ejecución: ${note}`;
+      return snapshots;
+    }
+    if (!forceFailed) return [];
+    return [{
+      kind: "case",
+      stepKey: "case",
+      baseTestId,
+      testId: baseTestId,
+      formName,
+      observation: note || "El caso fue marcado como Failed durante la ejecución QA.",
+      qaResult: "Failed",
+      evidenceStepIds: [],
+      severity: "Medium",
+      priority: "Medium",
+    }];
+  }
+
   function buildAutoIssueSnapshot(caseRecord = {}, forceFailed = false, fallbackNote = "") {
     const steps = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
     const issueSteps = steps
@@ -461,6 +536,7 @@
     parseQaCaseIdAndDescription,
     buildIssueLogEntries,
     buildAutoIssueSnapshot,
+    buildAutoIssueSnapshots,
     getGroupedStepLabel,
     getStepSeverity,
   };

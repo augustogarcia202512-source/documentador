@@ -10,6 +10,7 @@ const {
   getCaseTemplate,
   buildExecutiveSummary,
   getGroupedStepLabel,
+  buildAutoIssueSnapshots,
   getClipboardFallbackMessage,
   dualCaseRecord,
   buildCaseRecordTitle,
@@ -306,4 +307,28 @@ test('getGroupedStepLabel numbers grouped images and auto issue uses it', () => 
   const steps = [{}, {}, { sameAsPrevious: true }, { sameAsPrevious: true, stepStatus: 'fallo', comment: 'x' }];
   assert.deepEqual(steps.map((_, i) => getGroupedStepLabel(steps, i)), ['1', '2.1', '2.2', '2.3']);
   assert.match(buildAutoIssueSnapshot({ caseId: 'TC-1', steps }).observations || buildAutoIssueSnapshot({ caseId: 'TC-1', steps }).observation, /Paso 2\.3/);
+});
+
+test('buildAutoIssueSnapshots creates one snapshot per novelty and groups images', () => {
+  const snaps = buildAutoIssueSnapshots({
+    caseId: 'TC-9 Pago',
+    steps: [
+      { id: 1, stepStatus: 'fallo', comment: 'a' },
+      { id: 2, sameAsPrevious: true },
+      { id: 3, stepStatus: 'aprobado' },
+      { id: 4, severity: 'baja' },
+    ],
+  });
+  assert.equal(snaps.length, 2);
+  assert.deepEqual(snaps.map((s) => s.stepKey), ['1', '4']);
+  assert.deepEqual(snaps[0].evidenceStepIds, ['1', '2']);
+  assert.equal(snaps[0].baseTestId, 'TC-9');
+  assert.equal(snaps[1].severity, 'Low');
+});
+
+test('buildAutoIssueSnapshots falls back to a case-level snapshot only when failed', () => {
+  assert.deepEqual(buildAutoIssueSnapshots({ caseId: 'TC-1', steps: [] }), []);
+  const [snap] = buildAutoIssueSnapshots({ caseId: 'TC-1', steps: [] }, true, 'nota');
+  assert.equal(snap.stepKey, 'case');
+  assert.equal(snap.observation, 'nota');
 });
