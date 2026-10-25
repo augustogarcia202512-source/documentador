@@ -30823,6 +30823,23 @@ var __async = (__this, __arguments, generator) => {
     });
   }
 
+  function enableSpellcheck(root) {
+    const scope = root && root.querySelectorAll ? root : document;
+    const fields = scope.matches && scope.matches("textarea") ? [scope] : [];
+    scope.querySelectorAll("textarea").forEach((field) => fields.push(field));
+    fields.forEach((field) => {
+      if (field.id === "qaBulkImportText" || field.dataset.spellInit) return;
+      field.dataset.spellInit = "1";
+      field.spellcheck = true;
+      field.lang = "es";
+    });
+  }
+  enableSpellcheck(document);
+  new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+      if (node.nodeType === 1) enableSpellcheck(node);
+    }));
+  }).observe(document.body, { childList: true, subtree: true });
   function setPreviewEditing(enabled) {
     const preview = document.getElementById("exportPreview");
     const editBtn = document.getElementById("editPreviewTextBtn");
