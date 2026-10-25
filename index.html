@@ -2173,6 +2173,8 @@
   .dashboard-issue-table-wrap { overflow: auto; border: 1px solid var(--line-soft); border-radius: 9px; }
   #dashboardIssueTableView[hidden],
   #dashboardIssueKanbanView[hidden] { display: none; }
+  select.dashboard-issue-status-select { font: inherit; font-size: 12px; cursor: pointer; padding: 4px 8px; max-width: 100%; }
+  select.dashboard-issue-status-select option { background: var(--panel-2, #fff); color: var(--text, inherit); }
   .dashboard-issue-table { width: 100%; min-width: 0; table-layout: auto; border-collapse: collapse; background: var(--panel); font-size: 10px; }
   .dashboard-issue-table th { padding: 9px 5px; background: #202d3d; color: #9bb0c9; font-size: 8px; text-align: left; text-transform: uppercase; white-space: normal; }
   .dashboard-issue-table td { padding: 9px 5px; border-bottom: 1px solid var(--line-soft); vertical-align: top; overflow-wrap: anywhere; }
@@ -33343,7 +33345,7 @@ var __async = (__this, __arguments, generator) => {
           : "—"}</td>
         <td>${escapeHtml(issue.severity || "Medium")}</td>
         <td>${escapeHtml(issue.priority || "Medium")}</td>
-        <td><span class="dashboard-issue-status-pill ${getDashboardIssueStatusClass(issue.status)}">${escapeHtml(issue.status || "Open")}</span></td>
+        <td>${renderDashboardIssueStatusSelect(issue)}</td>
         <td>${escapeHtml(issue.assignee || "—")}</td>
         <td>${formatDashboardIssueDate(issue.createdAt)}</td>
         <td>${renderDashboardIssueAge(issue)}</td>
@@ -33380,12 +33382,16 @@ var __async = (__this, __arguments, generator) => {
             ${issue.assignee ? `<span>👤 ${escapeHtml(issue.assignee)}</span>` : ""}
             ${Array.isArray(issue.comments) && issue.comments.length ? `<span>💬 ${issue.comments.length}</span>` : ""}
             ${evidencePreview ? `<div class="dashboard-issue-evidence-previews" aria-label="Evidencias del caso">${evidencePreview}</div>` : ""}
+            ${renderDashboardIssueStatusSelect(issue)}
             <button type="button" data-issue-edit="${escapeHtml(issue.id)}">Editar</button>
           </article>`;
         }).join("") || '<div class="dashboard-issue-empty">Sin issues</div>'}</div>
       </section>`;
     }).join("");
 
+    document.querySelectorAll("[data-issue-status-select]").forEach((select) => {
+      select.addEventListener("change", () => changeDashboardIssueStatus(select.dataset.issueStatusSelect, select.value, select));
+    });
     document.querySelectorAll("[data-issue-edit]").forEach((button) => {
       button.addEventListener("click", () => {
         const issue = issues.find((item) => item.id === button.dataset.issueEdit);
@@ -33404,6 +33410,42 @@ var __async = (__this, __arguments, generator) => {
       const image = item?.step.renderedDataUrl || item?.step.dataUrl || item?.step.thumbnailDataUrl;
       if (image) button.addEventListener("click", () => openZoom(image, button));
     });
+  }
+
+  function renderDashboardIssueStatusSelect(issue) {
+    const current = DASHBOARD_ISSUE_STATUSES.includes(issue.status) ? issue.status : "Open";
+    return `<select class="dashboard-issue-status-select dashboard-issue-status-pill ${getDashboardIssueStatusClass(current)}" data-issue-status-select="${escapeHtml(issue.id)}" aria-label="Estado del issue ${escapeHtml(issue.testId || "")}">${
+      DASHBOARD_ISSUE_STATUSES.map((status) => `<option value="${escapeHtml(status)}" ${status === current ? "selected" : ""}>${escapeHtml(status)}</option>`).join("")
+    }</select>`;
+  }
+
+  async function changeDashboardIssueStatus(issueId, status, control) {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project || !DASHBOARD_ISSUE_STATUSES.includes(status)) return;
+    const before = Array.isArray(project.issues) ? project.issues : [];
+    const issue = before.find((item) => item.id === issueId);
+    if (!issue || issue.status === status) return;
+    const timestamp = Date.now();
+    const next = {
+      ...issue,
+      status,
+      statusHistory: [...(Array.isArray(issue.statusHistory) ? issue.statusHistory : []), { status, at: timestamp }],
+    };
+    if (status === "Closed") {
+      next.closedAt = timestamp;
+      next.lastValidationAt = timestamp;
+    } else if (issue.status === "Closed") {
+      next.closedAt = null;
+    }
+    project.issues = before.map((item) => item.id === issueId ? next : item);
+    if (!(await saveProjectsToDB())) {
+      project.issues = before;
+      if (control) control.value = issue.status;
+      showTransientStatus("No se pudo guardar el cambio de estado.", 4000);
+      return;
+    }
+    renderDashboard();
+    showTransientStatus(`${issue.testId || "Issue"}: ${status}.`, 2500);
   }
 
   function openDashboardIssueEditor(issue, opener) {
