@@ -39,19 +39,18 @@ jobs:
       - name: Build local spellchecker
         run: npm run build
 
+      - name: Prepare Pages artifact
+        run: |
+          mkdir -p _site
+          cp index.html case-utils.js spellcheck.bundle.js DICTIONARY-LICENSE.md dictionary-es.LICENSE MPL-1.1.txt _site/
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: |
-            index.html
-            case-utils.js
-            spellcheck.bundle.js
-            DICTIONARY-LICENSE.md
-            dictionary-es.LICENSE
-            MPL-1.1.txt
+          path: _site/
 
       - name: Deploy to GitHub Pages
         id: deployment
