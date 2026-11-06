@@ -1,0 +1,15 @@
+{
+  "name": "documentador-casos",
+  "private": true,
+  "scripts": {
+    "build": "esbuild spellcheck-entry.js --bundle --platform=browser --format=iife --target=es2020 --loader:.aff=text --loader:.dic=text --minify --outfile=spellcheck.bundle.js",
+    "test": "node --test *.test.js"
+  },
+  "dependencies": {
+    "dictionary-es": "^4.0.0",
+    "nspell": "^2.1.5"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

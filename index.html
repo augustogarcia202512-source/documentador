@@ -333,6 +333,19 @@
   }
   textarea::placeholder { color: var(--text-faint); }
   textarea:focus { outline: none; border-color: var(--amber); }
+  .spellcheck-results { margin: 5px 0 8px; color: var(--text-muted); font: 11px/1.5 var(--sans); }
+  .spellcheck-results[hidden] { display: none; }
+  .spellcheck-results__summary { margin: 0 0 4px; }
+  .spellcheck-results__list { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+  .spellcheck-results__item { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .spellcheck-results__word { color: var(--red); font-weight: 700; }
+  .spellcheck-results button {
+    min-height: 24px; padding: 3px 7px; border: 1px solid var(--line); border-radius: 4px;
+    background: var(--panel-2); color: var(--text); font: inherit; cursor: pointer;
+  }
+  .spellcheck-results button:hover { border-color: var(--focus-ring); }
+  .spellcheck-results button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  .comment-block.collapsed .spellcheck-results { display: none; }
   .comment-controls { display: flex; justify-content: flex-end; margin-top: 8px; }
   .comment-controls .comment-pos-btn { font-size: 11px; padding: 4px 8px; }
   .comment-block { margin-top: 6px; }
@@ -1277,8 +1290,28 @@
   .qa-suite-case-copy { min-width: 0; display: grid; gap: 3px; }
   .qa-suite-case-id { color: #52657c; font-size: 12px; }
   .qa-suite-case-name { overflow-wrap: anywhere; font-size: 14px; }
-  .qa-suite-case-details { color: #718096; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; }
   .qa-suite-case-status { flex: 0 0 auto; color: #758397; font-size: 11px; font-weight: 700; }
+  .qa-case-detail-content { display: grid; gap: 10px; margin: 14px 0; }
+  .qa-case-detail-field { padding: 10px 12px; border: 1px solid #d9e0e8; border-radius: 9px; background: #fff; }
+  .qa-case-detail-label { margin: 0 0 5px; color: #52657c; font-size: 11px; font-weight: 800; }
+  .qa-case-detail-value { color: #263445; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .qa-case-detail-value.is-empty { color: #8994a3; font-style: italic; }
+  .qa-case-detail-actions { display: flex; justify-content: flex-end; gap: 8px; margin: 14px 0; }
+  .qa-case-edit-control {
+    display: block; width: 100%; min-height: 40px; padding: 9px 10px;
+    border: 1px solid #cbd5e1; border-radius: 7px; color: #263445;
+    font: 13px/1.5 var(--sans); resize: vertical;
+  }
+  textarea.qa-case-edit-control { min-height: 84px; white-space: pre-wrap; }
+  .qa-case-detail-actions button, .qa-execution-back {
+    min-height: 40px; padding: 8px 13px; border: 1px solid #d9e0e8; border-radius: 8px;
+    background: #fff; color: #263445; font-size: 13px; font-weight: 800;
+  }
+  .qa-case-detail-actions .qa-case-execute { border-color: #168149; background: #198f52; color: #fff; }
+  .qa-case-detail-actions .qa-case-edit-save { border-color: #168149; background: #198f52; color: #fff; }
+  .qa-case-documenter-link { margin: 10px 0 0; }
+  .qa-execution-back { margin-bottom: 12px; }
+  .qa-case-execution-view[hidden], .qa-case-detail-view[hidden] { display: none; }
   .qa-case-context {
     margin: 0 0 12px;
     padding: 8px 10px;
@@ -1376,6 +1409,8 @@
     font: 13px/1.45 var(--sans);
     resize: vertical;
   }
+  .qa-new-case-field-label { color: #536277; font-size: 11px; font-weight: 750; }
+  .qa-new-case-field-help { margin: -4px 0 0; color: #718096; font-size: 10px; line-height: 1.4; }
   .qa-new-case-error { min-height: 16px; margin: 0; color: #c33d3d; font-size: 11px; }
   .qa-new-case-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
   .qa-new-case-actions button { min-height: 43px; border-radius: 8px; font-weight: 800; }
@@ -1482,6 +1517,24 @@
   .qa-execution-status[aria-pressed="true"] { background: currentColor; }
   .qa-execution-status[aria-pressed="true"] span { color: #fff; }
   .qa-execution-status span { color: inherit; }
+  .qa-documenter-execution-bar {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center;
+    margin: 0 0 16px; padding: 14px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--panel); box-shadow: var(--shadow);
+  }
+  .qa-documenter-execution-bar[hidden] { display: none; }
+  .qa-documenter-execution-title { min-width: 0; margin: 0 0 8px; color: var(--text); font-size: 13px; }
+  .qa-documenter-execution-bar .qa-execution-statuses { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .qa-documenter-execution-bar .qa-execution-status { min-height: 40px; font-size: 12px; }
+  .qa-documenter-execution-return {
+    min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--panel-2); color: var(--text); font-weight: 800;
+  }
+  @media (max-width: 760px) {
+    .qa-documenter-execution-bar { grid-template-columns: 1fr; }
+    .qa-documenter-execution-bar .qa-execution-statuses { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .qa-documenter-execution-return { width: 100%; }
+  }
   .qa-execution-note {
     width: 100%;
     min-height: 42px;
@@ -1497,7 +1550,7 @@
   .qa-execution-attachments[hidden] { display: none; }
   .qa-execution-history { min-height: 31px; margin: 10px 0; color: #718096; font-size: 11px; }
   .qa-execution-history-item { margin-top: 5px; line-height: 1.4; }
-  .qa-execution-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .qa-execution-actions { display: flex; justify-content: flex-end; gap: 8px; }
   .qa-execution-actions button {
     min-height: 43px;
     border: 1px solid #d9e0e8;
@@ -2823,39 +2876,27 @@
         </section>
       </main>
     </div>
-    <div id="qaExecutionOverlay" role="dialog" aria-modal="true" aria-labelledby="qaExecutionTitle">
-      <section class="qa-execution-panel">
-        <h2 class="qa-execution-heading" id="qaExecutionTitle"></h2>
-        <p class="qa-execution-subtitle" id="qaExecutionSubtitle"></p>
-        <div class="qa-execution-statuses" role="group" aria-label="Seleccionar estado del caso">
-          <button class="qa-execution-status" type="button" data-status="pass" aria-pressed="false"><span>Pass</span></button>
-          <button class="qa-execution-status" type="button" data-status="not-executed" aria-pressed="false"><span>Not Executed</span></button>
-          <button class="qa-execution-status" type="button" data-status="in-progress" aria-pressed="false"><span>In Progress</span></button>
-          <button class="qa-execution-status" type="button" data-status="failed" aria-pressed="false"><span>Failed</span></button>
-          <button class="qa-execution-status" type="button" data-status="blocked" aria-pressed="false"><span>Blocked</span></button>
-        </div>
-        <input class="qa-execution-note" id="qaExecutionNote" type="text" maxlength="500" placeholder="Nota / ID del bug (opcional)" aria-label="Nota o ID del bug opcional" />
-        <div class="qa-execution-attachments" id="qaExecutionAttachments" hidden>
-          <label for="qaExecutionImages">Imágenes del fallo (puedes pegar con Ctrl+V)
-            <input id="qaExecutionImages" type="file" accept="image/*" multiple />
-          </label>
-          <div class="dashboard-issue-attachment-list" id="qaExecutionAttachmentList"></div>
-        </div>
-        <div class="qa-execution-history" id="qaExecutionHistory" aria-live="polite"></div>
-        <div class="qa-execution-actions">
-          <button id="qaEditCaseBtn" type="button">Editar caso</button>
-          <button id="qaCloseExecutionBtn" type="button">Cerrar</button>
-        </div>
-      </section>
-    </div>
     <div id="qaNewCaseOverlay" role="dialog" aria-modal="true" aria-labelledby="qaNewCaseTitle">
       <section class="qa-new-case-panel">
         <h2 class="qa-new-case-title" id="qaNewCaseTitle">Nuevo caso</h2>
-        <p class="qa-new-case-help">En el primer campo escribe el ID seguido de la descripción, por ejemplo: TC-1 Login incorrecto. El detalle es opcional.</p>
         <form class="qa-new-case-form" id="qaNewCaseForm">
-          <input id="qaNewCaseId" type="text" maxlength="240" placeholder="Descripción del caso (ej.: Login incorrecto)" aria-label="Descripción del caso" required />
-          <label for="qaNewCaseDetails">Detalle, pasos o datos adicionales (opcional)</label>
-          <textarea id="qaNewCaseDetails" maxlength="1000" placeholder="Agrega datos o notas adicionales del caso si los necesitas." aria-label="Detalle, pasos o datos adicionales"></textarea>
+          <input id="qaNewCaseId" type="text" maxlength="240" placeholder="Verificar que un usuario registrado pueda iniciar sesión con credenciales válidas" aria-label="Descripción del caso" required />
+          <label class="qa-new-case-field-label" for="qaNewCasePreconditions">Precondiciones</label>
+          <textarea id="qaNewCasePreconditions" maxlength="1000" placeholder="1) Usuario registrado y activo
+2) Sesión cerrada
+3) Navegador en pantalla de login" aria-describedby="qaNewCasePreconditionsHelp"></textarea>
+          <p class="qa-new-case-field-help" id="qaNewCasePreconditionsHelp">Ejemplos de precondiciones. Escribe aquí las que correspondan a este caso.</p>
+          <label class="qa-new-case-field-label" for="qaNewCaseTestData">Datos de Prueba</label>
+          <textarea id="qaNewCaseTestData" maxlength="1000" placeholder="Usuario: qa.test@empresa.com
+Password: Clave#2026" aria-describedby="qaNewCaseTestDataHelp"></textarea>
+          <p class="qa-new-case-field-help" id="qaNewCaseTestDataHelp">Ejemplo de datos para probar. Escribe aquí los que correspondan a este caso.</p>
+          <label for="qaNewCaseDetails">Pasos de Ejecución</label>
+          <textarea id="qaNewCaseDetails" maxlength="1000" placeholder="1. Ingresar a la URL de login
+2. Introducir el usuario válido
+3. Introducir la contraseña válida
+4. Presionar 'Iniciar sesión'" aria-label="Pasos de Ejecución"></textarea>
+          <label class="qa-new-case-field-label" for="qaNewCaseExpectedResult">Resultado Esperado</label>
+          <textarea id="qaNewCaseExpectedResult" maxlength="1000" placeholder="El sistema valida las credenciales y redirige al usuario al Dashboard principal, mostrando su nombre en la cabecera" aria-label="Resultado Esperado"></textarea>
           <input id="qaNewCaseSuite" type="text" maxlength="60" list="qaSuiteOptions" placeholder="Suite" aria-label="Suite del caso" required />
           <datalist id="qaSuiteOptions"></datalist>
           <p class="qa-new-case-hint" id="qaNewCaseIdPreview" aria-live="polite" style="margin:0;font-size:.85rem;opacity:.8"></p>
@@ -2881,6 +2922,43 @@
       </section>
     </div>
   </section>
+  <div id="qaExecutionOverlay" role="dialog" aria-modal="true" aria-labelledby="qaExecutionTitle">
+    <section class="qa-execution-panel">
+      <h2 class="qa-execution-heading" id="qaExecutionTitle"></h2>
+      <p class="qa-execution-subtitle" id="qaExecutionSubtitle"></p>
+      <div class="qa-case-detail-view" id="qaCaseDetailView">
+        <div class="qa-case-detail-content" id="qaCaseDetailContent"></div>
+        <div class="qa-case-detail-actions">
+          <button id="qaEditCaseBtn" type="button">Editar caso</button>
+          <button id="qaCancelCaseEditBtn" type="button" hidden>Cancelar</button>
+          <button class="qa-case-edit-save" id="qaSaveCaseEditBtn" type="button" hidden>Guardar cambios</button>
+          <button class="qa-case-execute" id="qaStartExecutionBtn" type="button">Ejecutar caso</button>
+        </div>
+      </div>
+      <div class="qa-case-execution-view" id="qaCaseExecutionView" hidden>
+        <button class="qa-execution-back" id="qaBackToCaseDetailsBtn" type="button">← Volver al detalle</button>
+        <button class="qa-execution-back qa-case-documenter-link" id="qaOpenCaseInDocumenterBtn" type="button">Abrir en documentador</button>
+        <div class="qa-execution-statuses" role="group" aria-label="Seleccionar estado del caso">
+          <button class="qa-execution-status" type="button" data-status="pass" aria-pressed="false"><span>Pass</span></button>
+          <button class="qa-execution-status" type="button" data-status="not-executed" aria-pressed="false"><span>Not Executed</span></button>
+          <button class="qa-execution-status" type="button" data-status="in-progress" aria-pressed="false"><span>In Progress</span></button>
+          <button class="qa-execution-status" type="button" data-status="failed" aria-pressed="false"><span>Failed</span></button>
+          <button class="qa-execution-status" type="button" data-status="blocked" aria-pressed="false"><span>Blocked</span></button>
+        </div>
+        <input class="qa-execution-note" id="qaExecutionNote" type="text" maxlength="500" placeholder="Nota / ID del bug (opcional)" aria-label="Nota o ID del bug opcional" />
+        <div class="qa-execution-attachments" id="qaExecutionAttachments" hidden>
+          <label for="qaExecutionImages">Imágenes del fallo (puedes pegar con Ctrl+V)
+            <input id="qaExecutionImages" type="file" accept="image/*" multiple />
+          </label>
+          <div class="dashboard-issue-attachment-list" id="qaExecutionAttachmentList"></div>
+        </div>
+        <div class="qa-execution-history" id="qaExecutionHistory" aria-live="polite"></div>
+      </div>
+      <div class="qa-execution-actions">
+        <button id="qaCloseExecutionBtn" type="button">Cerrar</button>
+      </div>
+    </section>
+  </div>
   <div id="documenterApp">
   <p class="eyebrow">Registro de evidencia · sesión local</p>
   <div class="app-header">
@@ -2889,6 +2967,19 @@
     <button class="btn-secondary backup-header-btn" id="downloadWorkspaceBackupFromDocumenterBtn" type="button" title="Descargar proyectos, casos e imágenes para abrirlos en otro equipo">📦 Respaldo</button>
     <button class="btn-secondary" id="backToDashboardBtn" type="button" style="margin-left:auto;">← Panel</button>
   </div>
+  <section class="qa-documenter-execution-bar" id="qaDocumenterExecutionBar" aria-label="Estado de ejecución del caso" hidden>
+    <div>
+      <h2 class="qa-documenter-execution-title" id="qaDocumenterExecutionTitle"></h2>
+      <div class="qa-execution-statuses" role="group" aria-label="Seleccionar estado del caso">
+        <button class="qa-execution-status" type="button" data-status="pass" aria-pressed="false"><span>Pass</span></button>
+        <button class="qa-execution-status" type="button" data-status="not-executed" aria-pressed="false"><span>Not Executed</span></button>
+        <button class="qa-execution-status" type="button" data-status="in-progress" aria-pressed="false"><span>In Progress</span></button>
+        <button class="qa-execution-status" type="button" data-status="failed" aria-pressed="false"><span>Failed</span></button>
+        <button class="qa-execution-status" type="button" data-status="blocked" aria-pressed="false"><span>Blocked</span></button>
+      </div>
+    </div>
+    <button class="qa-documenter-execution-return" id="qaReturnToExecutionBtn" type="button">Volver a ejecución</button>
+  </section>
   <div class="theme-switch" role="group" aria-label="Estilo visual">
     <span class="theme-label">Vista</span>
     <button class="theme-btn presentation-btn" id="presentationModeBtn" aria-pressed="false" title="Alternar modo presentación (Alt+Shift+P)">Presentación: Off</button>
@@ -26275,6 +26366,7 @@ var __async = (__this, __arguments, generator) => {
 })({});
 </script>
 <script src="case-utils.js?v=20261014-qa-issue-novelty"></script>
+<script src="spellcheck.bundle.js?v=20261105-correcciones"></script>
   <script>
     let mediaStream = null;
     let steps = [];
@@ -26285,6 +26377,8 @@ var __async = (__this, __arguments, generator) => {
     let currentSuiteId = "";
     const MANUAL_CASE_PICKER_VALUE = "__manual__";
     let selectedQaCaseIndex = null;
+    let documenterExecutionCaseIndex = null;
+    let isQaCaseEditing = false;
     let editingCaseIndex = null;
     let dashboardReady = Promise.resolve();
     let caseRecoveryChecked = false;
@@ -30823,23 +30917,6 @@ var __async = (__this, __arguments, generator) => {
     });
   }
 
-  function enableSpellcheck(root) {
-    const scope = root && root.querySelectorAll ? root : document;
-    const fields = scope.matches && scope.matches("textarea") ? [scope] : [];
-    scope.querySelectorAll("textarea").forEach((field) => fields.push(field));
-    fields.forEach((field) => {
-      if (field.id === "qaBulkImportText" || field.dataset.spellInit) return;
-      field.dataset.spellInit = "1";
-      field.spellcheck = true;
-      field.lang = "es";
-    });
-  }
-  enableSpellcheck(document);
-  new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
-      if (node.nodeType === 1) enableSpellcheck(node);
-    }));
-  }).observe(document.body, { childList: true, subtree: true });
   function setPreviewEditing(enabled) {
     const preview = document.getElementById("exportPreview");
     const editBtn = document.getElementById("editPreviewTextBtn");
@@ -32191,7 +32268,10 @@ var __async = (__this, __arguments, generator) => {
         suiteId: suite.id,
         caseId: row.caseId,
         description: row.description,
+        preconditions: "",
+        testData: "",
         details: "",
+        expectedResult: "",
         team: "",
         tester: "",
         templateKey: DEFAULT_TEMPLATE_KEY,
@@ -32268,7 +32348,10 @@ var __async = (__this, __arguments, generator) => {
     const project = projects.find((item) => item.id === activeProjectId);
     if (!project) return;
     const description = document.getElementById("qaNewCaseId").value.trim();
+    const preconditions = document.getElementById("qaNewCasePreconditions").value.trim();
+    const testData = document.getElementById("qaNewCaseTestData").value.trim();
     const details = document.getElementById("qaNewCaseDetails").value.trim();
+    const expectedResult = document.getElementById("qaNewCaseExpectedResult").value.trim();
     const suiteName = document.getElementById("qaNewCaseSuite").value.trim();
     const error = document.getElementById("qaNewCaseError");
     const saveButton = document.getElementById("qaNewCaseSave");
@@ -32310,7 +32393,10 @@ var __async = (__this, __arguments, generator) => {
       suiteId: suite.id,
       caseId,
       description,
+      preconditions,
+      testData,
       details,
+      expectedResult,
       team: "",
       tester: "",
       templateKey: DEFAULT_TEMPLATE_KEY,
@@ -32372,7 +32458,54 @@ var __async = (__this, __arguments, generator) => {
     }
     document.getElementById("qaExecutionTitle").textContent = caseRecord.caseId || "Caso sin ID";
     document.getElementById("qaExecutionSubtitle").textContent =
-      `${caseRecord.description || "Caso de prueba"}${caseRecord.details ? ` · ${caseRecord.details}` : ""}${suite ? ` · ${suite.name}` : ""}${cycle ? ` · ${cycle.name}` : ""}`;
+      [caseRecord.description || "Caso de prueba", suite?.name, cycle?.name].filter(Boolean).join(" · ");
+    const detailFields = isQaCaseEditing
+      ? [
+          { label: "Descripción del caso", key: "description", maxLength: 240, multiline: false },
+          { label: "Precondiciones", key: "preconditions", maxLength: 1000, multiline: true },
+          { label: "Datos de Prueba", key: "testData", maxLength: 1000, multiline: true },
+          { label: "Pasos de Ejecución", key: "details", maxLength: 1000, multiline: true },
+          { label: "Resultado Esperado", key: "expectedResult", maxLength: 1000, multiline: true },
+        ]
+      : [
+          { label: "Precondiciones", value: caseRecord.preconditions },
+          { label: "Datos de Prueba", value: caseRecord.testData },
+          { label: "Pasos de Ejecución", value: caseRecord.details },
+          { label: "Resultado Esperado", value: caseRecord.expectedResult },
+        ];
+    const detailContent = document.getElementById("qaCaseDetailContent");
+    detailContent.replaceChildren();
+    detailFields.forEach(({ label, key, maxLength, multiline, value }) => {
+      const field = document.createElement("section");
+      field.className = "qa-case-detail-field";
+      if (isQaCaseEditing) {
+        const controlId = `qaCaseEdit-${key}`;
+        const fieldLabel = document.createElement("label");
+        fieldLabel.className = "qa-case-detail-label";
+        fieldLabel.htmlFor = controlId;
+        fieldLabel.textContent = label;
+        const control = document.createElement(multiline ? "textarea" : "input");
+        control.id = controlId;
+        control.className = "qa-case-edit-control";
+        control.maxLength = maxLength;
+        control.value = String(caseRecord[key] || "");
+        field.append(fieldLabel, control);
+      } else {
+        const heading = document.createElement("h3");
+        heading.className = "qa-case-detail-label";
+        heading.textContent = label;
+        const content = document.createElement("div");
+        const text = String(value || "").trim();
+        content.className = `qa-case-detail-value${text ? "" : " is-empty"}`;
+        content.textContent = text || "Sin especificar";
+        field.append(heading, content);
+      }
+      detailContent.append(field);
+    });
+    document.getElementById("qaEditCaseBtn").hidden = isQaCaseEditing;
+    document.getElementById("qaCancelCaseEditBtn").hidden = !isQaCaseEditing;
+    document.getElementById("qaSaveCaseEditBtn").hidden = !isQaCaseEditing;
+    document.getElementById("qaStartExecutionBtn").hidden = isQaCaseEditing;
     const currentStatus = getCaseExecutionStatus(caseRecord);
     document.querySelectorAll(".qa-execution-status").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.status === currentStatus));
@@ -32392,6 +32525,137 @@ var __async = (__this, __arguments, generator) => {
           </div>`;
         }).join("")
       : "Sin historial.";
+  }
+
+  function setQaCaseEditMode(editing) {
+    const caseRecord = savedCases[selectedQaCaseIndex];
+    if (!caseRecord) return;
+    isQaCaseEditing = editing;
+    renderQaExecutionDialog(caseRecord);
+    document.getElementById(editing ? "qaCaseEdit-description" : "qaEditCaseBtn").focus();
+  }
+
+  function renderQaDocumenterExecutionBar() {
+    const bar = document.getElementById("qaDocumenterExecutionBar");
+    const caseRecord = savedCases[documenterExecutionCaseIndex];
+    bar.hidden = !caseRecord || !document.body.classList.contains("documenter-view");
+    if (!caseRecord) return;
+    document.getElementById("qaDocumenterExecutionTitle").textContent =
+      `Estado de ejecución · ${caseRecord.caseId || "Caso sin ID"} · ${caseRecord.description || "Caso de prueba"}`;
+    bar.querySelectorAll(".qa-execution-status").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.status === getCaseExecutionStatus(caseRecord)));
+    });
+  }
+
+  function clearQaDocumenterExecutionContext() {
+    documenterExecutionCaseIndex = null;
+    if (selectedQaCaseIndex !== null && document.body.classList.contains("documenter-view")) {
+      selectedQaCaseIndex = null;
+    }
+    renderQaDocumenterExecutionBar();
+  }
+
+  async function saveDocumenterCaseForExecution(caseIndex) {
+    if (editingCaseIndex !== caseIndex || !savedCases[caseIndex]) return true;
+    syncStepInputsToData();
+    if (document.getElementById("exportPreview")) syncEditedPreviewToCaseFields();
+    const normalizedCase = normalizeCaseIdInputValue(
+      document.getElementById("caseId").value,
+      document.getElementById("description").value
+    );
+    if (!normalizedCase.caseId) {
+      showTransientStatus("No se pudo regresar: el caso no tiene un ID.", 4000);
+      document.getElementById("caseId").focus();
+      return false;
+    }
+
+    const previousCases = savedCases;
+    const project = projects.find((item) => item.id === (savedCases[caseIndex].projectId || activeProjectId));
+    const previousIssues = Array.isArray(project?.issues) ? project.issues.slice() : [];
+    const existingCase = savedCases[caseIndex];
+    const updatedCase = {
+      ...existingCase,
+      ...buildCurrentCaseRecord(normalizedCase),
+      qaId: existingCase.qaId,
+      projectId: existingCase.projectId,
+      suiteId: existingCase.suiteId,
+    };
+    savedCases = savedCases.slice();
+    savedCases[caseIndex] = updatedCase;
+    const failed = getCaseExecutionStatus(updatedCase) === "failed";
+    syncAutoIssueForCase(updatedCase, failed, failed ? getLatestQaExecutionNote(updatedCase) : "");
+    if (!(await saveCasesAndProjectsToDB())) {
+      savedCases = previousCases;
+      if (project) project.issues = previousIssues;
+      showTransientStatus("No se pudieron guardar los cambios del caso. Inténtalo nuevamente.", 5000);
+      return false;
+    }
+    await autosave.flush();
+    await saveStateToDB();
+    renderCasesList();
+    renderDashboard();
+    return true;
+  }
+
+  async function returnToQaExecution() {
+    const caseIndex = documenterExecutionCaseIndex;
+    if (caseIndex === null || !savedCases[caseIndex]) return;
+    const button = document.getElementById("qaReturnToExecutionBtn");
+    button.disabled = true;
+    try {
+      if (!(await saveDocumenterCaseForExecution(caseIndex))) return;
+      selectedQaCaseIndex = caseIndex;
+      openQaExecutionDialog(caseIndex, button, true);
+    } catch (error) {
+      console.error("No se pudo guardar el caso antes de volver a ejecución:", error);
+      await showAppAlert(`No se pudo guardar el caso antes de volver a ejecución. ${error.message || "Inténtalo nuevamente."}`, button);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function saveQaCaseEdits() {
+    const caseRecord = savedCases[selectedQaCaseIndex];
+    if (!caseRecord) return;
+    const fields = ["description", "preconditions", "testData", "details", "expectedResult"];
+    const updatedValues = Object.fromEntries(fields.map((key) => [
+      key,
+      document.getElementById(`qaCaseEdit-${key}`).value.trim(),
+    ]));
+    if (!updatedValues.description) {
+      showTransientStatus("Escribe la descripción del caso.", 3000);
+      document.getElementById("qaCaseEdit-description").focus();
+      return;
+    }
+
+    const previousValues = Object.fromEntries(fields.map((key) => [key, caseRecord[key]]));
+    Object.assign(caseRecord, updatedValues);
+    const saveButton = document.getElementById("qaSaveCaseEditBtn");
+    saveButton.disabled = true;
+    try {
+      if (!(await saveCasesToDB())) {
+        Object.assign(caseRecord, previousValues);
+        showTransientStatus("No se pudieron guardar los cambios del caso. Inténtalo nuevamente.", 5000);
+        return;
+      }
+      isQaCaseEditing = false;
+      renderDashboard();
+      renderCasesList();
+      renderQaExecutionDialog(caseRecord);
+      renderQaDocumenterExecutionBar();
+      document.getElementById("qaEditCaseBtn").focus();
+    } finally {
+      saveButton.disabled = false;
+    }
+  }
+
+  function showQaCaseExecutionMode(executing) {
+    document.getElementById("qaCaseDetailView").hidden = executing;
+    document.getElementById("qaCaseExecutionView").hidden = !executing;
+    const focusTarget = executing
+      ? document.querySelector(`.qa-execution-status[data-status="${getCaseExecutionStatus(savedCases[selectedQaCaseIndex])}"]`)
+      : document.getElementById("qaStartExecutionBtn");
+    focusTarget?.focus();
   }
 
   function getAutoIssueForCase(caseRecord, project) {
@@ -32504,18 +32768,22 @@ var __async = (__this, __arguments, generator) => {
     renderQaExecutionDialog(caseRecord);
   }
 
-  function openQaExecutionDialog(caseIndex, opener) {
+  function openQaExecutionDialog(caseIndex, opener, executing = false) {
     const caseRecord = savedCases[caseIndex];
     if (!caseRecord) return;
     selectedQaCaseIndex = caseIndex;
+    isQaCaseEditing = false;
     const noteInput = document.getElementById("qaExecutionNote");
     noteInput.dataset.hasPendingEdit = "false";
     noteInput.value = getLatestQaExecutionNote(caseRecord);
     renderQaExecutionDialog(caseRecord);
+    showQaCaseExecutionMode(executing);
     openOverlay(document.getElementById("qaExecutionOverlay"), {
       opener,
       display: "flex",
-      initialFocus: document.querySelector(`.qa-execution-status[data-status="${getCaseExecutionStatus(caseRecord)}"]`),
+      initialFocus: executing
+        ? document.querySelector(`.qa-execution-status[data-status="${getCaseExecutionStatus(caseRecord)}"]`)
+        : document.getElementById("qaStartExecutionBtn"),
       onEscape: closeQaExecutionDialog,
     });
   }
@@ -32524,11 +32792,16 @@ var __async = (__this, __arguments, generator) => {
     persistPendingQaExecutionNote();
     const overlay = document.getElementById("qaExecutionOverlay");
     if (overlay.style.display !== "none") closeOverlay(overlay);
-    selectedQaCaseIndex = null;
     const noteInput = document.getElementById("qaExecutionNote");
+    const keepDocumenterContext = documenterExecutionCaseIndex !== null &&
+      document.body.classList.contains("documenter-view") &&
+      editingCaseIndex === documenterExecutionCaseIndex;
+    selectedQaCaseIndex = keepDocumenterContext ? documenterExecutionCaseIndex : null;
     if (noteInput) {
       noteInput.dataset.hasPendingEdit = "false";
-      noteInput.value = "";
+      noteInput.value = keepDocumenterContext
+        ? getLatestQaExecutionNote(savedCases[documenterExecutionCaseIndex])
+        : "";
     }
   }
 
@@ -32767,7 +33040,7 @@ var __async = (__this, __arguments, generator) => {
     const suiteCases = cycleCases.filter((item) => item.suiteId === selectedSuite.id);
     const caseQuery = document.getElementById("qaCaseSearch").value.trim().toLocaleLowerCase();
     const visibleCases = suiteCases.filter((item) =>
-      `${item.caseId || ""} ${item.description || ""} ${item.details || ""}`.toLocaleLowerCase().includes(caseQuery)
+      `${item.caseId || ""} ${item.description || ""} ${item.preconditions || ""} ${item.testData || ""} ${item.details || ""} ${item.expectedResult || ""}`.toLocaleLowerCase().includes(caseQuery)
     );
     const list = document.getElementById("qaSuiteCaseList");
     list.innerHTML = visibleCases.map((caseRecord) => {
@@ -32777,7 +33050,6 @@ var __async = (__this, __arguments, generator) => {
         <span class="qa-suite-case-copy">
           <span class="qa-suite-case-id">${escapeHtml(caseRecord.caseId || "Sin ID")}</span>
           <span class="qa-suite-case-name">${escapeHtml(caseRecord.description || "Caso de prueba")}</span>
-          ${caseRecord.details ? `<span class="qa-suite-case-details">${escapeHtml(caseRecord.details)}</span>` : ""}
         </span>
         <span class="qa-suite-case-status">${getQaExecutionStatusLabel(status)}</span>
       </button>`;
@@ -34879,6 +35151,7 @@ var __async = (__this, __arguments, generator) => {
       }
     });
     const openDocumenter = async (suiteId = "") => {
+      clearQaDocumenterExecutionContext();
       document.body.classList.remove("dashboard-view");
       document.body.classList.add("documenter-view");
       try {
@@ -34903,6 +35176,7 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("startDocumenterBtn").addEventListener("click", openDocumenter);
     document.getElementById("backToDashboardBtn").addEventListener("click", async () => {
       await saveStateToDB();
+      clearQaDocumenterExecutionContext();
       document.body.classList.remove("documenter-view");
       document.body.classList.add("dashboard-view");
       renderDashboard();
@@ -35063,6 +35337,12 @@ var __async = (__this, __arguments, generator) => {
     document.querySelectorAll(".qa-execution-status").forEach((button) => {
       button.addEventListener("click", () => updateQaExecutionStatus(button.dataset.status));
     });
+    document.getElementById("qaStartExecutionBtn").addEventListener("click", () => showQaCaseExecutionMode(true));
+    document.getElementById("qaBackToCaseDetailsBtn").addEventListener("click", () => showQaCaseExecutionMode(false));
+    document.getElementById("qaEditCaseBtn").addEventListener("click", () => setQaCaseEditMode(true));
+    document.getElementById("qaCancelCaseEditBtn").addEventListener("click", () => setQaCaseEditMode(false));
+    document.getElementById("qaSaveCaseEditBtn").addEventListener("click", saveQaCaseEdits);
+    document.getElementById("qaReturnToExecutionBtn").addEventListener("click", returnToQaExecution);
     document.getElementById("qaCloseExecutionBtn").addEventListener("click", closeQaExecutionDialog);
     document.getElementById("qaExecutionImages").addEventListener("change", async (event) => {
       await updateQaExecutionAttachments(event.currentTarget.files);
@@ -35077,17 +35357,22 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("qaExecutionOverlay").addEventListener("click", (event) => {
       if (event.target === event.currentTarget) closeQaExecutionDialog();
     });
-    document.getElementById("qaEditCaseBtn").addEventListener("click", async () => {
+    document.getElementById("qaOpenCaseInDocumenterBtn").addEventListener("click", async () => {
       const caseIndex = selectedQaCaseIndex;
       if (caseIndex === null) return;
-      const button = document.getElementById("qaEditCaseBtn");
+      const button = document.getElementById("qaOpenCaseInDocumenterBtn");
       button.disabled = true;
       try {
+        await persistPendingQaExecutionNote();
         closeQaExecutionDialog();
         await openCaseFromBatch(caseIndex);
+        if (editingCaseIndex !== caseIndex || !document.body.classList.contains("documenter-view")) return;
+        documenterExecutionCaseIndex = caseIndex;
+        selectedQaCaseIndex = caseIndex;
+        renderQaDocumenterExecutionBar();
       } catch (error) {
-        console.error("No se pudo abrir el caso para editarlo:", error);
-        await showAppAlert(`No se pudo abrir el caso para editarlo. ${error.message || "Inténtalo nuevamente."}`, button);
+        console.error("No se pudo abrir el caso en el documentador:", error);
+        await showAppAlert(`No se pudo abrir el caso en el documentador. ${error.message || "Inténtalo nuevamente."}`, button);
       } finally {
         button.disabled = false;
       }
@@ -35288,6 +35573,7 @@ var __async = (__this, __arguments, generator) => {
   }
 
   async function startManualDocumenterCase() {
+    clearQaDocumenterExecutionContext();
     const current = currentCaseData();
     const hasCurrentData = current.steps.length > 0 ||
       [current.caseId, current.description, current.details, current.team, current.tester]
@@ -35319,6 +35605,7 @@ var __async = (__this, __arguments, generator) => {
   async function openCaseFromBatch(idx, focusStepId) {
     const selectedCase = savedCases[idx];
     if (!selectedCase) return;
+    clearQaDocumenterExecutionContext();
 
     const current = currentCaseData();
     const isAlreadyOpen = editingCaseIndex === idx &&
