@@ -1013,6 +1013,24 @@
   .dashboard-issue-management .dashboard-content > :not(#dashboardIssueLog):not(#dashboardIssueEditorOverlay):not(#dashboardIssueEvidenceOverlay) { display: none !important; }
   .dashboard-issue-management .dashboard-content { width: min(1500px, 100%); }
   .dashboard-qa-management .dashboard-content > :not(#qaPanel) { display: none !important; }
+  .dashboard-notes-management .dashboard-content > :not(#dashboardNotes) { display: none !important; }
+  #dashboardNotes[hidden], #dashboardNoteForm[hidden] { display: none; }
+  .dashboard-notes-list { display: grid; gap: 12px; margin-top: 16px; }
+  .dashboard-note { padding: 14px; border: 1px solid var(--line-soft); border-radius: 9px; background: var(--panel-2); }
+  .dashboard-note-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .dashboard-note-header h3 { margin: 0; overflow-wrap: anywhere; font-size: 14px; }
+  .dashboard-note-meta { color: var(--text-muted); font-size: 11px; }
+  .dashboard-note-content { margin: 10px 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; font-size: 13px; }
+  .dashboard-note-actions { display: flex; gap: 8px; }
+  .dashboard-note-form { display: grid; gap: 12px; margin-top: 15px; padding: 14px; border: 1px solid var(--line-soft); border-radius: 9px; background: var(--panel-2); }
+  .dashboard-note-form label { display: grid; gap: 5px; font-size: 12px; font-weight: 700; color: var(--text-muted); }
+  .dashboard-note-form input, .dashboard-note-form select, .dashboard-note-form textarea {
+    box-sizing: border-box; width: 100%; padding: 9px; border: 1px solid var(--line);
+    border-radius: 6px; background: var(--panel); color: var(--text); font: 13px var(--sans);
+  }
+  .dashboard-note-form textarea { min-height: 130px; resize: vertical; }
+  .dashboard-note-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  #dashboardNoteError { color: #e85a53; font-size: 12px; }
   body:not(.dashboard-qa-management) #qaPanel .qa-panel-actions,
   body:not(.dashboard-qa-management) #qaPanel .qa-suite-case-actions,
   body:not(.dashboard-qa-management) #qaPanel #qaSuiteCreateBtn,
@@ -1025,6 +1043,7 @@
   @media (max-width: 720px) {
     .dashboard-topbar { flex-wrap: wrap; }
     .dashboard-topbar .dashboard-issue-nav { font-size: 10px; padding: 8px 9px; }
+    .dashboard-note-fields { grid-template-columns: 1fr; }
   }
   .dashboard-page-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin: 0 0 20px; }
   .dashboard-page-heading h1 { margin: 0; font-size: clamp(24px, 3vw, 32px); letter-spacing: -.04em; }
@@ -2579,9 +2598,48 @@
         <button class="btn-secondary dashboard-issue-nav" id="backFromQaCasesBtn" type="button" hidden>← Volver al inicio</button>
         <button class="btn-secondary dashboard-issue-nav" id="openIssueLogBtn" type="button">📋 Bitácora de Issues</button>
         <button class="btn-secondary dashboard-issue-nav" id="backFromIssueLogBtn" type="button" hidden>← Volver al inicio</button>
+        <button class="btn-secondary dashboard-issue-nav" id="openNotesBtn" type="button">📝 Notas</button>
+        <button class="btn-secondary dashboard-issue-nav" id="backFromNotesBtn" type="button" hidden>← Volver al inicio</button>
         <button class="btn-primary dashboard-open-btn" id="openDocumenterBtn" type="button">📂 Abrir documentador</button>
       </header>
       <main class="dashboard-content">
+        <section class="dashboard-card" id="dashboardNotes" aria-labelledby="dashboardNotesTitle" tabindex="-1" hidden>
+          <div class="dashboard-card-heading">
+            <strong id="dashboardNotesTitle">Notas de reuniones y pruebas</strong>
+            <button class="btn-primary" id="newDashboardNoteBtn" type="button">+ Nueva nota</button>
+          </div>
+          <form class="dashboard-note-form" id="dashboardNoteForm" hidden novalidate>
+            <input id="dashboardNoteId" type="hidden" />
+            <label for="dashboardNoteTitle">Título *
+              <input id="dashboardNoteTitle" type="text" maxlength="160" required />
+            </label>
+            <div class="dashboard-note-fields">
+              <label for="dashboardNoteDate">Fecha *
+                <input id="dashboardNoteDate" type="date" required />
+              </label>
+              <label for="dashboardNoteType">Tipo *
+                <select id="dashboardNoteType" required>
+                  <option value="reunion">Reunión</option>
+                  <option value="prueba">Prueba</option>
+                </select>
+              </label>
+            </div>
+            <label for="dashboardNoteContent">Contenido *
+              <textarea id="dashboardNoteContent" maxlength="10000" required></textarea>
+            </label>
+            <label for="dashboardNoteImages">Imágenes adjuntas
+              <input id="dashboardNoteImages" type="file" accept="image/*" multiple />
+            </label>
+            <span class="dashboard-note-meta" id="dashboardNoteImageStatus" role="status">También puedes pegar imágenes con Ctrl+V.</span>
+            <div class="dashboard-issue-attachment-list" id="dashboardNoteAttachments"></div>
+            <div id="dashboardNoteError" role="alert" hidden></div>
+            <div class="dashboard-note-actions">
+              <button class="btn-secondary" id="cancelDashboardNoteBtn" type="button">Cancelar</button>
+              <button class="btn-primary" id="saveDashboardNoteBtn" type="submit">Guardar nota</button>
+            </div>
+          </form>
+          <div class="dashboard-notes-list" id="dashboardNotesList" aria-live="polite"></div>
+        </section>
         <div class="dashboard-page-heading">
           <div>
             <h1>Control del día</h1>
@@ -35153,6 +35211,197 @@ var __async = (__this, __arguments, generator) => {
     }, 120);
   }
 
+  let dashboardNoteDraftImages = [];
+  let dashboardNoteSession = 0;
+  let dashboardNotePendingImages = 0;
+  let dashboardNoteSaving = false;
+
+  function renderDashboardNoteAttachments() {
+    const list = document.getElementById("dashboardNoteAttachments");
+    list.innerHTML = dashboardNoteDraftImages.map((item, index) =>
+      `<div class="dashboard-issue-attachment-item"><button type="button" class="dashboard-issue-attachment-preview" data-preview-note-image="${index}" aria-label="Ampliar ${escapeHtml(item.name || "imagen adjunta")}"><img src="${escapeHtml(item.dataUrl)}" alt="" /></button><button type="button" data-remove-attachment="${index}" aria-label="Quitar imagen">×</button></div>`
+    ).join("");
+    list.querySelectorAll("[data-preview-note-image]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const image = dashboardNoteDraftImages[Number(button.dataset.previewNoteImage)];
+        if (image) openZoom(image.dataUrl, button);
+      });
+    });
+    list.querySelectorAll("[data-remove-attachment]").forEach((button) => {
+      button.addEventListener("click", () => {
+        dashboardNoteDraftImages.splice(Number(button.dataset.removeAttachment), 1);
+        renderDashboardNoteAttachments();
+      });
+    });
+  }
+
+  async function addDashboardNoteImages(files) {
+    const session = dashboardNoteSession;
+    const error = document.getElementById("dashboardNoteError");
+    const selected = [...files];
+    if (selected.some((file) => !file.type.startsWith("image/"))) {
+      error.textContent = "Solo se pueden adjuntar archivos de imagen.";
+      error.hidden = false;
+    }
+    const images = selected.filter((file) => file.type.startsWith("image/"));
+    if (!images.length) return;
+    dashboardNotePendingImages++;
+    document.getElementById("saveDashboardNoteBtn").disabled = true;
+    document.getElementById("dashboardNoteImageStatus").textContent = "Procesando imágenes...";
+    try {
+      for (const file of images) {
+        try {
+          const image = await readIssueImageFile(file);
+          if (session !== dashboardNoteSession) return;
+          dashboardNoteDraftImages.push(image);
+          renderDashboardNoteAttachments();
+        } catch (readError) {
+          if (session !== dashboardNoteSession) return;
+          error.textContent = `${file.name || "Imagen"}: ${readError.message}`;
+          error.hidden = false;
+        }
+      }
+    } finally {
+      if (session === dashboardNoteSession) {
+        dashboardNotePendingImages--;
+        if (!dashboardNotePendingImages) {
+          document.getElementById("saveDashboardNoteBtn").disabled = false;
+          document.getElementById("dashboardNoteImageStatus").textContent = "También puedes pegar imágenes con Ctrl+V.";
+        }
+      }
+    }
+  }
+
+  function closeDashboardNoteForm() {
+    dashboardNoteSession++;
+    dashboardNotePendingImages = 0;
+    dashboardNoteDraftImages = [];
+    const form = document.getElementById("dashboardNoteForm");
+    form.reset();
+    form.hidden = true;
+    document.getElementById("dashboardNoteError").hidden = true;
+  }
+
+  function openDashboardNoteForm(note) {
+    dashboardNoteSession++;
+    dashboardNotePendingImages = 0;
+    dashboardNoteDraftImages = Array.isArray(note?.attachments) ? note.attachments.map((item) => ({ ...item })) : [];
+    const form = document.getElementById("dashboardNoteForm");
+    form.reset();
+    document.getElementById("dashboardNoteId").value = note?.id || "";
+    document.getElementById("dashboardNoteTitle").value = note?.title || "";
+    document.getElementById("dashboardNoteDate").value = note?.date || toDateTimeLocalValue(Date.now()).slice(0, 10);
+    document.getElementById("dashboardNoteType").value = note?.type || "reunion";
+    document.getElementById("dashboardNoteContent").value = note?.content || "";
+    document.getElementById("dashboardNoteError").hidden = true;
+    document.getElementById("saveDashboardNoteBtn").disabled = false;
+    document.getElementById("dashboardNoteImageStatus").textContent = "También puedes pegar imágenes con Ctrl+V.";
+    renderDashboardNoteAttachments();
+    form.hidden = false;
+    document.getElementById("dashboardNoteTitle").focus();
+  }
+
+  function renderDashboardNotes() {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    const notes = Array.isArray(project.notes) ? project.notes : [];
+    const list = document.getElementById("dashboardNotesList");
+    list.innerHTML = notes.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)) || (b.createdAt || 0) - (a.createdAt || 0))
+      .map((note) => `<article class="dashboard-note">
+        <div class="dashboard-note-header">
+          <h3>${escapeHtml(note.title)}</h3>
+          <span class="dashboard-note-meta">${note.type === "reunion" ? "Reunión" : "Prueba"} · ${escapeHtml(note.date)}</span>
+        </div>
+        <p class="dashboard-note-content">${escapeHtml(note.content)}</p>
+        <div class="dashboard-issue-attachment-list">${(Array.isArray(note.attachments) ? note.attachments : []).map((image, index) =>
+          `<div class="dashboard-issue-attachment-item"><button type="button" class="dashboard-issue-attachment-preview" data-note-id="${escapeHtml(note.id)}" data-note-image="${index}" aria-label="Ampliar ${escapeHtml(image.name || "imagen adjunta")}"><img src="${escapeHtml(image.dataUrl)}" alt="" /></button></div>`
+        ).join("")}</div>
+        <div class="dashboard-note-actions">
+          <button class="btn-secondary" type="button" data-edit-note="${escapeHtml(note.id)}">Editar</button>
+          <button class="btn-secondary" type="button" data-delete-note="${escapeHtml(note.id)}">Eliminar</button>
+        </div>
+      </article>`).join("") || '<div class="dashboard-empty">Todavía no hay notas para este proyecto.</div>';
+    list.querySelectorAll("[data-note-image]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const note = notes.find((item) => item.id === button.dataset.noteId);
+        const image = note?.attachments?.[Number(button.dataset.noteImage)];
+        if (image) openZoom(image.dataUrl, button);
+      });
+    });
+    list.querySelectorAll("[data-edit-note]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const note = notes.find((item) => item.id === button.dataset.editNote);
+        if (note) openDashboardNoteForm(note);
+      });
+    });
+    list.querySelectorAll("[data-delete-note]").forEach((button) => {
+      button.addEventListener("click", () => deleteDashboardNote(project, button.dataset.deleteNote, button));
+    });
+  }
+
+  async function saveDashboardNote(event) {
+    event.preventDefault();
+    if (dashboardNoteSaving || dashboardNotePendingImages) return;
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    const id = document.getElementById("dashboardNoteId").value;
+    const title = document.getElementById("dashboardNoteTitle").value.trim();
+    const dateInput = document.getElementById("dashboardNoteDate");
+    const date = dateInput.value;
+    const type = document.getElementById("dashboardNoteType").value;
+    const content = document.getElementById("dashboardNoteContent").value.trim();
+    const error = document.getElementById("dashboardNoteError");
+    if (!title || !date || !dateInput.validity.valid || !["reunion", "prueba"].includes(type) || !content) {
+      error.textContent = "Completa el título, la fecha, el tipo y el contenido de la nota.";
+      error.hidden = false;
+      return;
+    }
+    const before = project.notes;
+    const notes = Array.isArray(before) ? before : [];
+    const existing = notes.find((item) => item.id === id);
+    if (id && !existing) {
+      error.textContent = "La nota ya no existe en este proyecto. Cierra el formulario y vuelve a intentarlo.";
+      error.hidden = false;
+      return;
+    }
+    const note = { ...existing, id: existing?.id || `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title, date, type, content, attachments: dashboardNoteDraftImages.map((item) => ({ ...item })), createdAt: existing?.createdAt || Date.now() };
+    project.notes = existing ? notes.map((item) => item.id === id ? note : item) : [...notes, note];
+    const saveButton = document.getElementById("saveDashboardNoteBtn");
+    dashboardNoteSaving = true;
+    saveButton.disabled = true;
+    try {
+      if (!(await saveProjectsToDB())) {
+        project.notes = before;
+        error.textContent = "No se pudo guardar la nota. Inténtalo nuevamente.";
+        error.hidden = false;
+        return;
+      }
+      closeDashboardNoteForm();
+      renderDashboardNotes();
+      showTransientStatus(existing ? "Nota actualizada." : "Nota guardada.", 3000);
+    } finally {
+      dashboardNoteSaving = false;
+      saveButton.disabled = false;
+    }
+  }
+
+  async function deleteDashboardNote(project, id, opener) {
+    const note = (Array.isArray(project.notes) ? project.notes : []).find((item) => item.id === id);
+    if (!note) return;
+    const confirmed = await showAppConfirm(`¿Eliminar la nota “${note.title}”? Esta acción no se puede deshacer.`, opener, "Eliminar nota");
+    if (!confirmed) return;
+    const before = project.notes;
+    project.notes = before.filter((item) => item.id !== id);
+    if (!(await saveProjectsToDB())) {
+      project.notes = before;
+      showTransientStatus("No se pudo eliminar la nota. Inténtalo nuevamente.", 4000);
+      return;
+    }
+    if (document.getElementById("dashboardNoteId").value === id) closeDashboardNoteForm();
+    renderDashboardNotes();
+    showTransientStatus("Nota eliminada.", 3000);
+  }
+
   function renderDashboard() {
     if (!projects.length) return;
     const project = projects.find((item) => item.id === activeProjectId) || projects[0];
@@ -35212,10 +35461,12 @@ var __async = (__this, __arguments, generator) => {
     renderProjectSelector();
     renderDocumenterCasePicker();
     renderQaPanel();
+    renderDashboardNotes();
   }
 
   async function selectDashboardProject(projectId) {
     if (!projects.some((project) => project.id === projectId)) return;
+    closeDashboardNoteForm();
     activeProjectId = projectId;
     activeSuiteId = "";
     renderDashboard();
@@ -35321,14 +35572,20 @@ var __async = (__this, __arguments, generator) => {
     let dashboardScrollPosition = 0;
     const setDashboardSection = (section) => {
       const previous = document.body.classList.contains("dashboard-issue-management") ? "issues"
-        : document.body.classList.contains("dashboard-qa-management") ? "qa" : "home";
+        : document.body.classList.contains("dashboard-qa-management") ? "qa"
+        : document.body.classList.contains("dashboard-notes-management") ? "notes" : "home";
       if (previous === "home" && section !== "home") dashboardScrollPosition = window.scrollY;
       document.body.classList.toggle("dashboard-issue-management", section === "issues");
       document.body.classList.toggle("dashboard-qa-management", section === "qa");
+      document.body.classList.toggle("dashboard-notes-management", section === "notes");
+      document.getElementById("dashboardNotes").hidden = section !== "notes";
       document.getElementById("openIssueLogBtn").hidden = section === "issues";
       document.getElementById("backFromIssueLogBtn").hidden = section !== "issues";
       document.getElementById("openQaCasesBtn").hidden = section === "qa";
       document.getElementById("backFromQaCasesBtn").hidden = section !== "qa";
+      document.getElementById("openNotesBtn").hidden = section === "notes";
+      document.getElementById("backFromNotesBtn").hidden = section !== "notes";
+      if (section !== "notes") closeDashboardNoteForm();
       if (section !== "issues") dashboardIssueSelection.clear();
       if (section !== "qa") {
         const createForm = document.getElementById("qaSuiteCreateForm");
@@ -35340,15 +35597,33 @@ var __async = (__this, __arguments, generator) => {
       }
       renderDashboardIssueLog();
       renderQaPanel();
+      renderDashboardNotes();
       window.scrollTo(0, section === "home" ? dashboardScrollPosition : 0);
       const focusId = section === "issues" ? "dashboardIssueLog" : section === "qa" ? "qaPanel"
-        : previous === "qa" ? "openQaCasesBtn" : "openIssueLogBtn";
+        : section === "notes" ? "dashboardNotes" : previous === "qa" ? "openQaCasesBtn"
+        : previous === "notes" ? "openNotesBtn" : "openIssueLogBtn";
       document.getElementById(focusId).focus({ preventScroll: true });
     };
     document.getElementById("openIssueLogBtn").addEventListener("click", () => setDashboardSection("issues"));
     document.getElementById("backFromIssueLogBtn").addEventListener("click", () => setDashboardSection("home"));
     document.getElementById("openQaCasesBtn").addEventListener("click", () => setDashboardSection("qa"));
     document.getElementById("backFromQaCasesBtn").addEventListener("click", () => setDashboardSection("home"));
+    document.getElementById("openNotesBtn").addEventListener("click", () => setDashboardSection("notes"));
+    document.getElementById("backFromNotesBtn").addEventListener("click", () => setDashboardSection("home"));
+    document.getElementById("newDashboardNoteBtn").addEventListener("click", () => openDashboardNoteForm());
+    document.getElementById("cancelDashboardNoteBtn").addEventListener("click", closeDashboardNoteForm);
+    document.getElementById("dashboardNoteForm").addEventListener("submit", saveDashboardNote);
+    document.getElementById("dashboardNoteImages").addEventListener("change", (event) => {
+      const files = [...event.currentTarget.files];
+      event.currentTarget.value = "";
+      addDashboardNoteImages(files);
+    });
+    document.getElementById("dashboardNoteForm").addEventListener("paste", (event) => {
+      const files = [...(event.clipboardData?.files || [])].filter((file) => file.type.startsWith("image/"));
+      if (!files.length) return;
+      event.preventDefault();
+      addDashboardNoteImages(files);
+    });
     const toggle = document.getElementById("dashboardSidebarToggle");
     document.getElementById("documenterCasePicker").addEventListener("change", async (event) => {
       const value = event.currentTarget.value;
@@ -35378,7 +35653,8 @@ var __async = (__this, __arguments, generator) => {
     });
     const openDocumenter = async (suiteId = "") => {
       if (document.body.classList.contains("dashboard-issue-management") ||
-          document.body.classList.contains("dashboard-qa-management")) setDashboardSection("home");
+          document.body.classList.contains("dashboard-qa-management") ||
+          document.body.classList.contains("dashboard-notes-management")) setDashboardSection("home");
       clearQaDocumenterExecutionContext();
       document.body.classList.remove("dashboard-view");
       document.body.classList.add("documenter-view");
