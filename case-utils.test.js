@@ -11,6 +11,8 @@ const {
   buildExecutiveSummary,
   getGroupedStepLabel,
   buildAutoIssueSnapshots,
+  nextIssueDisplayId,
+  migrateProjectIssueIds,
   getClipboardFallbackMessage,
   dualCaseRecord,
   buildCaseRecordTitle,
@@ -19,6 +21,41 @@ const {
   buildIssueLogEntries,
   buildAutoIssueSnapshot,
 } = require('./case-utils.js');
+
+test('issue identifiers migrate existing issues once and remain sequential per project', () => {
+  const project = {
+    issues: [
+      { id: 'old-1', source: 'auto', testId: 'TC-1-N1', baseTestId: 'TC-1', noveltyNo: 1, status: 'Closed' },
+      { id: 'old-2', source: 'auto', testId: 'TC-1-N2', baseTestId: 'TC-1', noveltyNo: 2, observation: 'Detalle' },
+      { id: 'old-3', source: 'manual', testId: 'TC-3-N1' },
+    ],
+  };
+  assert.equal(migrateProjectIssueIds(project), true);
+  assert.deepEqual(project.issues.map(({ testId, displayId }) => [testId, displayId]), [
+    ['TC-1', 'ISSUE-001'], ['TC-1', 'ISSUE-002'], ['TC-3-N1', 'ISSUE-003'],
+  ]);
+  assert.equal(project.issues[0].status, 'Closed');
+  assert.equal(project.issues[1].observation, 'Detalle');
+  assert.equal(migrateProjectIssueIds(project), false);
+  project.issues.pop();
+  assert.equal(nextIssueDisplayId(project), 'ISSUE-004');
+  assert.equal(nextIssueDisplayId({ issues: [] }), 'ISSUE-001');
+});
+
+test('issue migration reserves existing identifiers and preserves case IDs ending in novelty-like suffixes', () => {
+  const project = {
+    issues: [
+      { source: 'auto', testId: 'TC-N1-N1', baseTestId: 'TC-N1', noveltyNo: 1 },
+      { source: 'manual', displayId: 'ISSUE-009', testId: 'TC-2' },
+      { source: 'auto', testId: 'TC-3-N2', baseTestId: 'TC-3', noveltyNo: 2 },
+    ],
+  };
+  assert.equal(migrateProjectIssueIds(project), true);
+  assert.deepEqual(project.issues.map((issue) => issue.displayId), ['ISSUE-010', 'ISSUE-009', 'ISSUE-011']);
+  assert.equal(project.issues[0].testId, 'TC-N1');
+  assert.equal(migrateProjectIssueIds(project), false);
+  assert.equal(project.issues[0].testId, 'TC-N1');
+});
 
 test('normalizeStepStatus returns a valid fallback', () => {
   assert.equal(normalizeStepStatus('aprobado'), 'aprobado');

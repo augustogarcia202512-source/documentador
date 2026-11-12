@@ -379,6 +379,35 @@
     return size > 1 ? `${group}.${index - first + 1}` : String(group);
   }
 
+  function nextIssueDisplayId(project) {
+    const issues = Array.isArray(project.issues) ? project.issues : [];
+    const highest = issues.reduce((max, issue) => {
+      const match = /^ISSUE-(\d+)$/.exec(String(issue.displayId || ""));
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, Number.isSafeInteger(project.issueSequence) && project.issueSequence > 0 ? project.issueSequence : 0);
+    if (!Number.isSafeInteger(highest + 1)) throw new Error("Se agotó la secuencia de identificadores de issues.");
+    project.issueSequence = highest + 1;
+    return `ISSUE-${String(project.issueSequence).padStart(3, "0")}`;
+  }
+
+  function migrateProjectIssueIds(project) {
+    const issues = Array.isArray(project.issues) ? project.issues : [];
+    let changed = false;
+    for (const issue of issues) {
+      if (issue.displayId) continue;
+      if (issue.source === "auto" && Number.isInteger(issue.noveltyNo) && issue.noveltyNo > 0) {
+        const suffix = `-N${issue.noveltyNo}`;
+        if (typeof issue.testId === "string" && issue.testId.endsWith(suffix) &&
+            (!issue.baseTestId || issue.testId === issue.baseTestId + suffix)) {
+          issue.testId = issue.testId.slice(0, -suffix.length);
+        }
+      }
+      issue.displayId = nextIssueDisplayId(project);
+      changed = true;
+    }
+    return changed;
+  }
+
   // Una novedad es un paso lógico (con sus imágenes agrupadas) fallido o con severidad.
   function buildAutoIssueSnapshots(caseRecord = {}, forceFailed = false, fallbackNote = "") {
     const steps = Array.isArray(caseRecord.steps) ? caseRecord.steps : [];
@@ -539,6 +568,8 @@
     buildAutoIssueSnapshots,
     getGroupedStepLabel,
     getStepSeverity,
+    nextIssueDisplayId,
+    migrateProjectIssueIds,
   };
 
   if (typeof module !== "undefined" && module.exports) {
