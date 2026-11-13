@@ -390,6 +390,83 @@
     return `ISSUE-${String(project.issueSequence).padStart(3, "0")}`;
   }
 
+  function getIssueSuiteCode(project, suiteId, suiteName) {
+    const savedCodes = project.issueSuiteCodes && typeof project.issueSuiteCodes === "object"
+      ? project.issueSuiteCodes
+      : {};
+    if (savedCodes[suiteId]) return savedCodes[suiteId];
+
+    const normalizedName = String(suiteName || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+    const baseCode = normalizedName.slice(0, 3) || "ISS";
+    const reservedCodes = new Set(
+      Object.entries(savedCodes)
+        .filter(([id]) => id !== suiteId)
+        .map(([, code]) => String(code))
+    );
+    (Array.isArray(project.issues) ? project.issues : []).forEach((issue) => {
+      if (issue.suiteId === suiteId) return;
+      const match = /^(.+)-\d+$/.exec(String(issue.displayId || ""));
+      if (match) reservedCodes.add(match[1]);
+    });
+
+    let code = baseCode;
+    if (reservedCodes.has(code)) {
+      code = "";
+      for (let length = 4; length <= normalizedName.length; length += 1) {
+        const candidate = normalizedName.slice(0, length);
+        if (!reservedCodes.has(candidate)) {
+          code = candidate;
+          break;
+        }
+      }
+      if (!code) {
+        let suffix = 2;
+        while (reservedCodes.has(`${baseCode}${suffix}`)) suffix += 1;
+        code = `${baseCode}${suffix}`;
+      }
+    }
+    return code;
+  }
+
+  function getNextSuiteIssueNumber(project, suiteId, code) {
+    const savedSequences = project.issueSuiteSequences && typeof project.issueSuiteSequences === "object"
+      ? project.issueSuiteSequences
+      : {};
+    const pattern = new RegExp(`^${escapeRegExp(code)}-(\\d+)$`);
+    const highestIssueNumber = (Array.isArray(project.issues) ? project.issues : []).reduce((max, issue) => {
+      if (issue.suiteId !== suiteId) return max;
+      const match = pattern.exec(String(issue.displayId || ""));
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
+    const savedSequence = Number.isSafeInteger(savedSequences[suiteId]) && savedSequences[suiteId] > 0
+      ? savedSequences[suiteId]
+      : 0;
+    const highest = Math.max(highestIssueNumber, savedSequence);
+    if (!Number.isSafeInteger(highest + 1)) throw new Error("Se agotó la secuencia de identificadores de issues para esta suite.");
+    return highest + 1;
+  }
+
+  function previewSuiteIssueDisplayId(project, suiteId, suiteName) {
+    if (!suiteId || !String(suiteName || "").trim()) throw new Error("Selecciona una suite para generar el ID del issue.");
+    const code = getIssueSuiteCode(project, suiteId, suiteName);
+    return `${code}-${String(getNextSuiteIssueNumber(project, suiteId, code)).padStart(3, "0")}`;
+  }
+
+  function nextSuiteIssueDisplayId(project, suiteId, suiteName) {
+    const displayId = previewSuiteIssueDisplayId(project, suiteId, suiteName);
+    const code = displayId.slice(0, displayId.lastIndexOf("-"));
+    project.issueSuiteCodes = { ...(project.issueSuiteCodes || {}), [suiteId]: code };
+    project.issueSuiteSequences = {
+      ...(project.issueSuiteSequences || {}),
+      [suiteId]: Number(displayId.slice(displayId.lastIndexOf("-") + 1)),
+    };
+    return displayId;
+  }
+
   function migrateProjectIssueIds(project) {
     const issues = Array.isArray(project.issues) ? project.issues : [];
     let changed = false;
@@ -569,6 +646,8 @@
     getGroupedStepLabel,
     getStepSeverity,
     nextIssueDisplayId,
+    previewSuiteIssueDisplayId,
+    nextSuiteIssueDisplayId,
     migrateProjectIssueIds,
   };
 

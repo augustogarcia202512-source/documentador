@@ -2832,7 +2832,7 @@
                   <th id="dashboardIssueSelectColumn" hidden><input type="checkbox" id="dashboardIssueSelectAll" aria-label="Seleccionar todos los issues visibles" /></th>
                   <th>Test ID</th>
                   <th>ID issue</th>
-                  <th>Caso de prueba</th>
+                  <th>Hallazgo / caso de prueba</th>
                   <th>Observación</th>
                   <th>Evidencia</th>
                   <th>Resultado QA</th>
@@ -2844,7 +2844,7 @@
                   <th>Antigüedad</th>
                   <th>Fecha cierre</th>
                   <th>Última validación</th>
-                  <th id="dashboardIssueActionsColumn" hidden>Acciones</th>
+                  <th id="dashboardIssueActionsColumn">Acciones</th>
                 </tr>
               </thead>
               <tbody id="dashboardIssueTableBody"></tbody>
@@ -2858,11 +2858,14 @@
             <form class="dashboard-issue-editor-form" id="dashboardIssueForm" novalidate>
               <input id="dashboardIssueId" type="hidden" />
               <div class="dashboard-issue-editor-fields">
-                <label for="dashboardIssueDisplayId">ID del issue
+                <label for="dashboardIssueDisplayId">ID automático del issue
                   <input id="dashboardIssueDisplayId" type="text" readonly />
+                  <small>Se asigna según la suite seleccionada.</small>
                 </label>
-                <label for="dashboardIssueModule">Módulo del caso
-                  <input id="dashboardIssueModule" type="text" readonly />
+                <label for="dashboardIssueSuite">Suite *
+                  <select id="dashboardIssueSuite" required>
+                    <option value="">Selecciona una suite</option>
+                  </select>
                 </label>
               </div>
               <label for="dashboardIssueCase">Caso relacionado (opcional)
@@ -2876,8 +2879,11 @@
               <label for="dashboardIssueFormName">Caso de prueba / título *
                 <input id="dashboardIssueFormName" type="text" maxlength="180" required />
               </label>
-              <label for="dashboardIssueObservation">Observación / descripción *
-                <textarea id="dashboardIssueObservation" maxlength="3000" required placeholder="Describe el comportamiento encontrado..."></textarea>
+              <label for="dashboardIssueFindingTitle">Título del hallazgo *
+                <input id="dashboardIssueFindingTitle" type="text" maxlength="180" required placeholder="Resume el problema encontrado..." />
+              </label>
+              <label for="dashboardIssueObservation">Descripción del hallazgo *
+                <textarea id="dashboardIssueObservation" maxlength="3000" required placeholder="Describe el hallazgo y el comportamiento encontrado..."></textarea>
               </label>
               <div class="dashboard-issue-attachments dashboard-issue-section">
                 <span class="dashboard-issue-section-title">Evidencias adjuntas</span>
@@ -26511,7 +26517,7 @@ var __async = (__this, __arguments, generator) => {
   return exports;
 })({});
 </script>
-<script src="case-utils.js?v=20261111-issue-ids"></script>
+<script src="case-utils.js?v=20261112-suite-issue-ids"></script>
 <script src="spellcheck.bundle.js?v=20261105-correcciones"></script>
   <script>
     let mediaStream = null;
@@ -31904,7 +31910,209 @@ var __async = (__this, __arguments, generator) => {
   }
 
   function getDashboardEvidenceLabel(item) {
-    return `${item.attachment ? "Adjunto" : "Paso"} ${item.index + 1}`;
+    return `${item.attachment ? "Adjunto" : "Evidencia"} ${item.index + 1}`;
+  }
+
+  function cleanDashboardIssueReportText(value, fallback = "Sin definir") {
+    const text = String(value ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").trim();
+    return text || fallback;
+  }
+
+  function dashboardIssueReportParagraph(text, options = {}) {
+    return new docx.Paragraph({
+      spacing: { before: options.before || 0, after: options.after ?? 100 },
+      keepNext: !!options.keepNext,
+      children: [new docx.TextRun({
+        text: cleanDashboardIssueReportText(text, ""),
+        font: "Arial",
+        size: options.size || 20,
+        bold: !!options.bold,
+        color: options.color || "263746",
+      })],
+    });
+  }
+
+  function dashboardIssueReportSectionHeading(text) {
+    return dashboardIssueReportParagraph(text, { before: 180, after: 80, size: 23, bold: true, color: "E8A33D", keepNext: true });
+  }
+
+  function dashboardIssueReportMetadataCell(text, { label = false, shaded = false } = {}) {
+    return new docx.TableCell({
+      borders: panamCellBorders(),
+      shading: shaded ? { type: docx.ShadingType.CLEAR, color: "auto", fill: "EEF3F7" } : undefined,
+      margins: { top: 90, bottom: 90, left: 110, right: 110 },
+      children: [dashboardIssueReportParagraph(text, { after: 0, size: 18, bold: label, color: label ? "64788A" : "263746" })],
+    });
+  }
+
+  function dashboardIssueReportFilename(issue) {
+    const identifier = sanitizeFilenamePart(issue.displayId || issue.testId || issue.id, "issue");
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return `informe-${identifier}-${date}.docx`;
+  }
+
+  async function createDashboardIssueReportBlob(issue, project) {
+    if (!issue || !project) throw new Error("No se encontró el issue seleccionado o su proyecto.");
+    const relatedCase = getDashboardIssueCase(issue, project);
+    const suiteId = issue.suiteId || relatedCase?.suiteId;
+    const moduleName = (Array.isArray(project.suites) ? project.suites : []).find((suite) => suite.id === suiteId)?.name;
+    const metadata = [
+      ["ID del issue", issue.displayId],
+      ["Test ID", issue.testId],
+      ["Módulo", moduleName],
+      ["Fecha de registro", formatDashboardIssueDate(issue.createdAt)],
+      ["Estado", issue.status],
+      ["Severidad", issue.severity],
+      ["Prioridad", issue.priority],
+      ["Asignado a", issue.assignee],
+    ];
+    const metadataRows = [];
+    for (let index = 0; index < metadata.length; index += 2) {
+      metadataRows.push(new docx.TableRow({
+        cantSplit: true,
+        children: [
+          dashboardIssueReportMetadataCell(metadata[index][0], { label: true, shaded: true }),
+          dashboardIssueReportMetadataCell(metadata[index][1]),
+          dashboardIssueReportMetadataCell(metadata[index + 1][0], { label: true, shaded: true }),
+          dashboardIssueReportMetadataCell(metadata[index + 1][1]),
+        ],
+      }));
+    }
+
+    const body = [
+      dashboardIssueReportParagraph("INFORME DE ISSUE", { after: 100, size: 30, bold: true, color: "1F3A5F" }),
+      dashboardIssueReportParagraph(`Generado el ${new Date().toLocaleString("es-CO")}`, { after: 140, size: 17, color: "64788A" }),
+      new docx.Table({
+        width: { size: 11056, type: docx.WidthType.DXA },
+        columnWidths: [1900, 3628, 1900, 3628],
+        rows: metadataRows,
+      }),
+      dashboardIssueReportSectionHeading("Título del hallazgo"),
+      dashboardIssueReportParagraph(issue.findingTitle || issue.formName),
+      dashboardIssueReportSectionHeading("Caso de prueba"),
+      dashboardIssueReportParagraph(issue.formName),
+      dashboardIssueReportSectionHeading("Descripción del hallazgo"),
+      ...cleanDashboardIssueReportText(issue.observation, "Sin descripción").split(/\r?\n/).map((line) =>
+        dashboardIssueReportParagraph(line || " ", { after: 75 })
+      ),
+    ];
+
+    const evidence = getDashboardIssueEvidence(issue, project);
+    body.push(dashboardIssueReportSectionHeading("Evidencias"));
+    if (!evidence.length) {
+      body.push(dashboardIssueReportParagraph("Este issue no tiene evidencias adjuntas.", { after: 100 }));
+    } else {
+      for (let index = 0; index < evidence.length; index += 1) {
+        const item = evidence[index];
+        const { step } = item;
+        const dataUrl = step.renderedDataUrl || step.dataUrl || step.thumbnailDataUrl;
+        if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
+          throw new Error(`No se pudo procesar ${getDashboardEvidenceLabel(item)}: el archivo de imagen no es válido.`);
+        }
+        try {
+          const imageData = await buildWordEvidenceImage(dataUrl, step.pins);
+          if (!imageData.width || !imageData.height) throw new Error("La imagen no tiene dimensiones válidas.");
+          const scale = Math.min(490 / imageData.width, 680 / imageData.height, 1);
+          body.push(dashboardIssueReportParagraph(getDashboardEvidenceLabel(item), { before: 100, after: 35, bold: true, keepNext: true }));
+          const description = String(step.comment || "").trim();
+          if (description) body.push(dashboardIssueReportParagraph(description, { after: 60 }));
+          body.push(new docx.Paragraph({
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 120 },
+            children: [new docx.ImageRun({
+              data: imageData.data,
+              transformation: {
+                width: Math.max(1, Math.round(imageData.width * scale)),
+                height: Math.max(1, Math.round(imageData.height * scale)),
+              },
+              type: "jpg",
+            })],
+          }));
+        } catch (imageError) {
+          throw new Error(`No se pudo procesar ${getDashboardEvidenceLabel(item)}: ${imageError.message}`);
+        }
+      }
+    }
+
+    const updates = [
+      ...(Array.isArray(issue.statusHistory) ? issue.statusHistory : [])
+        .filter((entry) => entry && entry.status)
+        .map((entry) => ({
+          at: Number(entry.at) || 0,
+          type: "Cambio de estado",
+          detail: cleanDashboardIssueReportText(entry.status),
+        })),
+      ...(Array.isArray(issue.comments) ? issue.comments : [])
+        .filter((comment) => comment && String(comment.text || "").trim())
+        .map((comment) => ({
+          at: Number(comment.at) || 0,
+          type: "Comentario",
+          detail: cleanDashboardIssueReportText(comment.text),
+        })),
+    ].sort((a, b) => a.at - b.at);
+    if (updates.length) {
+      body.push(dashboardIssueReportSectionHeading("Historial de actualizaciones"));
+      updates.forEach((update) => {
+        body.push(dashboardIssueReportParagraph(`${formatDashboardIssueDate(update.at)} · ${update.type}`, { after: 25, size: 17, bold: true, color: "64788A" }));
+        body.push(...update.detail.split(/\r?\n/).map((line) => dashboardIssueReportParagraph(line || " ", { after: 75 })));
+      });
+    }
+
+    const generatedDate = new Date().toLocaleDateString("es-CO");
+    const document = new docx.Document({
+      creator: "Bitácora de Issues",
+      title: `Informe de issue ${cleanDashboardIssueReportText(issue.displayId || issue.testId, "Issue")}`,
+      description: "Informe individual generado desde la Bitácora de Issues.",
+      sections: [{
+        properties: {
+          page: {
+            size: { width: 12242, height: 15842 },
+            margin: { top: 567, right: 902, bottom: 851, left: 851, header: 709, footer: 369 },
+          },
+        },
+        headers: { default: new docx.Header({ children: [buildPanamHeaderTable()] }) },
+        footers: { default: new docx.Footer({
+          children: [new docx.Paragraph({
+            alignment: docx.AlignmentType.RIGHT,
+            border: { top: { style: docx.BorderStyle.SINGLE, size: 4, color: "D4DEE7", space: 5 } },
+            children: [
+              new docx.TextRun({ text: `Bitácora de Issues · Generado el ${generatedDate} · Página `, font: "Arial", size: 16, color: "64788A" }),
+              docx.PageNumber.CURRENT,
+            ],
+          })],
+        }) },
+        children: body,
+      }],
+    });
+    return await docx.Packer.toBlob(document);
+  }
+
+  async function downloadDashboardIssueReport(issueId, button) {
+    const project = projects.find((item) => item.id === activeProjectId);
+    const issue = Array.isArray(project?.issues) ? project.issues.find((item) => item.id === issueId) : null;
+    if (!issue || !project) {
+      await showAppAlert("No se encontró el issue que quieres descargar.", button || document.activeElement);
+      return;
+    }
+    if (button) button.disabled = true;
+    try {
+      const blob = await createDashboardIssueReportBlob(issue, project);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = dashboardIssueReportFilename(issue);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showTransientStatus(`Informe de ${issue.displayId || issue.testId || "issue"} descargado.`, 3500);
+    } catch (reportError) {
+      console.error("No se pudo generar el informe del issue:", reportError);
+      await showAppAlert(reportError.message || "No se pudo generar el informe Word. Inténtalo de nuevo.", button || document.activeElement);
+    } finally {
+      if (button) button.disabled = false;
+    }
   }
 
   let dashboardIssueDraftImages = [];
@@ -33460,7 +33668,7 @@ var __async = (__this, __arguments, generator) => {
     return issues.filter((issue) => {
       const relatedCase = getDashboardIssueCase(issue, project);
       const suiteId = issue.suiteId || relatedCase?.suiteId || "";
-      const searchText = [issue.displayId, issue.testId, issue.formName, issue.observation, issue.severity, issue.priority, issue.assignee]
+      const searchText = [issue.displayId, issue.testId, issue.findingTitle, issue.formName, issue.observation, issue.severity, issue.priority, issue.assignee]
         .filter(Boolean)
         .join(" ")
         .normalize("NFD")
@@ -33758,7 +33966,7 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("dashboardIssueHeadingActions").hidden = !canManageIssues;
     document.getElementById("dashboardIssueAgingConfig").hidden = !canManageIssues;
     document.getElementById("dashboardIssueSelectColumn").hidden = !canManageIssues;
-    document.getElementById("dashboardIssueActionsColumn").hidden = !canManageIssues;
+    document.getElementById("dashboardIssueActionsColumn").hidden = false;
     if (!Array.isArray(project.issues)) project.issues = [];
     const suiteNames = new Map((Array.isArray(project.suites) ? project.suites : [])
       .map((suite) => [suite.id, suite.name]));
@@ -33830,7 +34038,7 @@ var __async = (__this, __arguments, generator) => {
         ${canManageIssues ? `<td><input type="checkbox" data-issue-select="${escapeHtml(issue.id)}" aria-label="Seleccionar issue ${escapeHtml(issue.displayId || "")}" ${dashboardIssueSelection.has(issue.id) ? "checked" : ""} /></td>` : ""}
         <td><span class="dashboard-issue-test-id">${escapeHtml(issue.testId || "—")}</span></td>
         <td>${escapeHtml(issue.displayId || "—")}</td>
-        <td>${escapeHtml(issue.formName || "Caso de prueba")}<br><small>${escapeHtml(suiteName)}</small></td>
+        <td><strong>${escapeHtml(issue.findingTitle || issue.formName || "Hallazgo sin título")}</strong><br><small>${escapeHtml(issue.formName || "Sin caso de prueba")} · ${escapeHtml(suiteName)}</small></td>
         <td><div class="dashboard-issue-observation">${escapeHtml(issue.observation || "Sin observación")}</div>${Array.isArray(issue.comments) && issue.comments.length ? `<span class="dashboard-issue-meta">💬 ${issue.comments.length} ${issue.comments.length === 1 ? "comentario" : "comentarios"}</span>` : ""}</td>
         <td>${evidenceCount
           ? `<div class="dashboard-issue-evidence-previews">${evidencePreview}</div>`
@@ -33846,9 +34054,12 @@ var __async = (__this, __arguments, generator) => {
         <td>${renderDashboardIssueAge(issue)}</td>
         <td>${formatDashboardIssueDate(issue.closedAt)}</td>
         <td>${formatDashboardIssueDate(issue.lastValidationAt)}</td>
-        ${canManageIssues ? `<td><div class="dashboard-issue-table-actions"><button type="button" data-issue-edit="${escapeHtml(issue.id)}">Editar</button></div></td>` : ""}
+        <td><div class="dashboard-issue-table-actions">
+          <button type="button" data-issue-report="${escapeHtml(issue.id)}">Descargar Word</button>
+          ${canManageIssues ? `<button type="button" data-issue-edit="${escapeHtml(issue.id)}">Editar</button>` : ""}
+        </div></td>
       </tr>`;
-    }).join("") || `<tr><td colspan="${canManageIssues ? 16 : 14}"><div class="dashboard-issue-empty">${issues.length ? "No hay issues que coincidan con los filtros." : "Aún no hay issues. Se crearán automáticamente cuando se registre un fallo o una novedad con severidad, o puedes registrar uno manualmente."}</div></td></tr>`;
+    }).join("") || `<tr><td colspan="${canManageIssues ? 16 : 15}"><div class="dashboard-issue-empty">${issues.length ? "No hay issues que coincidan con los filtros." : "Aún no hay issues. Se crearán automáticamente cuando se registre un fallo o una novedad con severidad, o puedes registrar uno manualmente."}</div></td></tr>`;
 
     renderDashboardIssueBulkBar(visibleIssues);
     renderDashboardIssueTrend(issues);
@@ -33871,13 +34082,15 @@ var __async = (__this, __arguments, generator) => {
           }).join("");
           return `<article class="dashboard-issue-kanban-card">
             <strong>${escapeHtml(issue.displayId || "Issue")} · ${escapeHtml(issue.testId || "Caso sin ID")}</strong>
-            <span>${escapeHtml(issue.formName || "Caso de prueba")}</span>
+            <strong>${escapeHtml(issue.findingTitle || issue.formName || "Hallazgo sin título")}</strong>
+            <span>Caso de prueba: ${escapeHtml(issue.formName || "Sin caso relacionado")}</span>
             ${issue.qaResult ? `<span>Resultado QA: ${escapeHtml(issue.qaResult)}</span>` : ""}
             <span>${escapeHtml(issue.observation || "Sin observación")}</span>
             ${issue.assignee ? `<span>👤 ${escapeHtml(issue.assignee)}</span>` : ""}
             ${Array.isArray(issue.comments) && issue.comments.length ? `<span>💬 ${issue.comments.length}</span>` : ""}
             ${evidencePreview ? `<div class="dashboard-issue-evidence-previews" aria-label="Evidencias del caso">${evidencePreview}</div>` : ""}
             ${canManageIssues ? renderDashboardIssueStatusSelect(issue) : renderDashboardIssueStatusLabel(issue)}
+            <button type="button" data-issue-report="${escapeHtml(issue.id)}">Descargar Word</button>
             ${canManageIssues ? `<button type="button" data-issue-edit="${escapeHtml(issue.id)}">Editar</button>` : ""}
           </article>`;
         }).join("") || '<div class="dashboard-issue-empty">Sin issues</div>'}</div>
@@ -33892,6 +34105,9 @@ var __async = (__this, __arguments, generator) => {
         const issue = issues.find((item) => item.id === button.dataset.issueEdit);
         if (issue) openDashboardIssueEditor(issue, button);
       });
+    });
+    document.querySelectorAll("[data-issue-report]").forEach((button) => {
+      button.addEventListener("click", () => downloadDashboardIssueReport(button.dataset.issueReport, button));
     });
     document.querySelectorAll("[data-issue-evidence]").forEach((button) => {
       const issue = issues.find((item) => item.id === button.dataset.issueEvidence);
@@ -33948,10 +34164,36 @@ var __async = (__this, __arguments, generator) => {
     showTransientStatus(`${issue.displayId || issue.testId || "Issue"}: ${status}.`, 2500);
   }
 
-  function updateDashboardIssueModule(suiteId) {
+  function updateDashboardIssueSuite(suiteId) {
     const project = projects.find((item) => item.id === activeProjectId);
+    const suiteSelect = document.getElementById("dashboardIssueSuite");
+    suiteSelect.value = suiteId || "";
+    updateDashboardIssueDisplayIdPreview();
+  }
+
+  function updateDashboardIssueDisplayIdPreview() {
+    const project = projects.find((item) => item.id === activeProjectId);
+    const issueId = document.getElementById("dashboardIssueId").value;
+    const existing = project?.issues?.find((item) => item.id === issueId);
+    const suiteId = document.getElementById("dashboardIssueSuite").value;
     const suite = project?.suites?.find((item) => item.id === suiteId);
-    document.getElementById("dashboardIssueModule").value = suite?.name || "Sin módulo";
+    const displayId = document.getElementById("dashboardIssueDisplayId");
+    if (existing?.displayId) {
+      displayId.value = existing.displayId;
+      return;
+    }
+    if (!suite) {
+      displayId.value = "Selecciona una suite";
+      return;
+    }
+    try {
+      displayId.value = caseUtils.previewSuiteIssueDisplayId(project, suite.id, suite.name);
+    } catch (previewError) {
+      displayId.value = "";
+      const error = document.getElementById("dashboardIssueFormError");
+      error.textContent = previewError.message;
+      error.hidden = false;
+    }
   }
 
   function openDashboardIssueEditor(issue, opener) {
@@ -33966,6 +34208,11 @@ var __async = (__this, __arguments, generator) => {
       const label = [caseRecord.caseId, caseRecord.description].filter(Boolean).join(" · ") || "Caso sin ID";
       caseSelect.append(new Option(label, caseRecord.qaId));
     });
+    const suiteSelect = document.getElementById("dashboardIssueSuite");
+    suiteSelect.replaceChildren(new Option("Selecciona una suite", ""));
+    (Array.isArray(project.suites) ? project.suites : []).forEach((suite) => {
+      suiteSelect.append(new Option(suite.name, suite.id));
+    });
     form.reset();
     dashboardIssueDraftImages = Array.isArray(issue?.attachments) ? issue.attachments.map((item) => ({ ...item })) : [];
     dashboardIssueDraftComments = Array.isArray(issue?.comments) ? issue.comments.map((item) => ({ ...item })) : [];
@@ -33974,8 +34221,8 @@ var __async = (__this, __arguments, generator) => {
     renderDashboardIssueComments();
     renderDashboardIssueAttachments();
     document.getElementById("dashboardIssueId").value = issue?.id || "";
-    document.getElementById("dashboardIssueDisplayId").value = issue?.displayId || "Se asigna al guardar";
-    updateDashboardIssueModule(issue?.suiteId || getActiveProjectCases().find((item) => item.qaId === issue?.caseQaId)?.suiteId);
+    suiteSelect.disabled = issue?.source === "auto";
+    updateDashboardIssueSuite(issue?.suiteId || getActiveProjectCases().find((item) => item.qaId === issue?.caseQaId)?.suiteId);
     document.getElementById("dashboardIssueImageStatus").textContent = "También puedes pegar imágenes con Ctrl+V.";
     document.getElementById("dashboardIssueSaveBtn").disabled = false;
     const history = Array.isArray(issue?.statusHistory) ? issue.statusHistory : [];
@@ -33986,9 +34233,11 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("dashboardIssueSaveBtn").textContent = issue ? "Guardar cambios" : "Registrar issue";
     document.getElementById("dashboardIssueFormError").hidden = true;
     document.getElementById("dashboardIssueFormError").textContent = "";
+    updateDashboardIssueDisplayIdPreview();
     caseSelect.value = issue?.caseQaId || "";
     document.getElementById("dashboardIssueTestId").value = issue?.testId || "";
     document.getElementById("dashboardIssueFormName").value = issue?.formName || "";
+    document.getElementById("dashboardIssueFindingTitle").value = issue?.findingTitle || (issue?.source === "auto" ? issue.formName || "" : "");
     document.getElementById("dashboardIssueObservation").value = issue?.observation || "";
     document.getElementById("dashboardIssueSeverity").value = DASHBOARD_ISSUE_PRIORITIES.includes(issue?.severity) ? issue.severity : "Medium";
     document.getElementById("dashboardIssuePriority").value = DASHBOARD_ISSUE_PRIORITIES.includes(issue?.priority) ? issue.priority : "Medium";
@@ -34031,11 +34280,14 @@ var __async = (__this, __arguments, generator) => {
     const error = document.getElementById("dashboardIssueFormError");
     const caseQaId = document.getElementById("dashboardIssueCase").value;
     const relatedCase = caseQaId ? getActiveProjectCases().find((item) => item.qaId === caseQaId) : null;
+    const selectedSuiteId = document.getElementById("dashboardIssueSuite").value;
+    const selectedSuite = project.suites?.find((item) => item.id === selectedSuiteId);
     const issueId = document.getElementById("dashboardIssueId").value;
     const issuesBefore = Array.isArray(project.issues) ? project.issues : [];
     const existing = issuesBefore.find((item) => item.id === issueId);
     const testId = document.getElementById("dashboardIssueTestId").value.trim();
     const formName = document.getElementById("dashboardIssueFormName").value.trim();
+    const findingTitle = document.getElementById("dashboardIssueFindingTitle").value.trim();
     const observation = document.getElementById("dashboardIssueObservation").value.trim();
     const severity = document.getElementById("dashboardIssueSeverity").value;
     const priority = document.getElementById("dashboardIssuePriority").value;
@@ -34045,13 +34297,20 @@ var __async = (__this, __arguments, generator) => {
       error.hidden = false;
       return;
     }
-    if (!testId || !formName || !observation ||
+    if ((!selectedSuite && !existing?.displayId) || (relatedCase && relatedCase.suiteId !== selectedSuiteId) ||
+        !testId || !formName || !findingTitle || !observation ||
         !DASHBOARD_ISSUE_STATUSES.includes(status) ||
         !DASHBOARD_ISSUE_PRIORITIES.includes(severity) ||
         !DASHBOARD_ISSUE_PRIORITIES.includes(priority)) {
-      error.textContent = "Completa el Test ID, el caso de prueba y la observación con valores válidos.";
+      error.textContent = !selectedSuite && !existing?.displayId
+        ? "Selecciona una suite para generar el ID automático del issue."
+        : relatedCase && relatedCase.suiteId !== selectedSuiteId
+          ? "La suite seleccionada no coincide con la suite del caso relacionado."
+          : "Completa el Test ID, el caso de prueba, el título y la descripción del hallazgo.";
       error.hidden = false;
-      document.getElementById(!testId ? "dashboardIssueTestId" : !formName ? "dashboardIssueFormName" : !observation ? "dashboardIssueObservation" : "dashboardIssueStatus").focus();
+      document.getElementById(!selectedSuite && !existing?.displayId || (relatedCase && relatedCase.suiteId !== selectedSuiteId)
+        ? "dashboardIssueSuite"
+        : !testId ? "dashboardIssueTestId" : !formName ? "dashboardIssueFormName" : !findingTitle ? "dashboardIssueFindingTitle" : !observation ? "dashboardIssueObservation" : "dashboardIssueStatus").focus();
       return;
     }
 
@@ -34075,15 +34334,18 @@ var __async = (__this, __arguments, generator) => {
       }
     }
     const previousStatus = existing?.status || "";
+    const issueSuiteCodesBefore = project.issueSuiteCodes ? { ...project.issueSuiteCodes } : null;
+    const issueSuiteSequencesBefore = project.issueSuiteSequences ? { ...project.issueSuiteSequences } : null;
     const nextIssue = {
       ...(existing || {}),
       id: existing?.id || createQaIssueId(),
-      displayId: existing?.displayId || caseUtils.nextIssueDisplayId(project),
+      displayId: existing?.displayId || caseUtils.nextSuiteIssueDisplayId(project, selectedSuite.id, selectedSuite.name),
       source: existing?.source || "manual",
       caseQaId: relatedCase?.qaId || "",
-      suiteId: relatedCase?.suiteId || "",
+      suiteId: selectedSuite?.id || relatedCase?.suiteId || existing?.suiteId || "",
       testId,
       formName,
+      findingTitle,
       observation,
       severity,
       priority,
@@ -34113,6 +34375,10 @@ var __async = (__this, __arguments, generator) => {
     try {
       if (!(await saveProjectsToDB())) {
         project.issues = issuesBefore;
+        if (issueSuiteCodesBefore) project.issueSuiteCodes = issueSuiteCodesBefore;
+        else delete project.issueSuiteCodes;
+        if (issueSuiteSequencesBefore) project.issueSuiteSequences = issueSuiteSequencesBefore;
+        else delete project.issueSuiteSequences;
         throw new Error("No se pudo guardar el issue en el almacenamiento local.");
       }
       dashboardIssueSaving = false;
@@ -34168,12 +34434,13 @@ var __async = (__this, __arguments, generator) => {
 
   function buildDashboardIssueExportData(project, issues) {
     const suiteNames = new Map((Array.isArray(project.suites) ? project.suites : []).map((suite) => [suite.id, suite.name]));
-    const headers = ["Test ID", "ID issue", "Caso de prueba", "Módulo", "Observación", "Resultado QA", "Severidad", "Prioridad", "Estado", "Asignado a", "Origen", "Fecha registro", "Antigüedad (días)", "Fecha cierre", "Última validación", "Comentarios", "Imágenes"];
+    const headers = ["Test ID", "ID issue", "Título del hallazgo", "Caso de prueba", "Módulo", "Descripción del hallazgo", "Resultado QA", "Severidad", "Prioridad", "Estado", "Asignado a", "Origen", "Fecha registro", "Antigüedad (días)", "Fecha cierre", "Última validación", "Comentarios", "Imágenes"];
     const rows = issues.map((issue) => {
       const relatedCase = getDashboardIssueCase(issue, project);
       return [
         issue.testId,
         issue.displayId,
+        issue.findingTitle || "",
         issue.formName,
         suiteNames.get(issue.suiteId || relatedCase?.suiteId) || "",
         issue.observation,
@@ -34757,8 +35024,8 @@ var __async = (__this, __arguments, generator) => {
     const attentionSlide = newSlide("Issues abiertos que requieren atención");
     if (attention.length) {
       const trim = (text, max) => { const value = String(text || "").replace(/\s+/g, " ").trim(); return value.length > max ? `${value.slice(0, max - 1)}…` : value; };
-      attentionSlide.table(0.5, 1.4, [1.3, 4.6, 1.5, 1.2, 1.0, 1.4, 1.3], 0.6, ["ID", "Caso / observación", "Severidad", "Estado", "Días", "Responsable", "Origen"],
-        attention.map(({ issue, age }) => [issue.displayId || "", trim(`${issue.testId || ""} · ${issue.formName || ""}${issue.observation ? ` · ${issue.observation}` : ""}`, 80), issue.severity || "", issue.status || "", age, trim(issue.assignee, 14) || "Sin asignar", issue.source === "auto" ? "Automático" : "Manual"]), { size: 10 });
+      attentionSlide.table(0.5, 1.4, [1.3, 4.6, 1.5, 1.2, 1.0, 1.4, 1.3], 0.6, ["ID", "Hallazgo / descripción", "Severidad", "Estado", "Días", "Responsable", "Origen"],
+        attention.map(({ issue, age }) => [issue.displayId || "", trim(`${issue.findingTitle || issue.formName || ""}${issue.observation ? ` · ${issue.observation}` : ""}`, 80), issue.severity || "", issue.status || "", age, trim(issue.assignee, 14) || "Sin asignar", issue.source === "auto" ? "Automático" : "Manual"]), { size: 10 });
       attentionSlide.box(0.5, 6.6, 12.3, 0.3, { text: "Ordenados por severidad y antigüedad.", size: 10, color: GREY });
     } else {
       attentionSlide.box(0.5, 1.6, 12.3, 1, { text: "No hay issues abiertos. ✔", size: 20, color: "34C38F", bold: true });
@@ -34867,7 +35134,7 @@ var __async = (__this, __arguments, generator) => {
         const images = issues.map((issue) => {
           const evidence = getDashboardIssueEvidence(issue, project);
           if (!evidence.length) return "";
-          return `<section style="page-break-inside:avoid;margin-top:14px"><strong>${escapeHtml(issue.displayId || "Issue")} · ${escapeHtml(issue.testId || "")} · ${escapeHtml(issue.formName || "")}</strong><div>${evidence.map(({ step }) => {
+          return `<section style="page-break-inside:avoid;margin-top:14px"><strong>${escapeHtml(issue.displayId || "Issue")} · ${escapeHtml(issue.testId || "")} · ${escapeHtml(issue.findingTitle || issue.formName || "")}</strong><div>${evidence.map(({ step }) => {
             const src = step.renderedDataUrl || step.dataUrl || step.thumbnailDataUrl;
             return src ? `<img src="${escapeHtml(src)}" style="max-width:300px;max-height:220px;margin:6px 6px 0 0;border:1px solid #ccc" />` : "";
           }).join("")}</div></section>`;
@@ -34945,7 +35212,8 @@ var __async = (__this, __arguments, generator) => {
     });
     document.getElementById("dashboardIssueCase").addEventListener("change", (event) => {
       const caseRecord = getActiveProjectCases().find((item) => item.qaId === event.currentTarget.value);
-      updateDashboardIssueModule(caseRecord?.suiteId);
+      if (caseRecord) updateDashboardIssueSuite(caseRecord.suiteId);
+      else updateDashboardIssueDisplayIdPreview();
       if (!caseRecord) return;
       if (!document.getElementById("dashboardIssueTestId").value.trim()) {
         document.getElementById("dashboardIssueTestId").value = caseRecord.caseId || "";
@@ -34953,6 +35221,14 @@ var __async = (__this, __arguments, generator) => {
       if (!document.getElementById("dashboardIssueFormName").value.trim()) {
         document.getElementById("dashboardIssueFormName").value = caseRecord.description || "";
       }
+    });
+    document.getElementById("dashboardIssueSuite").addEventListener("change", (event) => {
+      const selectedSuiteId = event.currentTarget.value;
+      const caseSelect = document.getElementById("dashboardIssueCase");
+      const relatedCase = getActiveProjectCases().find((item) => item.qaId === caseSelect.value);
+      if (relatedCase && relatedCase.suiteId !== selectedSuiteId) caseSelect.value = "";
+      updateDashboardIssueDisplayIdPreview();
+      document.getElementById("dashboardIssueFormError").hidden = true;
     });
     document.getElementById("dashboardIssueImages").addEventListener("change", async (event) => {
       const files = [...event.currentTarget.files];

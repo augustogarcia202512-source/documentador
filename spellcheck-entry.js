@@ -12,6 +12,7 @@ const FIELD_SELECTOR = [
   "#preconditions",
   "#qaNewCaseId",
   "#dashboardIssueFormName",
+  "#dashboardIssueFindingTitle",
 ].join(", ");
 const RESULTS_CLASS = "spellcheck-results";
 const registeredFields = new Set();

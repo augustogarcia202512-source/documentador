@@ -20,6 +20,8 @@ const {
   parseQaCaseIdAndDescription,
   buildIssueLogEntries,
   buildAutoIssueSnapshot,
+  previewSuiteIssueDisplayId,
+  nextSuiteIssueDisplayId,
 } = require('./case-utils.js');
 
 test('issue identifiers migrate existing issues once and remain sequential per project', () => {
@@ -55,6 +57,27 @@ test('issue migration reserves existing identifiers and preserves case IDs endin
   assert.equal(project.issues[0].testId, 'TC-N1');
   assert.equal(migrateProjectIssueIds(project), false);
   assert.equal(project.issues[0].testId, 'TC-N1');
+});
+
+test('manual issue IDs use stable suite prefixes and never reuse a deleted sequence number', () => {
+  const project = { issues: [] };
+  assert.equal(previewSuiteIssueDisplayId(project, 'suite-pagos', 'Pagos'), 'PAG-001');
+  assert.equal(project.issueSuiteCodes, undefined);
+  assert.equal(nextSuiteIssueDisplayId(project, 'suite-pagos', 'Pagos'), 'PAG-001');
+  project.issues.push({ suiteId: 'suite-pagos', displayId: 'PAG-001' });
+  assert.equal(nextSuiteIssueDisplayId(project, 'suite-pagos', 'Pagos renombrados'), 'PAG-002');
+  project.issues = [];
+  assert.equal(nextSuiteIssueDisplayId(project, 'suite-pagos', 'Pagos renombrados'), 'PAG-003');
+  assert.equal(nextIssueDisplayId(project), 'ISSUE-001');
+});
+
+test('manual issue suite prefixes avoid collisions with existing suites and issue IDs', () => {
+  const project = {
+    issues: [{ suiteId: 'legacy-suite', displayId: 'PAG-001' }],
+  };
+  assert.equal(previewSuiteIssueDisplayId(project, 'suite-pagos', 'Pagos'), 'PAGO-001');
+  assert.equal(nextSuiteIssueDisplayId(project, 'suite-pagos', 'Pagos'), 'PAGO-001');
+  assert.equal(previewSuiteIssueDisplayId(project, 'suite-pago-web', 'Pagos Web'), 'PAGOS-001');
 });
 
 test('normalizeStepStatus returns a valid fallback', () => {
