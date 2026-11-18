@@ -2,14 +2,18 @@
   "name": "documentador-casos",
   "private": true,
   "scripts": {
-    "build": "esbuild spellcheck-entry.js --bundle --platform=browser --format=iife --target=es2020 --loader:.aff=text --loader:.dic=text --minify --outfile=spellcheck.bundle.js",
+    "build": "npm run build:spellcheck && npm run build:excel-ole",
+    "build:spellcheck": "esbuild spellcheck-entry.js --bundle --platform=browser --format=iife --target=es2020 --loader:.aff=text --loader:.dic=text --minify --outfile=spellcheck.bundle.js",
+    "build:excel-ole": "esbuild excel-ole-entry.js --bundle --platform=browser --format=iife --global-name=IssueExcelOle --target=es2020 --loader:.bin=binary --loader:.emf=binary --minify --outfile=excel-ole.bundle.js",
     "test": "node --test *.test.js"
   },
   "dependencies": {
+    "cfb": "^1.2.2",
     "dictionary-es": "^4.0.0",
     "nspell": "^2.1.5"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "jszip": "^3.10.1"
   }
 }

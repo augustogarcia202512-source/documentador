@@ -1,0 +1,3 @@
+[    3269ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://127.0.0.1:8000/favicon.ico:1
+[  212919ms] DataError: Failed to execute 'put' on 'IDBObjectStore': The object store uses out-of-line keys and has no key generator and the key parameter was not provided.
+    at q.onsuccess (eval at <anonymous> (eval at evaluate (:370:30)), <anonymous>:1:1717)

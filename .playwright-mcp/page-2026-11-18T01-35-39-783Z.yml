@@ -1,0 +1,440 @@
+- generic [active] [ref=f1e1]:
+  - status [ref=f1e2]
+  - region "Panel de proyectos" [ref=f1e3]:
+    - complementary [ref=f1e4]:
+      - generic [ref=f1e5]:
+        - generic [aria-hidden] [ref=f1e6]: ✓
+        - generic [ref=f1e7]:
+          - generic [ref=f1e8]: QA Workspace
+          - generic [ref=f1e9]: Documentación de pruebas
+      - generic [ref=f1e10]:
+        - generic [ref=f1e11]: Proyectos
+        - button "Crear proyecto" [ref=f1e12] [cursor=pointer]: +
+      - navigation "Seleccionar proyecto" [ref=f1e13]:
+        - generic [ref=f1e14]:
+          - button "M Mi proyecto 0" [ref=f1e15] [cursor=pointer]:
+            - generic [ref=f1e16]: M
+            - generic [ref=f1e17]: Mi proyecto
+            - generic [ref=f1e18]: "0"
+          - button "Eliminar proyecto Mi proyecto" [ref=f1e19] [cursor=pointer]: ✕
+      - generic [ref=f1e21]:
+        - 'button "🌙 Modo oscuro: On" [pressed] [ref=f1e22] [cursor=pointer]'
+        - generic [ref=f1e23]: Tus datos se guardan en este navegador
+    - generic [ref=f1e24]:
+      - generic [ref=f1e25]:
+        - button "Ocultar barra lateral" [ref=f1e26] [cursor=pointer]: ◀
+        - generic [ref=f1e27]:
+          - generic [ref=f1e28]: Proyecto seleccionado
+          - strong [ref=f1e29]: Mi proyecto
+        - button "✏️ Editar" [ref=f1e30] [cursor=pointer]
+        - button "📁 QA casos" [ref=f1e31] [cursor=pointer]
+        - button "📋 Bitácora de Issues" [ref=f1e32] [cursor=pointer]
+        - button "📝 Notas" [ref=f1e33] [cursor=pointer]
+        - button "📂 Abrir documentador" [ref=f1e34] [cursor=pointer]
+      - main [ref=f1e35]:
+        - generic [ref=f1e36]:
+          - generic [ref=f1e37]:
+            - heading "Control del día" [level=1] [ref=f1e38]
+            - paragraph [ref=f1e39]: Resumen general · Mi proyecto
+          - generic [ref=f1e40]: martes, 17 de noviembre de 2026
+        - region "Documentador de evidencias" [ref=f1e41]:
+          - generic [ref=f1e42]:
+            - generic [ref=f1e43]: 📋 Documentador de evidencia listo
+            - generic [ref=f1e44]: Captura pasos, adjunta evidencias y prepara el informe desde un solo lugar.
+          - button "Abrir herramienta" [ref=f1e45] [cursor=pointer]
+        - heading "Métricas de calidad" [level=2] [ref=f1e46]
+        - region "Métricas calculadas con los casos guardados" [ref=f1e47]:
+          - article [ref=f1e48]:
+            - generic [ref=f1e49]: Casos guardados
+            - generic [ref=f1e50]: "0"
+            - generic [ref=f1e51]: En este proyecto
+          - article [ref=f1e52]:
+            - generic [ref=f1e53]: Ejecución de pasos
+            - generic [ref=f1e54]: 0%
+            - generic [ref=f1e55]: 0 de 0 pasos ejecutados
+          - article [ref=f1e56]:
+            - generic [ref=f1e57]: Aprobación
+            - generic [ref=f1e58]: 0%
+            - generic [ref=f1e59]: 0 pasos aprobados
+          - article [ref=f1e60]:
+            - generic [ref=f1e61]: Pasos fallidos
+            - generic [ref=f1e62]: "0"
+            - generic [ref=f1e63]: Marcados como fallo
+        - region "Casos QA" [ref=f1e64]:
+          - generic [ref=f1e65]:
+            - generic [ref=f1e66]: QA CASOS
+            - generic [ref=f1e67]: 0/0 ejecutados · 0% pass
+          - generic "Estados" [ref=f1e68]:
+            - generic [ref=f1e69]:
+              - text: Pass
+              - generic [ref=f1e71]: "0"
+            - generic [ref=f1e72]:
+              - text: Not Executed
+              - generic [ref=f1e74]: "0"
+            - generic [ref=f1e75]:
+              - text: In Progress
+              - generic [ref=f1e77]: "0"
+            - generic [ref=f1e78]:
+              - text: Failed
+              - generic [ref=f1e80]: "0"
+            - generic [ref=f1e81]:
+              - text: Blocked
+              - generic [ref=f1e83]: "0"
+          - generic "Ciclos de ejecución" [ref=f1e84]: Crea ciclos independientes sin modificar los estados actuales.
+          - region "Métricas de ejecución" [ref=f1e86]:
+            - generic [ref=f1e87]:
+              - heading "Avance de ejecución por suite" [level=3] [ref=f1e88]
+              - generic [ref=f1e89]: Aún no hay casos para mostrar.
+            - generic [ref=f1e90]:
+              - heading "Tendencia de aprobación entre ciclos" [level=3] [ref=f1e91]
+              - generic [ref=f1e92]: Se mostrará cuando un ciclo tenga casos evaluados (Pass o Failed).
+          - searchbox "Buscar suite" [ref=f1e94]
+          - generic "Suites de casos" [ref=f1e95]:
+            - 'button "Login, 0 casos. Pass: 0, Failed: 0, In Progress: 0, Not Executed: 0, Blocked: 0" [ref=f1e96] [cursor=pointer]':
+              - generic [ref=f1e97]:
+                - generic [ref=f1e102]: Login
+                - generic [aria-hidden] [ref=f1e103]: ›
+              - generic [ref=f1e105]:
+                - strong [ref=f1e106]: "0"
+                - text: casos
+              - generic [aria-hidden] [ref=f1e107]:
+                - generic [ref=f1e108]:
+                  - generic [ref=f1e109]: Pass
+                  - progressbar [ref=f1e110]
+                  - generic [ref=f1e111]: 0 · 0%
+                - generic [ref=f1e112]:
+                  - generic [ref=f1e113]: Failed
+                  - progressbar [ref=f1e114]
+                  - generic [ref=f1e115]: 0 · 0%
+                - generic [ref=f1e116]:
+                  - generic [ref=f1e117]: In Progress
+                  - progressbar [ref=f1e118]
+                  - generic [ref=f1e119]: 0 · 0%
+                - generic [ref=f1e120]:
+                  - generic [ref=f1e121]: Not Executed
+                  - progressbar [ref=f1e122]
+                  - generic [ref=f1e123]: 0 · 0%
+                - generic [ref=f1e124]:
+                  - generic [ref=f1e125]: Blocked
+                  - progressbar [ref=f1e126]
+                  - generic [ref=f1e127]: 0 · 0%
+            - 'button "Pagos, 0 casos. Pass: 0, Failed: 0, In Progress: 0, Not Executed: 0, Blocked: 0" [ref=f1e128] [cursor=pointer]':
+              - generic [ref=f1e129]:
+                - generic [ref=f1e134]: Pagos
+                - generic [aria-hidden] [ref=f1e135]: ›
+              - generic [ref=f1e137]:
+                - strong [ref=f1e138]: "0"
+                - text: casos
+              - generic [aria-hidden] [ref=f1e139]:
+                - generic [ref=f1e140]:
+                  - generic [ref=f1e141]: Pass
+                  - progressbar [ref=f1e142]
+                  - generic [ref=f1e143]: 0 · 0%
+                - generic [ref=f1e144]:
+                  - generic [ref=f1e145]: Failed
+                  - progressbar [ref=f1e146]
+                  - generic [ref=f1e147]: 0 · 0%
+                - generic [ref=f1e148]:
+                  - generic [ref=f1e149]: In Progress
+                  - progressbar [ref=f1e150]
+                  - generic [ref=f1e151]: 0 · 0%
+                - generic [ref=f1e152]:
+                  - generic [ref=f1e153]: Not Executed
+                  - progressbar [ref=f1e154]
+                  - generic [ref=f1e155]: 0 · 0%
+                - generic [ref=f1e156]:
+                  - generic [ref=f1e157]: Blocked
+                  - progressbar [ref=f1e158]
+                  - generic [ref=f1e159]: 0 · 0%
+            - 'button "Carrito, 0 casos. Pass: 0, Failed: 0, In Progress: 0, Not Executed: 0, Blocked: 0" [ref=f1e160] [cursor=pointer]':
+              - generic [ref=f1e161]:
+                - generic [ref=f1e166]: Carrito
+                - generic [aria-hidden] [ref=f1e167]: ›
+              - generic [ref=f1e169]:
+                - strong [ref=f1e170]: "0"
+                - text: casos
+              - generic [aria-hidden] [ref=f1e171]:
+                - generic [ref=f1e172]:
+                  - generic [ref=f1e173]: Pass
+                  - progressbar [ref=f1e174]
+                  - generic [ref=f1e175]: 0 · 0%
+                - generic [ref=f1e176]:
+                  - generic [ref=f1e177]: Failed
+                  - progressbar [ref=f1e178]
+                  - generic [ref=f1e179]: 0 · 0%
+                - generic [ref=f1e180]:
+                  - generic [ref=f1e181]: In Progress
+                  - progressbar [ref=f1e182]
+                  - generic [ref=f1e183]: 0 · 0%
+                - generic [ref=f1e184]:
+                  - generic [ref=f1e185]: Not Executed
+                  - progressbar [ref=f1e186]
+                  - generic [ref=f1e187]: 0 · 0%
+                - generic [ref=f1e188]:
+                  - generic [ref=f1e189]: Blocked
+                  - progressbar [ref=f1e190]
+                  - generic [ref=f1e191]: 0 · 0%
+            - 'button "Reportes, 0 casos. Pass: 0, Failed: 0, In Progress: 0, Not Executed: 0, Blocked: 0" [ref=f1e192] [cursor=pointer]':
+              - generic [ref=f1e193]:
+                - generic [ref=f1e198]: Reportes
+                - generic [aria-hidden] [ref=f1e199]: ›
+              - generic [ref=f1e201]:
+                - strong [ref=f1e202]: "0"
+                - text: casos
+              - generic [aria-hidden] [ref=f1e203]:
+                - generic [ref=f1e204]:
+                  - generic [ref=f1e205]: Pass
+                  - progressbar [ref=f1e206]
+                  - generic [ref=f1e207]: 0 · 0%
+                - generic [ref=f1e208]:
+                  - generic [ref=f1e209]: Failed
+                  - progressbar [ref=f1e210]
+                  - generic [ref=f1e211]: 0 · 0%
+                - generic [ref=f1e212]:
+                  - generic [ref=f1e213]: In Progress
+                  - progressbar [ref=f1e214]
+                  - generic [ref=f1e215]: 0 · 0%
+                - generic [ref=f1e216]:
+                  - generic [ref=f1e217]: Not Executed
+                  - progressbar [ref=f1e218]
+                  - generic [ref=f1e219]: 0 · 0%
+                - generic [ref=f1e220]:
+                  - generic [ref=f1e221]: Blocked
+                  - progressbar [ref=f1e222]
+                  - generic [ref=f1e223]: 0 · 0%
+        - region "Fallos y observaciones por caso" [ref=f1e224]:
+          - generic [ref=f1e225]:
+            - strong [ref=f1e226]: Fallos y observaciones por caso
+            - generic [ref=f1e227]: 0 total · 0 alta · 0 media · 0 baja
+          - generic "Filtros de novedades" [ref=f1e228]:
+            - searchbox "Buscar novedades por caso o comentario" [ref=f1e229]
+            - combobox "Filtrar novedades por severidad" [ref=f1e230]:
+              - option "Todas las severidades" [selected]
+              - option "Alta"
+              - option "Media"
+              - option "Baja"
+            - combobox "Filtrar novedades por estado" [ref=f1e231]:
+              - option "Todos los estados" [selected]
+              - option "Pendiente"
+              - option "Aprobado"
+              - option "Falló"
+              - option "Observado"
+            - combobox "Filtrar novedades por suite" [ref=f1e232]:
+              - option "Todas las suites" [selected]
+              - option "Sin suite"
+              - option "Login"
+              - option "Pagos"
+              - option "Carrito"
+              - option "Reportes"
+            - combobox "Ordenar novedades" [ref=f1e233]:
+              - 'option "Prioridad: Alta primero" [selected]'
+              - 'option "Prioridad: Baja primero"'
+              - option "Orden por caso"
+          - generic [ref=f1e234]: Aún no hay pasos marcados con novedad Alta, Media o Baja.
+        - region "Bitácora de issues" [ref=f1e236]:
+          - strong [ref=f1e238]: Bitácora de issues
+          - generic "Resumen de issues" [ref=f1e239]:
+            - generic [ref=f1e240]:
+              - strong [ref=f1e241]: "1"
+              - generic [ref=f1e242]: Open
+            - generic [ref=f1e243]:
+              - strong [ref=f1e244]: "1"
+              - generic [ref=f1e245]: Closed
+            - generic [ref=f1e246]:
+              - strong [ref=f1e247]: "0"
+              - generic [ref=f1e248]: Ready for Retest
+            - generic [ref=f1e249]:
+              - strong [ref=f1e250]: "0"
+              - generic [ref=f1e251]: In progress
+            - generic [ref=f1e252]:
+              - strong [ref=f1e253]: "0"
+              - generic [ref=f1e254]: Re-Open
+            - generic [ref=f1e255]:
+              - strong [ref=f1e256]: "2"
+              - generic [ref=f1e257]: Total
+            - generic [ref=f1e258]:
+              - strong [ref=f1e259]: "0"
+              - generic [ref=f1e260]: Vencidos
+          - generic "Tendencia semanal de issues" [ref=f1e261]:
+            - generic [ref=f1e262]:
+              - strong [ref=f1e263]: Tendencia semanal (últimas 8 semanas)
+              - generic [ref=f1e264]:
+                - generic [ref=f1e265]: "Tiempo promedio de cierre: 1.0 días"
+                - generic [ref=f1e266]: "Issues cerrados: 1"
+            - img "Issues abiertos y cerrados por semana" [ref=f1e267]:
+              - 'generic "Semana del 28 de sept: 0 abiertos, 0 cerrados" [ref=f1e268]': 28 de sept
+              - 'generic "Semana del 5 de oct: 0 abiertos, 0 cerrados" [ref=f1e270]': 5 de oct
+              - 'generic "Semana del 12 de oct: 0 abiertos, 0 cerrados" [ref=f1e272]': 12 de oct
+              - 'generic "Semana del 19 de oct: 0 abiertos, 0 cerrados" [ref=f1e274]': 19 de oct
+              - 'generic "Semana del 26 de oct: 0 abiertos, 0 cerrados" [ref=f1e276]': 26 de oct
+              - 'generic "Semana del 2 de nov: 0 abiertos, 0 cerrados" [ref=f1e278]': 2 de nov
+              - 'generic "Semana del 9 de nov: 0 abiertos, 0 cerrados" [ref=f1e280]': 9 de nov
+              - 'generic "Semana del 16 de nov: 2 abiertos, 1 cerrados" [ref=f1e282]':
+                - generic [ref=f1e285]: "2"
+                - generic [ref=f1e286]: "1"
+                - generic [ref=f1e287]: 16 de nov
+            - generic [ref=f1e288]:
+              - generic [ref=f1e289]: Abiertos (registrados)
+              - generic [ref=f1e291]: Cerrados
+          - generic "Distribución de issues por severidad y módulo" [ref=f1e293]:
+            - region "Issues por severidad" [ref=f1e294]:
+              - heading "Distribución por severidad" [level=3] [ref=f1e295]
+              - generic [ref=f1e296]:
+                - 'generic "High: 1" [ref=f1e297]':
+                  - generic [ref=f1e298]: High
+                  - generic [ref=f1e301]: "1"
+                - 'generic "Medium: 1" [ref=f1e302]':
+                  - generic [ref=f1e303]: Medium
+                  - generic [ref=f1e306]: "1"
+            - region "Issues por módulo" [ref=f1e307]:
+              - heading "Distribución por módulo" [level=3] [ref=f1e308]
+              - generic [ref=f1e309]:
+                - 'generic "Login: 1" [ref=f1e310]':
+                  - generic [ref=f1e311]: Login
+                  - generic [ref=f1e314]: "1"
+                - 'generic "Pagos: 1" [ref=f1e315]':
+                  - generic [ref=f1e316]: Pagos
+                  - generic [ref=f1e319]: "1"
+          - generic "Cumplimiento del plazo y reapertura" [ref=f1e320]:
+            - region "Cumplimiento del plazo" [ref=f1e321]:
+              - heading "Cumplimiento del plazo (7 días)" [level=3] [ref=f1e322]
+              - generic [ref=f1e323]:
+                - strong [ref=f1e324]: 100%
+                - generic [ref=f1e325]: 1 de 1 cerrados dentro del plazo
+              - generic [ref=f1e326]: 0 abiertos fuera de plazo
+            - region "Tasa de reapertura" [ref=f1e327]:
+              - heading "Tasa de reapertura" [level=3] [ref=f1e328]
+              - generic [ref=f1e329]:
+                - strong [ref=f1e330]: —
+                - generic [ref=f1e331]: 0 de 0 issues cerrados se reabrieron
+              - generic [ref=f1e332]: Reapertura = cambió de estado después de cerrarse.
+          - generic "Filtros de issues" [ref=f1e333]:
+            - searchbox "Buscar issues" [ref=f1e334]
+            - combobox "Filtrar issues por estado" [ref=f1e335]:
+              - option "Todos los estados" [selected]
+              - option "Open"
+              - option "Closed"
+              - option "Ready for Retest"
+              - option "In progress"
+              - option "Re-Open"
+            - combobox "Filtrar issues por suite" [ref=f1e336]:
+              - option "Todos los módulos" [selected]
+              - option "Sin módulo"
+              - option "Login"
+              - option "Pagos"
+              - option "Carrito"
+              - option "Reportes"
+            - group "Vista de issues" [ref=f1e337]:
+              - button "Tabla" [pressed] [ref=f1e338] [cursor=pointer]
+              - button "Kanban" [ref=f1e339] [cursor=pointer]
+          - generic [ref=f1e340]: Mostrando 2 de 2 issues
+          - table [ref=f1e342]:
+            - rowgroup [ref=f1e343]:
+              - row [ref=f1e344]:
+                - columnheader "Test ID" [ref=f1e345]
+                - columnheader "ID issue" [ref=f1e346]
+                - columnheader "Hallazgo / caso de prueba" [ref=f1e347]
+                - columnheader "Observación" [ref=f1e348]
+                - columnheader "Evidencia" [ref=f1e349]
+                - columnheader "Resultado QA" [ref=f1e350]
+                - columnheader "Severidad" [ref=f1e351]
+                - columnheader "Prioridad" [ref=f1e352]
+                - columnheader "Estado" [ref=f1e353]
+                - columnheader "Asignado a" [ref=f1e354]
+                - columnheader "Fecha registro" [ref=f1e355]
+                - columnheader "Antigüedad" [ref=f1e356]
+                - columnheader "Fecha cierre" [ref=f1e357]
+                - columnheader "Última validación" [ref=f1e358]
+                - columnheader "Acciones" [ref=f1e359]
+            - rowgroup [ref=f1e360]:
+              - row [ref=f1e361]:
+                - cell "TC-SYN-001" [ref=f1e362]
+                - cell "ISSUE-SYN-001" [ref=f1e363]
+                - cell [ref=f1e364]:
+                  - strong [ref=f1e365]: Synthetic A
+                  - text: Checkout · Login
+                - cell "PNG JPEG evidence" [ref=f1e366]
+                - cell [ref=f1e368]:
+                  - generic [ref=f1e369]:
+                    - 'button "Ampliar imagen: Adjunto 1 de TC-SYN-001" [ref=f1e370] [cursor=pointer]':
+                      - generic [ref=f1e371]: Adjunto 1
+                    - 'button "Ampliar imagen: Adjunto 2 de TC-SYN-001" [ref=f1e372] [cursor=pointer]':
+                      - generic [ref=f1e373]: Adjunto 2
+                - cell "Falla" [ref=f1e374]
+                - cell "High" [ref=f1e376]
+                - cell "High" [ref=f1e377]
+                - cell "Open" [ref=f1e378]
+                - cell "QA" [ref=f1e380]
+                - cell "17/11/2026" [ref=f1e381]
+                - cell "0 días" [ref=f1e382]
+                - cell "—" [ref=f1e383]
+                - cell "—" [ref=f1e384]
+                - cell [ref=f1e385]:
+                  - button "Descargar Word" [ref=f1e387] [cursor=pointer]
+              - row [ref=f1e388]:
+                - cell "TC-SYN-002" [ref=f1e389]
+                - cell "ISSUE-SYN-002" [ref=f1e390]
+                - cell [ref=f1e391]:
+                  - strong [ref=f1e392]: Synthetic B
+                  - text: Payments · Pagos
+                - cell "PNG evidence" [ref=f1e393]
+                - cell [ref=f1e395]:
+                  - 'button "Ampliar imagen: Adjunto 1 de TC-SYN-002" [ref=f1e397] [cursor=pointer]':
+                    - generic [ref=f1e398]: Adjunto 1
+                - cell "Falla" [ref=f1e399]
+                - cell "Medium" [ref=f1e401]
+                - cell "Medium" [ref=f1e402]
+                - cell "Closed" [ref=f1e403]
+                - cell "QA" [ref=f1e405]
+                - cell "16/11/2026" [ref=f1e406]
+                - cell "0 días" [ref=f1e407]
+                - cell "17/11/2026" [ref=f1e408]
+                - cell "—" [ref=f1e409]
+                - cell [ref=f1e410]:
+                  - button "Descargar Word" [ref=f1e412] [cursor=pointer]
+        - generic [ref=f1e413]:
+          - generic [ref=f1e414]:
+            - generic [ref=f1e415]:
+              - strong [ref=f1e416]: Progreso de ejecución
+              - generic [ref=f1e417]: 0 pasos
+            - generic [ref=f1e418]:
+              - generic [ref=f1e419]: Ejecutados
+              - strong [ref=f1e421]: 0%
+            - generic [ref=f1e422]:
+              - generic [ref=f1e423]: Aprobados
+              - strong [ref=f1e425]: 0%
+            - generic [ref=f1e426]:
+              - generic [ref=f1e427]: Fallidos
+              - strong [ref=f1e429]: 0%
+          - generic [ref=f1e430]:
+            - generic [ref=f1e431]:
+              - strong [ref=f1e432]: Personas que documentan
+              - generic [ref=f1e433]: Según los casos guardados
+            - generic [ref=f1e434]: Los nombres aparecerán aquí cuando guardes casos con “Documentado por”.
+        - generic [ref=f1e436]:
+          - generic [ref=f1e437]:
+            - strong [ref=f1e438]: Casos recientes
+            - generic [ref=f1e439]: 0 casos
+          - generic [ref=f1e440]: Todavía no hay casos en este proyecto. Abre el documentador para crear el primero.
+        - region "Catálogo de casos" [ref=f1e442]:
+          - generic [ref=f1e443]:
+            - strong [ref=f1e444]: Catálogo de casos
+            - generic [ref=f1e445]: 0 casos
+          - generic [ref=f1e446]:
+            - searchbox "Buscar casos, descripción o resultado" [ref=f1e447]
+            - button "Limpiar" [ref=f1e448] [cursor=pointer]
+          - generic "Transferir datos del documentador" [ref=f1e449]:
+            - button "⬇ Descargar respaldo" [ref=f1e450] [cursor=pointer]
+            - button "⬆ Importar respaldo" [ref=f1e451] [cursor=pointer]
+            - button "🗑 Reiniciar todo" [ref=f1e452] [cursor=pointer]
+            - paragraph [ref=f1e453]: Importar reemplaza el espacio actual. Reiniciar lo deja listo para comenzar de nuevo.
+          - table [ref=f1e455]:
+            - rowgroup [ref=f1e456]:
+              - row [ref=f1e457]:
+                - columnheader "Casos" [ref=f1e458]
+                - columnheader "Estado" [ref=f1e459]
+                - columnheader "Pasos" [ref=f1e460]
+                - columnheader "Acciones" [ref=f1e461]
+            - rowgroup [ref=f1e462]:
+              - row [ref=f1e463]:
+                - cell "No hay casos que coincidan con la búsqueda." [ref=f1e464]
