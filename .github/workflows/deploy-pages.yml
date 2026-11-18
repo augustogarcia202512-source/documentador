@@ -36,13 +36,14 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build local spellchecker
+      - name: Build browser bundles
         run: npm run build
 
       - name: Prepare Pages artifact
         run: |
           mkdir -p _site
-          cp index.html case-utils.js spellcheck.bundle.js DICTIONARY-LICENSE.md dictionary-es.LICENSE MPL-1.1.txt _site/
+          cp index.html case-utils.js spellcheck.bundle.js excel-ole.bundle.js DICTIONARY-LICENSE.md dictionary-es.LICENSE MPL-1.1.txt CFB-LICENSE SHEETJS-CHECKSUM-LICENSE _site/
+          test -s _site/excel-ole.bundle.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
