@@ -18,6 +18,15 @@ Otros formatos se convierten al guardarse o exportarse. Si una evidencia no
 puede procesarse, la exportación se cancela y muestra el issue afectado.
 Las imágenes originales pueden incrementar el espacio usado en el navegador.
 
+En un Excel nuevo, puedes cambiar el estado de un issue usando la lista de la
+columna Estado. Los conteos, gráficos e indicadores relacionados se recalculan
+para los registros exportados. Los cambios del Excel no se sincronizan con el
+documentador y no crean fechas de cierre ni entradas de historial. Los cálculos
+de antigüedad y fechas utilizan los datos disponibles al exportar; la tasa de
+reapertura permanece como una instantánea del historial exportado. Para tener
+fechas o historial actualizados, modifica el issue en el documentador y vuelve
+a exportar.
+
 Después de modificar el código del exportador OLE o sus dependencias, ejecuta
 `npm run build:excel-ole`. Para ejecutar las pruebas, usa `npm test`.
 El módulo OLE incluye `cfb`, `adler-32` y `crc-32` de SheetJS bajo Apache 2.0;

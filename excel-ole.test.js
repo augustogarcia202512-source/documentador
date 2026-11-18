@@ -38,6 +38,8 @@ function createHarness() {
     docx: { JSZip },
     getDashboardIssueEvidence: (issue) => issue.evidence,
     getDashboardIssueSummarySections: () => [],
+    DASHBOARD_TREND_WEEKS: 8,
+    DASHBOARD_ISSUE_STATUSES: ['Open', 'Closed', 'Ready for Retest', 'In progress', 'Re-Open'],
     console,
   };
   vm.createContext(context);
@@ -119,6 +121,44 @@ test('Excel without images contains no OLE relationships', async () => {
   const zip = await JSZip.loadAsync(Buffer.from(await downloaded().arrayBuffer()));
   assert.equal(zip.file('xl/worksheets/_rels/sheet1.xml.rels'), null);
   assert.doesNotMatch(await zip.file('xl/worksheets/sheet1.xml').async('string'), /<oleObjects>/);
+});
+
+test('Excel summary uses recalculating formulas tied to exported issue statuses', async () => {
+  const { context, downloaded } = createHarness();
+  const now = Date.now();
+  const issues = [
+    { status: 'Open', createdAt: new Date(now - 2 * 86400000).toISOString(), evidence: [{ step: { dataUrl: dataUrl(png, 'png') } }] },
+    { status: 'Closed', createdAt: new Date(now - 3 * 86400000).toISOString(), closedAt: new Date(now - 86400000).toISOString(), evidence: [] },
+  ];
+  context.getDashboardIssueSummarySections = () => [
+    { title: 'Issues por estado', headers: ['Estado', 'Cantidad', '%'], data: [['Open', 1, 0.5], ['Closed', 1, 0.5], ['Total', 2, 1]], styles: [2, 4, 5], chart: { title: 'Estados', dataCount: 2, series: [{ column: 1, color: 'FF0000' }] } },
+    { title: 'Issues por severidad', headers: ['Severidad', 'Abiertos', 'Cerrados', 'Total'], data: [['Medium', 1, 1, 2]], styles: [2, 4, 4, 4], chart: null },
+    { title: 'Issues por módulo', headers: ['Módulo', 'Abiertos', 'Cerrados', 'Total'], data: [['Sin módulo', 1, 1, 2]], styles: [2, 4, 4, 4], chart: null },
+    { title: 'Issues por responsable', headers: ['Responsable', 'Abiertos', 'Cerrados', 'Total'], data: [['Sin asignar', 1, 1, 2]], styles: [2, 4, 4, 4], chart: null },
+    { title: 'Indicadores de calidad y gestión', headers: ['Indicador', 'Valor'], data: [
+      ['Tiempo promedio de cierre (días)', 2], ['Antigüedad promedio de issues abiertos (días)', 2],
+      ['Issue abierto más antiguo (días)', 2], ['Límite de antigüedad configurado (días)', 7],
+      ['Abiertos fuera de plazo', 0], ['Cerrados dentro del plazo (%)', 1],
+      ['Issues críticos abiertos', 0], ['Issues abiertos sin responsable', 1],
+      ['Tasa de reapertura (%)', '—'], ['Resolución (% cerrados sobre el total)', 0.5],
+    ], styles: [2, 4], chart: null },
+  ];
+  await context.downloadDashboardIssuesXlsx({ name: 'Prueba' }, issues,
+    ['ID issue', 'Severidad', 'Módulo', 'Asignado a', 'Estado'],
+    [['A', 'Medium', '', '', 'Open'], ['B', 'Medium', '', '', 'Closed']], 'dynamic.xlsx');
+  const buffer = Buffer.from(await downloaded().arrayBuffer());
+  if (process.env.DYNAMIC_TEST_OUTPUT) fs.writeFileSync(process.env.DYNAMIC_TEST_OUTPUT, buffer);
+  const zip = await JSZip.loadAsync(buffer);
+  const sheet = await zip.file('xl/worksheets/sheet1.xml').async('string');
+  const summary = await zip.file('xl/worksheets/sheet2.xml').async('string');
+  const workbook = await zip.file('xl/workbook.xml').async('string');
+  assert.match(sheet, /<dataValidation type="list"[^>]*sqref="E2:E3"/);
+  assert.match(sheet, /<col min="7" max="10" hidden="1"/);
+  assert.match(sheet, /<oleObjects>/);
+  assert.match(summary, /COUNTIF\('Bitácora'!\$E\$2:\$E\$3,A6\)/);
+  assert.match(summary, /SUMPRODUCT\(/);
+  assert.match(summary, /AVERAGEIFS\(/);
+  assert.match(workbook, /calcMode="auto" fullCalcOnLoad="1"/);
 });
 
 test('Excel export passes only the actively filtered issues to the workbook builder', async () => {

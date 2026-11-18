@@ -34680,6 +34680,27 @@ var __async = (__this, __arguments, generator) => {
     const textColumns = headers.length;
     const widths = [12, 14, 30, 16, 45, 12, 11, 11, 16, 11, 13, 13, 15, 10];
     const widthMap = allHeaders.map((_, index) => index < textColumns ? (widths[index] || 14) : 24);
+    const statusColumn = headers.indexOf("Estado");
+    const severityColumn = headers.indexOf("Severidad");
+    const moduleColumn = headers.indexOf("Módulo");
+    const assigneeColumn = headers.indexOf("Asignado a");
+    const dynamicSummary = [statusColumn, severityColumn, moduleColumn, assigneeColumn].every((index) => index >= 0);
+    const metadataStart = allHeaders.length;
+    if (dynamicSummary && metadataStart + 4 > 16384) throw new Error("No hay suficientes columnas para los indicadores del Excel.");
+    const exportTime = Date.now();
+    const weekStart = new Date(exportTime);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+    const firstWeek = dynamicSummary ? weekStart.getTime() - (DASHBOARD_TREND_WEEKS - 1) * 7 * 86400000 : 0;
+    const metadata = dynamicSummary ? issues.map((issue) => {
+      const start = new Date(issue.createdAt).getTime();
+      const closed = issue.closedAt ? new Date(issue.closedAt).getTime() : NaN;
+      const openAge = Number.isFinite(start) ? Math.max(0, Math.floor((exportTime - start) / 86400000)) : "";
+      const closedAge = Number.isFinite(start) && Number.isFinite(closed) ? Math.max(0, Math.floor((closed - start) / 86400000)) : "";
+      const duration = Number.isFinite(start) && Number.isFinite(closed) && closed >= start ? (closed - start) / 86400000 : "";
+      const week = Number.isFinite(closed) && closed >= firstWeek ? Math.min(DASHBOARD_TREND_WEEKS - 1, Math.floor((closed - firstWeek) / (7 * 86400000))) : "";
+      return [openAge, closedAge, duration, week];
+    }) : [];
 
     const cellXml = (value, rowNumber, columnIndex, style) =>
       `<c r="${columnName(columnIndex)}${rowNumber}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
@@ -34687,12 +34708,15 @@ var __async = (__this, __arguments, generator) => {
       `<row r="1" ht="24" customHeight="1">${allHeaders.map((header, index) => cellXml(header, 1, index, 1)).join("")}</row>`,
       ...rows.map((row, rowIndex) => {
         const rowNumber = rowIndex + 2;
-        return `<row r="${rowNumber}" ht="76" customHeight="1">${allHeaders.map((_, index) => cellXml(row[index] ?? "", rowNumber, index, 2)).join("")}</row>`;
+        const hiddenCells = dynamicSummary ? metadata[rowIndex].map((value, index) => value === ""
+          ? cellXml("", rowNumber, metadataStart + index, 0)
+          : `<c r="${columnName(metadataStart + index)}${rowNumber}"><v>${value}</v></c>`).join("") : "";
+        return `<row r="${rowNumber}" ht="76" customHeight="1">${allHeaders.map((_, index) => cellXml(row[index] ?? "", rowNumber, index, 2)).join("")}${hiddenCells}</row>`;
       }),
     ].join("");
     const columnsXml = widthMap.map((width, index) =>
       `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`
-    ).join("");
+    ).join("") + (dynamicSummary ? `<col min="${metadataStart + 1}" max="${metadataStart + 4}" hidden="1" width="12" customWidth="1"/>` : "");
 
     const objects = [];
     issueImages.forEach((list, rowIndex) => {
@@ -34711,11 +34735,26 @@ var __async = (__this, __arguments, generator) => {
           ? `<c r="${ref}" s="${style}"><v>${value}</v></c>`
           : `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`);
       };
+      const putFormula = (row, column, formula, cached, style, array = false) => {
+        const ref = `${columnName(column)}${row}`;
+        const numeric = typeof cached === "number" && Number.isFinite(cached);
+        cells.get(row).set(column, `<c r="${ref}" s="${style}"${numeric ? "" : ' t="str"'}><f${array ? ` t="array" ref="${ref}"` : ""}>${xmlEscape(formula)}</f><v>${xmlEscape(cached)}</v></c>`);
+      };
+      const range = (column) => `'Bitácora'!$${columnName(column)}$2:$${columnName(column)}$${Math.max(2, rows.length + 1)}`;
+      const status = range(statusColumn);
+      const severity = range(severityColumn);
+      const module = range(moduleColumn);
+      const assignee = range(assigneeColumn);
+      const openAge = range(metadataStart);
+      const closedAge = range(metadataStart + 1);
+      const duration = range(metadataStart + 2);
+      const closedWeek = range(metadataStart + 3);
       const charts = [];
       let row = 1;
       put(row, 0, `Resumen de issues · ${project.name || "Proyecto"}`, 3);
       row += 1;
       put(row, 0, `Alcance: ${issues.length} issue${issues.length === 1 ? "" : "s"} (según los filtros aplicados) · ${new Date().toLocaleDateString("es-CO")}`, 0);
+      if (dynamicSummary) put(3, 0, "Estados editables; fechas, antigüedad e historial corresponden a la exportación.", 0);
       row += 2;
 
       const section = ({ title, headers, data, styles, chart }) => {
@@ -34725,6 +34764,47 @@ var __async = (__this, __arguments, generator) => {
         data.forEach((values, rowIndex) => values.forEach((value, index) => put(headerRow + 1 + rowIndex, index, value, styles[index] ?? 4)));
         const first = headerRow + 1;
         const last = headerRow + data.length;
+        if (dynamicSummary && rows.length) {
+          const formula = (rowIndex, column, expression, array = false) => putFormula(first + rowIndex, column, expression, data[rowIndex][column], styles[column] ?? 4, array);
+          if (title === "Issues por estado") {
+            data.forEach((values, index) => {
+              if (index === data.length - 1) {
+                formula(index, 1, `${rows.length}`);
+              } else {
+                formula(index, 1, `COUNTIF(${status},A${first + index})`);
+              }
+              formula(index, 2, `IFERROR(B${first + index}/B${last},0)`);
+            });
+          } else if (["Issues por severidad", "Issues por módulo", "Issues por responsable"].includes(title)) {
+            const category = title === "Issues por severidad" ? severity : title === "Issues por módulo" ? module : assignee;
+            const emptyLabel = title === "Issues por severidad" ? "Medium" : title === "Issues por módulo" ? "Sin módulo" : "Sin asignar";
+            data.forEach((values, index) => {
+              const label = `A${first + index}`;
+              const match = `((TRIM(${category})=${label})+((TRIM(${category})="")*(${label}="${emptyLabel}")))`;
+              formula(index, 1, `SUMPRODUCT(${match}*(${status}<>"Closed"))`);
+              formula(index, 2, `SUMPRODUCT(${match}*(${status}="Closed"))`);
+              formula(index, 3, `B${first + index}+C${first + index}`);
+            });
+          } else if (title.startsWith("Tendencia semanal")) {
+            data.forEach((values, index) => formula(index, 2, `COUNTIFS(${status},"Closed",${closedWeek},${index})`));
+          } else if (title === "Indicadores de calidad y gestión") {
+            const byName = (name, expression, array = false) => {
+              const index = data.findIndex((values) => values[0] === name);
+              if (index >= 0) formula(index, 1, expression, array);
+            };
+            const openCount = `COUNTIFS(${status},"<>Closed",${openAge},">=0")`;
+            const closedCount = `COUNTIF(${status},"Closed")`;
+            const limit = `B${first + 3}`;
+            byName("Tiempo promedio de cierre (días)", `IFERROR(ROUND(AVERAGEIFS(${duration},${status},"Closed"),1),"—")`);
+            byName("Antigüedad promedio de issues abiertos (días)", `IFERROR(ROUND(AVERAGEIFS(${openAge},${status},"<>Closed"),1),"—")`);
+            byName("Issue abierto más antiguo (días)", `IF(${openCount}=0,"—",MAX(IF(${status}<>"Closed",IF(ISNUMBER(${openAge}),${openAge},0),0)))`, true);
+            byName("Abiertos fuera de plazo", `COUNTIFS(${status},"<>Closed",${openAge},">"&${limit})`);
+            byName("Cerrados dentro del plazo (%)", `IF(${closedCount}=0,"—",COUNTIFS(${status},"Closed",${closedAge},">=0",${closedAge},"<="&${limit})/${closedCount})`);
+            byName("Issues críticos abiertos", `COUNTIFS(${status},"<>Closed",${severity},"Critical")`);
+            byName("Issues abiertos sin responsable", `SUMPRODUCT((${status}<>"Closed")*(TRIM(${assignee})=""))`);
+            byName("Resolución (% cerrados sobre el total)", `${closedCount}/${rows.length}`);
+          }
+        }
         const chartLast = chart?.dataCount ? first + chart.dataCount - 1 : last;
         if (chart && data.length) {
           charts.push({
@@ -34778,10 +34858,12 @@ var __async = (__this, __arguments, generator) => {
     const header = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
     addFile("[Content_Types].xml", `${header}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="bin" ContentType="application/vnd.openxmlformats-officedocument.oleObject"/><Default Extension="emf" ContentType="image/x-emf"/><Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/drawings/drawing2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>${summary.charts.map((_, index) => `<Override PartName="/xl/charts/chart${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`).join("")}</Types>`);
     addFile("_rels/.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`);
-    addFile("xl/workbook.xml", `${header}<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Bitácora" sheetId="1" r:id="rId1"/><sheet name="Resumen" sheetId="2" r:id="rId3"/></sheets></workbook>`);
+    addFile("xl/workbook.xml", `${header}<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Bitácora" sheetId="1" r:id="rId1"/><sheet name="Resumen" sheetId="2" r:id="rId3"/></sheets><calcPr calcMode="auto" fullCalcOnLoad="1" forceFullCalc="1"/></workbook>`);
     addFile("xl/_rels/workbook.xml.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>`);
     addFile("xl/styles.xml", `${header}<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font><font><b/><sz val="12"/><color rgb="FF1F3A5F"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F3A5F"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFBBBBBB"/></left><right style="thin"><color rgb="FFBBBBBB"/></right><top style="thin"><color rgb="FFBBBBBB"/></top><bottom style="thin"><color rgb="FFBBBBBB"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf><xf numFmtId="9" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf></cellXfs></styleSheet>`);
-    addFile("xl/worksheets/sheet1.xml", `${header}<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${columnsXml}</cols><sheetData>${sheetRows}</sheetData>${objects.length ? `<drawing r:id="rId1"/><legacyDrawing r:id="rId2"/><oleObjects>${oleXml.objectsXml}</oleObjects>` : ""}</worksheet>`);
+    const statusValidation = dynamicSummary && rows.length
+      ? `<dataValidations count="1"><dataValidation type="list" allowBlank="0" showErrorMessage="1" errorTitle="Estado inválido" error="Selecciona un estado de la lista." sqref="${columnName(statusColumn)}2:${columnName(statusColumn)}${rows.length + 1}"><formula1>${xmlEscape(`"${DASHBOARD_ISSUE_STATUSES.join(",")}"`)}</formula1></dataValidation></dataValidations>` : "";
+    addFile("xl/worksheets/sheet1.xml", `${header}<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${columnsXml}</cols><sheetData>${sheetRows}</sheetData>${statusValidation}${objects.length ? `<drawing r:id="rId1"/><legacyDrawing r:id="rId2"/><oleObjects>${oleXml.objectsXml}</oleObjects>` : ""}</worksheet>`);
     addFile("xl/worksheets/sheet2.xml", `${header}<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><cols><col min="1" max="1" width="46" customWidth="1"/><col min="2" max="4" width="14" customWidth="1"/><col min="5" max="5" width="4" customWidth="1"/></cols><sheetData>${summary.rowsXml}</sheetData>${summary.charts.length ? '<drawing r:id="rId1"/>' : ""}</worksheet>`);
     if (summary.charts.length) {
       addFile("xl/worksheets/_rels/sheet2.xml.rels", `${header}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing2.xml"/></Relationships>`);
