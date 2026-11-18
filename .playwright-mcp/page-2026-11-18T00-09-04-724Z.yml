@@ -1,0 +1,176 @@
+- generic [active] [ref=f1e1]:
+  - status [ref=f1e2]
+  - region "Panel de proyectos" [ref=f1e3]:
+    - complementary [ref=f1e4]:
+      - generic [ref=f1e5]:
+        - generic [aria-hidden] [ref=f1e6]: ✓
+        - generic [ref=f1e7]:
+          - generic [ref=f1e8]: QA Workspace
+          - generic [ref=f1e9]: Documentación de pruebas
+      - generic [ref=f1e10]:
+        - generic [ref=f1e11]: Proyectos
+        - button "Crear proyecto" [ref=f1e12] [cursor=pointer]: +
+      - navigation "Seleccionar proyecto"
+      - generic [ref=f1e14]:
+        - 'button "🌙 Modo oscuro: On" [pressed] [ref=f1e15] [cursor=pointer]'
+        - generic [ref=f1e16]: Tus datos se guardan en este navegador
+    - generic [ref=f1e17]:
+      - generic [ref=f1e18]:
+        - button "Ocultar barra lateral" [ref=f1e19] [cursor=pointer]: ◀
+        - generic [ref=f1e20]:
+          - generic [ref=f1e21]: Proyecto seleccionado
+          - strong [ref=f1e22]: Mis proyectos
+        - button "✏️ Editar" [ref=f1e23] [cursor=pointer]
+        - button "📁 QA casos" [ref=f1e24] [cursor=pointer]
+        - button "📋 Bitácora de Issues" [ref=f1e25] [cursor=pointer]
+        - button "📝 Notas" [ref=f1e26] [cursor=pointer]
+        - button "📂 Abrir documentador" [ref=f1e27] [cursor=pointer]
+      - main [ref=f1e28]:
+        - generic [ref=f1e30]:
+          - heading "Control del día" [level=1] [ref=f1e31]
+          - paragraph [ref=f1e32]: Resumen de casos de prueba y evidencias guardadas.
+        - region "Documentador de evidencias" [ref=f1e33]:
+          - generic [ref=f1e34]:
+            - generic [ref=f1e35]: 📋 Documentador de evidencia listo
+            - generic [ref=f1e36]: Captura pasos, adjunta evidencias y prepara el informe desde un solo lugar.
+          - button "Abrir herramienta" [ref=f1e37] [cursor=pointer]
+        - heading "Métricas de calidad" [level=2] [ref=f1e38]
+        - region "Métricas calculadas con los casos guardados" [ref=f1e39]:
+          - article [ref=f1e40]:
+            - generic [ref=f1e41]: Casos guardados
+            - generic [ref=f1e42]: "0"
+            - generic [ref=f1e43]: En este proyecto
+          - article [ref=f1e44]:
+            - generic [ref=f1e45]: Ejecución de pasos
+            - generic [ref=f1e46]: 0%
+            - generic [ref=f1e47]: 0 de 0 pasos ejecutados
+          - article [ref=f1e48]:
+            - generic [ref=f1e49]: Aprobación
+            - generic [ref=f1e50]: 0%
+            - generic [ref=f1e51]: 0 pasos aprobados
+          - article [ref=f1e52]:
+            - generic [ref=f1e53]: Pasos fallidos
+            - generic [ref=f1e54]: "0"
+            - generic [ref=f1e55]: Marcados como fallo
+        - region "Casos QA" [ref=f1e56]:
+          - generic [ref=f1e57]:
+            - generic [ref=f1e58]: QA CASOS
+            - generic [ref=f1e59]: 0/0 ejecutados · 0% pasados
+          - generic "Estados" [ref=f1e60]:
+            - generic [ref=f1e61]:
+              - text: Pass
+              - generic [ref=f1e63]: "0"
+            - generic [ref=f1e64]:
+              - text: Not Executed
+              - generic [ref=f1e66]: "0"
+            - generic [ref=f1e67]:
+              - text: In Progress
+              - generic [ref=f1e69]: "0"
+            - generic [ref=f1e70]:
+              - text: Failed
+              - generic [ref=f1e72]: "0"
+            - generic [ref=f1e73]:
+              - text: Blocked
+              - generic [ref=f1e75]: "0"
+          - generic "Ciclos de ejecución" [ref=f1e76]
+          - region [ref=f1e77]
+          - region "Métricas de ejecución" [ref=f1e78]
+          - searchbox "Buscar suite" [ref=f1e80]
+          - generic "Suites de casos"
+        - region "Fallos y observaciones por caso" [ref=f1e81]:
+          - generic [ref=f1e82]:
+            - strong [ref=f1e83]: Fallos y observaciones por caso
+            - generic [ref=f1e84]: 0 novedades
+          - generic "Filtros de novedades" [ref=f1e85]:
+            - searchbox "Buscar novedades por caso o comentario" [ref=f1e86]
+            - combobox "Filtrar novedades por severidad" [ref=f1e87]:
+              - option "Todas las severidades" [selected]
+              - option "Alta"
+              - option "Media"
+              - option "Baja"
+            - combobox "Filtrar novedades por estado" [ref=f1e88]:
+              - option "Todos los estados" [selected]
+              - option "Pendiente"
+              - option "Aprobado"
+              - option "Falló"
+              - option "Observado"
+            - combobox "Filtrar novedades por suite" [ref=f1e89]:
+              - option "Todas las suites" [selected]
+            - combobox "Ordenar novedades" [ref=f1e90]:
+              - 'option "Prioridad: Alta primero" [selected]'
+              - 'option "Prioridad: Baja primero"'
+              - option "Orden por caso"
+        - region "Bitácora de issues" [ref=f1e91]:
+          - strong [ref=f1e93]: Bitácora de issues
+          - generic "Resumen de issues" [ref=f1e94]
+          - generic "Tendencia semanal de issues" [ref=f1e95]
+          - generic "Distribución de issues por severidad y módulo"
+          - generic "Cumplimiento del plazo y reapertura"
+          - generic "Filtros de issues" [ref=f1e96]:
+            - searchbox "Buscar issues" [ref=f1e97]
+            - combobox "Filtrar issues por estado" [ref=f1e98]:
+              - option "Todos los estados" [selected]
+            - combobox "Filtrar issues por suite" [ref=f1e99]:
+              - option "Todos los módulos" [selected]
+            - group "Vista de issues" [ref=f1e100]:
+              - button "Tabla" [pressed] [ref=f1e101] [cursor=pointer]
+              - button "Kanban" [ref=f1e102] [cursor=pointer]
+          - table [ref=f1e105]:
+            - rowgroup [ref=f1e106]:
+              - row [ref=f1e107]:
+                - columnheader "Test ID" [ref=f1e108]
+                - columnheader "ID issue" [ref=f1e109]
+                - columnheader "Hallazgo / caso de prueba" [ref=f1e110]
+                - columnheader "Observación" [ref=f1e111]
+                - columnheader "Evidencia" [ref=f1e112]
+                - columnheader "Resultado QA" [ref=f1e113]
+                - columnheader "Severidad" [ref=f1e114]
+                - columnheader "Prioridad" [ref=f1e115]
+                - columnheader "Estado" [ref=f1e116]
+                - columnheader "Asignado a" [ref=f1e117]
+                - columnheader "Fecha registro" [ref=f1e118]
+                - columnheader "Antigüedad" [ref=f1e119]
+                - columnheader "Fecha cierre" [ref=f1e120]
+                - columnheader "Última validación" [ref=f1e121]
+                - columnheader "Acciones" [ref=f1e122]
+            - rowgroup
+        - generic [ref=f1e123]:
+          - generic [ref=f1e124]:
+            - generic [ref=f1e125]:
+              - strong [ref=f1e126]: Progreso de ejecución
+              - generic [ref=f1e127]: 0 pasos
+            - generic [ref=f1e128]:
+              - generic [ref=f1e129]: Ejecutados
+              - strong [ref=f1e132]: 0%
+            - generic [ref=f1e133]:
+              - generic [ref=f1e134]: Aprobados
+              - strong [ref=f1e137]: 0%
+            - generic [ref=f1e138]:
+              - generic [ref=f1e139]: Fallidos
+              - strong [ref=f1e142]: 0%
+          - generic [ref=f1e144]:
+            - strong [ref=f1e145]: Personas que documentan
+            - generic [ref=f1e146]: Según los casos guardados
+        - generic [ref=f1e148]:
+          - strong [ref=f1e149]: Casos recientes
+          - generic [ref=f1e150]: 0 casos
+        - region "Catálogo de casos" [ref=f1e151]:
+          - generic [ref=f1e152]:
+            - strong [ref=f1e153]: Catálogo de casos
+            - generic [ref=f1e154]: 0 casos
+          - generic [ref=f1e155]:
+            - searchbox "Buscar casos, descripción o resultado" [ref=f1e156]
+            - button "Limpiar" [ref=f1e157] [cursor=pointer]
+          - generic "Transferir datos del documentador" [ref=f1e158]:
+            - button "⬇ Descargar respaldo" [ref=f1e159] [cursor=pointer]
+            - button "⬆ Importar respaldo" [ref=f1e160] [cursor=pointer]
+            - button "🗑 Reiniciar todo" [ref=f1e161] [cursor=pointer]
+            - paragraph [ref=f1e162]: Importar reemplaza el espacio actual. Reiniciar lo deja listo para comenzar de nuevo.
+          - table [ref=f1e164]:
+            - rowgroup [ref=f1e165]:
+              - row [ref=f1e166]:
+                - columnheader "Casos" [ref=f1e167]
+                - columnheader "Estado" [ref=f1e168]
+                - columnheader "Pasos" [ref=f1e169]
+                - columnheader "Acciones" [ref=f1e170]
+            - rowgroup

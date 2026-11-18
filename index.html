@@ -31918,6 +31918,15 @@ var __async = (__this, __arguments, generator) => {
     return text || fallback;
   }
 
+  function cleanDashboardIssueObservation(value, fallback = "Sin observación") {
+    const text = cleanDashboardIssueReportText(value, fallback)
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^Paso\s+\d+(?:\.\d+)?\s+\([^)]*\):\s*/, ""))
+      .join("\n")
+      .trim();
+    return text || fallback;
+  }
+
   function dashboardIssueReportParagraph(text, options = {}) {
     return new docx.Paragraph({
       spacing: { before: options.before || 0, after: options.after ?? 100 },
@@ -31993,9 +32002,11 @@ var __async = (__this, __arguments, generator) => {
       dashboardIssueReportSectionHeading("Caso de prueba"),
       dashboardIssueReportParagraph(issue.formName),
       dashboardIssueReportSectionHeading("Descripción del hallazgo"),
-      ...cleanDashboardIssueReportText(issue.observation, "Sin descripción").split(/\r?\n/).map((line) =>
-        dashboardIssueReportParagraph(line || " ", { after: 75 })
-      ),
+      ...cleanDashboardIssueObservation(issue.observation, "Sin descripción")
+        .split(/\r?\n/)
+        .map((line) =>
+          dashboardIssueReportParagraph(line || " ", { after: 75 })
+        ),
     ];
 
     const evidence = getDashboardIssueEvidence(issue, project);
@@ -34026,6 +34037,7 @@ var __async = (__this, __arguments, generator) => {
       const evidenceCount = evidence.length;
       const relatedCase = getDashboardIssueCase(issue, project);
       const suiteName = suiteNames.get(issue.suiteId || relatedCase?.suiteId) || "—";
+      const observation = cleanDashboardIssueObservation(issue.observation);
       const evidencePreview = evidence.map((item, evidenceIndex) => {
         const { step } = item;
         const image = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
@@ -34039,7 +34051,7 @@ var __async = (__this, __arguments, generator) => {
         <td><span class="dashboard-issue-test-id">${escapeHtml(issue.testId || "—")}</span></td>
         <td>${escapeHtml(issue.displayId || "—")}</td>
         <td><strong>${escapeHtml(issue.findingTitle || issue.formName || "Hallazgo sin título")}</strong><br><small>${escapeHtml(issue.formName || "Sin caso de prueba")} · ${escapeHtml(suiteName)}</small></td>
-        <td><div class="dashboard-issue-observation">${escapeHtml(issue.observation || "Sin observación")}</div>${Array.isArray(issue.comments) && issue.comments.length ? `<span class="dashboard-issue-meta">💬 ${issue.comments.length} ${issue.comments.length === 1 ? "comentario" : "comentarios"}</span>` : ""}</td>
+        <td><div class="dashboard-issue-observation">${escapeHtml(observation)}</div>${Array.isArray(issue.comments) && issue.comments.length ? `<span class="dashboard-issue-meta">💬 ${issue.comments.length} ${issue.comments.length === 1 ? "comentario" : "comentarios"}</span>` : ""}</td>
         <td>${evidenceCount
           ? `<div class="dashboard-issue-evidence-previews">${evidencePreview}</div>`
           : "—"}</td>
@@ -34072,6 +34084,7 @@ var __async = (__this, __arguments, generator) => {
         <div class="dashboard-issue-column-heading"><span>${escapeHtml(status)}</span><span>${columnIssues.length}</span></div>
         <div class="dashboard-issue-kanban-list">${columnIssues.map((issue) => {
           const evidence = getDashboardIssueEvidence(issue, project);
+          const observation = cleanDashboardIssueObservation(issue.observation);
           const evidencePreview = evidence.map((item, evidenceIndex) => {
             const { step } = item;
             const image = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
@@ -34085,7 +34098,7 @@ var __async = (__this, __arguments, generator) => {
             <strong>${escapeHtml(issue.findingTitle || issue.formName || "Hallazgo sin título")}</strong>
             <span>Caso de prueba: ${escapeHtml(issue.formName || "Sin caso relacionado")}</span>
             ${issue.qaResult ? `<span>Resultado QA: ${escapeHtml(issue.qaResult)}</span>` : ""}
-            <span>${escapeHtml(issue.observation || "Sin observación")}</span>
+            <span>${escapeHtml(observation)}</span>
             ${issue.assignee ? `<span>👤 ${escapeHtml(issue.assignee)}</span>` : ""}
             ${Array.isArray(issue.comments) && issue.comments.length ? `<span>💬 ${issue.comments.length}</span>` : ""}
             ${evidencePreview ? `<div class="dashboard-issue-evidence-previews" aria-label="Evidencias del caso">${evidencePreview}</div>` : ""}
@@ -36353,6 +36366,7 @@ var __async = (__this, __arguments, generator) => {
   }
 
   async function startManualDocumenterCase() {
+    await flushLiveIssueSync();
     clearQaDocumenterExecutionContext();
     const current = currentCaseData();
     const hasCurrentData = current.steps.length > 0 ||
@@ -36385,6 +36399,7 @@ var __async = (__this, __arguments, generator) => {
   async function openCaseFromBatch(idx, focusStepId) {
     const selectedCase = savedCases[idx];
     if (!selectedCase) return;
+    await flushLiveIssueSync();
     clearQaDocumenterExecutionContext();
 
     const current = currentCaseData();
@@ -36488,16 +36503,28 @@ var __async = (__this, __arguments, generator) => {
   // guardando el caso en el lote si todavía no existe.
   let liveIssueTimer = null;
   let liveIssueRunning = false;
+  let liveIssuePromise = Promise.resolve();
   function scheduleLiveIssueSync() {
     clearTimeout(liveIssueTimer);
-    liveIssueTimer = setTimeout(syncLiveIssueForCurrentCase, 700);
+    liveIssueTimer = setTimeout(() => {
+      liveIssueTimer = null;
+      if (liveIssueRunning) {
+        scheduleLiveIssueSync();
+        return;
+      }
+      liveIssuePromise = syncLiveIssueForCurrentCase();
+    }, 700);
+  }
+
+  async function flushLiveIssueSync() {
+    clearTimeout(liveIssueTimer);
+    liveIssueTimer = null;
+    if (liveIssueRunning) await liveIssuePromise;
+    clearTimeout(liveIssueTimer);
+    liveIssueTimer = null;
   }
 
   async function syncLiveIssueForCurrentCase() {
-    if (liveIssueRunning) {
-      scheduleLiveIssueSync();
-      return;
-    }
     if (!document.body.classList.contains("documenter-view")) return;
     const hasIssueStep = steps.some((step) =>
       normalizeStepStatus(step.stepStatus || step.status) === "fallo" || getStepSeverity(step));
@@ -36508,12 +36535,14 @@ var __async = (__this, __arguments, generator) => {
     if (!hasIssueStep && !hasAutoIssues) return;
     const idInput = document.getElementById("caseId");
     const descriptionInput = document.getElementById("description");
-    if (!idInput || !String(idInput.value || "").trim()) return;
+    if (!idInput) return;
     liveIssueRunning = true;
     try {
       const normalizedCase = normalizeCaseIdInputValue(idInput.value, descriptionInput ? descriptionInput.value : "");
-      if (!normalizedCase.caseId) return;
-      const record = buildCurrentCaseRecord(normalizedCase);
+      const record = buildCurrentCaseRecord({
+        ...normalizedCase,
+        caseId: normalizedCase.caseId || "Caso sin ID",
+      });
       let savedCase;
       if (editingCaseIndex !== null && savedCases[editingCaseIndex]) {
         savedCases = savedCases.slice();
@@ -36543,7 +36572,12 @@ var __async = (__this, __arguments, generator) => {
     }
   }
 
-  document.getElementById("addToBatchBtn").addEventListener("click", async () => {    syncStepInputsToData();
+  document.getElementById("caseId").addEventListener("input", scheduleLiveIssueSync);
+  document.getElementById("description").addEventListener("input", scheduleLiveIssueSync);
+
+  document.getElementById("addToBatchBtn").addEventListener("click", async () => {
+    await flushLiveIssueSync();
+    syncStepInputsToData();
     if (document.getElementById("exportPreview")) {
       syncEditedPreviewToCaseFields();
     }

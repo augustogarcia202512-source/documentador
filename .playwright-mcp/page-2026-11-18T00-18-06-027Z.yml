@@ -1,0 +1,132 @@
+- generic [ref=e1]:
+  - status [ref=e2]
+  - generic [ref=e394]:
+    - paragraph [ref=e395]: Registro de evidencia · sesión local
+    - generic [ref=e396]:
+      - heading "Documentador de Casos de Prueba" [level=1] [ref=e398]
+      - button "📦 Respaldo" [ref=e399] [cursor=pointer]
+      - button "← Panel" [ref=e400] [cursor=pointer]
+    - group "Estilo visual" [ref=e401]:
+      - generic [ref=e402]: Vista
+      - 'button "Presentación: Off" [ref=e403] [cursor=pointer]'
+      - 'button "Compacta: Off" [disabled] [ref=e404]'
+    - button "💬 Comentar" [ref=e405] [cursor=pointer]
+    - status [ref=e406]: 💾 Guardado automáticamente • 07:18 p. m.
+    - generic [ref=e407]:
+      - generic [ref=e408]: Proyecto
+      - combobox "Proyecto" [ref=e409]:
+        - option "Mi proyecto" [selected]
+      - generic [ref=e410]: Caso de una suite o caso manual
+      - combobox "Caso de una suite o caso manual" [ref=e411]:
+        - option "Selecciona un caso..."
+        - option "➕ Caso manual / imprevisto" [selected]
+      - generic [ref=e412]: Selecciona un caso guardado en una suite o elige la opción manual para documentar uno imprevisto.
+      - generic [ref=e413]: ID / Tema
+      - textbox "ID / Tema" [ref=e414]:
+        - /placeholder: "Ej: CP-001 o Soporte contabilidad"
+      - generic [ref=e415]: Descripción
+      - textbox "Descripción" [ref=e416]
+      - generic [ref=e417]: Detalle, pasos o datos adicionales
+      - textbox "Detalle, pasos o datos adicionales" [ref=e418]:
+        - /placeholder: Detalle opcional del caso
+      - generic [ref=e419]: Plantilla del caso
+      - combobox "Plantilla del caso" [ref=e420]:
+        - option "General" [selected]
+        - option "Caso funcional"
+        - option "Prueba de regresión"
+        - option "Soporte / incidencia"
+      - generic [ref=e421]:
+        - generic [ref=e422]:
+          - generic [ref=e423]: Área / equipo
+          - textbox "Área / equipo" [ref=e424]:
+            - /placeholder: "Ej: Contabilidad"
+        - generic [ref=e425]:
+          - generic [ref=e426]: Documentado por
+          - textbox "Documentado por" [ref=e427]:
+            - /placeholder: Tu nombre
+    - generic [ref=e428]:
+      - status [ref=e430]
+      - generic [ref=e431]:
+        - button "🖥️ Compartir pantalla o pestaña" [ref=e432] [cursor=pointer]
+        - button "📌 Activar botón flotante" [ref=e433] [cursor=pointer]
+        - button "📸 Capturar ahora (Ctrl+Shift+Y)" [ref=e434] [cursor=pointer]
+        - button "✂️ Seleccionar área" [ref=e435] [cursor=pointer]
+        - generic [ref=e436]:
+          - text: Destino
+          - combobox "Destino" [ref=e437]:
+            - option "Nuevo paso" [selected]
+            - option "Paso actual (otra imagen)"
+        - button "⬇️ Descargar capturas" [ref=e438] [cursor=pointer]
+        - button "↶ Deshacer" [ref=e439] [cursor=pointer]
+        - button "↷ Rehacer" [disabled] [ref=e440] [cursor=pointer]
+        - 'status "Deshacer disponibles: 2 | Rehacer disponibles: 0" [ref=e508]': "Historial: 2/80"
+      - group [ref=e442]:
+        - generic "⌨️ Ayuda rápida y atajos de teclado" [ref=e443] [cursor=pointer]
+    - generic [ref=e444]:
+      - generic [ref=e445]:
+        - generic [ref=e446]: Texto
+        - searchbox "Texto" [ref=e447]
+      - generic [ref=e448]:
+        - generic [ref=e449]: Severidad
+        - combobox "Severidad" [ref=e450]:
+          - option "Todas" [selected]
+          - option "Alta"
+          - option "Media"
+          - option "Baja"
+          - option "Sin novedad"
+      - generic [ref=e451]:
+        - checkbox "Sólo novedades" [ref=e452]
+        - generic [ref=e453]: Sólo novedades
+      - generic [ref=e454]: 1/1 pasos
+    - generic [ref=e476]:
+      - generic [ref=e477]:
+        - generic "Mover paso con arrastre o con Alt más flechas" [ref=e478]: ⠿
+        - generic [ref=e479]: Evidencia 1
+        - generic [ref=e480]:
+          - button "➕ Imagen" [ref=e481] [cursor=pointer]
+          - button "Subir paso" [ref=e482] [cursor=pointer]: ↑
+          - button "Bajar paso" [ref=e483] [cursor=pointer]: ↓
+          - button "Eliminar" [ref=e484] [cursor=pointer]
+      - generic [ref=e486]:
+        - generic "Arrastrar comentario" [ref=e487]: ↕
+        - button "Abrir comentario" [ref=e488] [cursor=pointer]: 💬
+      - generic [ref=e489]:
+        - button "Abrir imagen ampliada del paso 1" [ref=e490]
+        - generic "Marcadores de notas sobre la imagen"
+      - generic [ref=e491]:
+        - button "📋 Copiar evidencia" [ref=e492] [cursor=pointer]
+        - button "⬇️ Descargar imagen" [ref=e493] [cursor=pointer]
+        - button "🐞 Generar defecto" [ref=e494] [cursor=pointer]
+        - button "✏️ Marcar zona" [ref=e495] [cursor=pointer]
+        - button "📍 Nota en imagen" [ref=e496] [cursor=pointer]
+        - button "🔄 Reemplazar imagen" [ref=e497] [cursor=pointer]
+      - button "Mover comentario hacia centro" [pressed] [ref=e499] [cursor=pointer]: "Mover comentario: centro"
+      - generic [ref=e500]:
+        - generic [ref=e501]: Estado
+        - combobox "Estado" [ref=e502]:
+          - option "⏳ Pendiente" [selected]
+          - option "✅ Aprobado"
+          - option "❌ Falló"
+          - option "⚠️ Observado"
+      - generic [ref=e503]:
+        - button "Sin novedad" [ref=e504] [cursor=pointer]
+        - button "🔴 Alta" [active] [pressed] [ref=e505] [cursor=pointer]
+        - button "🟠 Media" [ref=e506] [cursor=pointer]
+        - button "🟡 Baja" [ref=e507] [cursor=pointer]
+    - generic [ref=e457]:
+      - generic [ref=e458]: Casos guardados en esta sesión (0)
+      - generic [ref=e459]: Aún no hay casos guardados en este proyecto.
+      - generic [ref=e461]:
+        - button "➕ Guardar caso y empezar otro" [ref=e462] [cursor=pointer]
+        - button "🗑️ Vaciar lote" [ref=e463] [cursor=pointer]
+      - button "📚 Descargar todos combinados (.docx)" [disabled] [ref=e464] [cursor=pointer]
+      - paragraph [ref=e465]: Guarda el caso actual en el lote y empieza uno nuevo sin perder los anteriores. Al descargar el combinado, si el caso en pantalla tiene datos, se incluye automáticamente al final aunque no lo hayas guardado.
+    - generic [ref=e466]:
+      - button "📥 Descargar como Word (.docx)" [ref=e467] [cursor=pointer]
+      - button "🚩 Descargar solo novedades (.docx)" [ref=e468] [cursor=pointer]
+      - button "👁️ Vista previa del documento" [ref=e469] [cursor=pointer]
+      - status [ref=e470]
+      - generic [ref=e471]:
+        - button "📄 Copiar y pegar" [ref=e472] [cursor=pointer]
+        - button "⬇️ Descargar HTML" [ref=e473] [cursor=pointer]
+      - button "🗑️ Reiniciar" [ref=e474] [cursor=pointer]
