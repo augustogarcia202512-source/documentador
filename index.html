@@ -1540,6 +1540,28 @@
     font: 10px var(--mono);
     overflow-wrap: anywhere;
   }
+  .qa-bulk-import-file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .qa-bulk-import-file-button {
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-weight: 750;
+    cursor: pointer;
+  }
+  .qa-bulk-import-file-name {
+    min-width: 0;
+    color: var(--text-muted);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
   #qaBulkImportText {
     display: block;
     box-sizing: border-box;
@@ -2419,6 +2441,15 @@
   .dashboard-issue-kanban-card button { margin-top: 7px; min-height: 26px; padding: 4px 7px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--panel-2); color: var(--text); font-size: 9px; }
   .dashboard-issue-empty { padding: 22px 12px; color: var(--text-faint); text-align: center; font-size: 11px; }
   .dashboard-issue-editor { width: min(680px, 100%); max-height: 90vh; overflow: auto; }
+  .dashboard-issue-import-panel { width: min(760px, 100%); max-height: min(90vh, 720px); overflow: auto; }
+  .dashboard-issue-import-help { margin: -8px 0 12px; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+  .dashboard-issue-import-file-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dashboard-issue-import-file-row button { min-height: 36px; padding: 0 12px; border: 1px solid var(--line-soft); border-radius: 7px; background: var(--panel-2); color: var(--text); font-weight: 750; cursor: pointer; }
+  .dashboard-issue-import-file-name { min-width: 0; color: var(--text-muted); font-size: 11px; overflow-wrap: anywhere; }
+  #dashboardIssueImportText { display: block; box-sizing: border-box; width: 100%; min-height: 190px; resize: vertical; padding: 12px; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--panel-2); color: var(--text); font: 12px/1.6 var(--mono); }
+  #dashboardIssueImportText:focus { outline: none; border-color: rgba(232,163,61,.7); box-shadow: 0 0 0 3px rgba(232,163,61,.14); }
+  .dashboard-issue-import-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
+  .dashboard-issue-import-actions button { min-height: 40px; }
   .dashboard-issue-editor-form { display: grid; gap: 10px; }
   .dashboard-issue-editor-form label { display: grid; gap: 5px; color: var(--text-muted); font-size: 10px; font-weight: 750; }
   .dashboard-issue-editor-form input,
@@ -2785,7 +2816,7 @@
             <span class="qa-panel-chip status-not-executed"><span class="qa-chip-dot"></span>Not Executed <span id="qaNotExecutedCount">0</span></span>
             <span class="qa-panel-chip status-in-progress"><span class="qa-chip-dot"></span>In Progress <span id="qaInProgressCount">0</span></span>
             <span class="qa-panel-chip status-failed"><span class="qa-chip-dot"></span>Failed <span id="qaFailedCount">0</span></span>
-            <span class="qa-panel-chip status-blocked"><span class="qa-chip-dot"></span>Blocked <span id="qaBlockedCount">0</span></span>
+            <span class="qa-panel-chip status-blocked"><span class="qa-chip-dot"></span>Not Applicable <span id="qaBlockedCount">0</span></span>
           </div>
 
           <div class="qa-cycle-toolbar" id="qaCycleToolbar" aria-label="Ciclos de ejecución">
@@ -2890,6 +2921,7 @@
               <button class="btn-primary" id="dashboardIssueCreateBtn" type="button">+ Registrar issue</button>
               <button class="btn-secondary" id="dashboardIssueExportBtn" type="button">Exportar CSV</button>
               <button class="btn-secondary" id="dashboardIssueExportExcelBtn" type="button">Exportar Excel</button>
+              <button class="btn-secondary" id="dashboardIssueImportOpenBtn" type="button" title="Adjunta un Excel o pega directamente las filas de issues.">Importar issues</button>
               <button class="btn-secondary" id="dashboardIssueExportPdfBtn" type="button">Exportar PDF</button>
               <button class="btn-secondary" id="dashboardIssueExportPptxBtn" type="button">Presentación PowerPoint</button>
             </div>
@@ -2954,6 +2986,25 @@
             </div>
           </div>
           <div class="dashboard-issue-kanban" id="dashboardIssueKanbanView" hidden></div>
+          <div id="dashboardIssueImportOverlay" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="dashboardIssueImportTitle">
+            <section class="app-dialog-panel dashboard-issue-import-panel">
+              <h2 class="app-dialog-title" id="dashboardIssueImportTitle">Importar issues</h2>
+              <p class="dashboard-issue-import-help">Adjunta un Excel o pega una fila por issue. Se agregarán sin reemplazar los existentes. El módulo debe coincidir con una suite del proyecto; las imágenes no se importan.</p>
+              <div class="dashboard-issue-import-file-row">
+                <button id="dashboardIssueImportFileBtn" type="button">Adjuntar documento</button>
+                <input id="dashboardIssueImportFileInput" type="file" accept=".xlsx,.csv,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/tab-separated-values" hidden />
+                <span class="dashboard-issue-import-file-name" id="dashboardIssueImportFileName" aria-live="polite">Excel (.xlsx), CSV o TSV</span>
+              </div>
+              <label class="dashboard-issue-import-help" for="dashboardIssueImportText">Columnas: Test ID · Título del hallazgo · Caso de prueba · Módulo · Descripción del hallazgo</label>
+              <textarea id="dashboardIssueImportText" spellcheck="false" placeholder="TC-101&#9;Error al guardar&#9;Guardar formulario&#9;Pagos&#9;El sistema presenta un error.&#10;TC-102&#9;Botón no responde&#9;Enviar formulario&#9;Pagos&#9;No se ejecuta la acción."></textarea>
+              <p class="dashboard-issue-import-help">También puedes pegar la fila de encabezados del Excel exportado para importar columnas opcionales.</p>
+              <p id="dashboardIssueImportError" role="alert" aria-live="polite" style="min-height:18px;margin:6px 0;color:#df625a;font-size:11px;white-space:pre-line"></p>
+              <div class="dashboard-issue-import-actions">
+                <button class="btn-secondary" id="dashboardIssueImportCancelBtn" type="button">Cancelar</button>
+                <button class="btn-primary" id="dashboardIssueImportSubmitBtn" type="button">Importar</button>
+              </div>
+            </section>
+          </div>
         </section>
         <div id="dashboardIssueEditorOverlay" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="dashboardIssueEditorTitle">
           <div class="app-dialog-panel dashboard-issue-editor">
@@ -3169,7 +3220,12 @@ Password: Clave#2026" aria-describedby="qaNewCaseTestDataHelp"></textarea>
     <div id="qaBulkImportOverlay" role="dialog" aria-modal="true" aria-labelledby="qaBulkImportTitle">
       <section class="qa-bulk-import-panel">
         <h2 class="qa-bulk-import-title" id="qaBulkImportTitle">Importar casos</h2>
-        <p class="qa-bulk-import-help">Copia desde Excel y pega aquí una fila por caso. Se agregarán los casos sin reemplazar los que ya existen.</p>
+        <p class="qa-bulk-import-help">Adjunta un Excel o pega aquí los datos copiados desde Excel. Revisa una fila por caso; se agregarán sin reemplazar los existentes.</p>
+        <div class="qa-bulk-import-file-row">
+          <button class="qa-bulk-import-file-button" id="qaBulkImportFileBtn" type="button">Adjuntar documento</button>
+          <input id="qaBulkImportFile" type="file" accept=".xlsx,.csv,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/tab-separated-values" hidden />
+          <span class="qa-bulk-import-file-name" id="qaBulkImportFileName" aria-live="polite">Excel (.xlsx), CSV o TSV</span>
+        </div>
         <label class="qa-bulk-import-format" for="qaBulkImportText">Columnas: Nombre · Suite (el ID se genera solo; opcionalmente ID · Nombre · Suite)</label>
         <textarea id="qaBulkImportText" spellcheck="false" placeholder="Login válido&#9;Login&#10;Clave errónea&#9;Login"></textarea>
         <p class="qa-bulk-import-error" id="qaBulkImportError" role="alert" aria-live="polite"></p>
@@ -3201,7 +3257,7 @@ Password: Clave#2026" aria-describedby="qaNewCaseTestDataHelp"></textarea>
           <button class="qa-execution-status" type="button" data-status="not-executed" aria-pressed="false"><span>Not Executed</span></button>
           <button class="qa-execution-status" type="button" data-status="in-progress" aria-pressed="false"><span>In Progress</span></button>
           <button class="qa-execution-status" type="button" data-status="failed" aria-pressed="false"><span>Failed</span></button>
-          <button class="qa-execution-status" type="button" data-status="blocked" aria-pressed="false"><span>Blocked</span></button>
+          <button class="qa-execution-status" type="button" data-status="blocked" aria-pressed="false"><span>Not Applicable</span></button>
         </div>
         <input class="qa-execution-note" id="qaExecutionNote" type="text" maxlength="500" placeholder="Nota / ID del bug (opcional)" aria-label="Nota o ID del bug opcional" />
         <div class="qa-execution-attachments" id="qaExecutionAttachments" hidden>
@@ -3233,7 +3289,7 @@ Password: Clave#2026" aria-describedby="qaNewCaseTestDataHelp"></textarea>
         <button class="qa-execution-status" type="button" data-status="not-executed" aria-pressed="false"><span>Not Executed</span></button>
         <button class="qa-execution-status" type="button" data-status="in-progress" aria-pressed="false"><span>In Progress</span></button>
         <button class="qa-execution-status" type="button" data-status="failed" aria-pressed="false"><span>Failed</span></button>
-        <button class="qa-execution-status" type="button" data-status="blocked" aria-pressed="false"><span>Blocked</span></button>
+        <button class="qa-execution-status" type="button" data-status="blocked" aria-pressed="false"><span>Not Applicable</span></button>
       </div>
     </div>
     <button class="qa-documenter-execution-return" id="qaReturnToExecutionBtn" type="button">Volver a ejecución</button>
@@ -32473,7 +32529,7 @@ var __async = (__this, __arguments, generator) => {
       "not-executed": "Not Executed",
       "in-progress": "In Progress",
       failed: "Failed",
-      blocked: "Blocked",
+      blocked: "Not Applicable",
     }[status] || "Not Executed";
   }
 
@@ -32556,7 +32612,7 @@ var __async = (__this, __arguments, generator) => {
       const suiteCount = (suiteBreakdown.match(/<tr>/g) || []).length;
       const breakdown = suiteBreakdown
         ? `<details class="qa-cycle-suite-breakdown"><summary>Desglose por suite (${suiteCount})</summary>
-            <table><thead><tr><th>Suite</th><th>Casos</th><th>Pass</th><th>Failed</th><th>Blocked</th><th>Evaluados</th><th>Aprobación</th></tr></thead>
+            <table><thead><tr><th>Suite</th><th>Casos</th><th>Pass</th><th>Failed</th><th>Not Applicable</th><th>Evaluados</th><th>Aprobación</th></tr></thead>
             <tbody>${suiteBreakdown}</tbody></table></details>`
         : "";
       return `<tr>
@@ -32574,7 +32630,7 @@ var __async = (__this, __arguments, generator) => {
         <span>Tasa de aprobación = Pass / (Pass + Failed). El cambio compara cada ciclo con el anterior.</span>
       </div>
       <div class="qa-cycle-comparison-table-wrap"><table class="qa-cycle-comparison-table">
-        <thead><tr><th scope="col">Ciclo</th><th scope="col">Pasaron</th><th scope="col">Fallaron</th><th scope="col">Bloqueados</th><th scope="col">Evaluados</th><th scope="col">Tasa de aprobación</th><th scope="col">Cambio</th></tr></thead>
+        <thead><tr><th scope="col">Ciclo</th><th scope="col">Pasaron</th><th scope="col">Fallaron</th><th scope="col">Not Applicable</th><th scope="col">Evaluados</th><th scope="col">Tasa de aprobación</th><th scope="col">Cambio</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>`;
   }
@@ -32650,7 +32706,7 @@ var __async = (__this, __arguments, generator) => {
         <span><b>Casos en alcance:</b> ${report.cycleCaseCount}</span><span><b>Evaluados (Pass + Failed):</b> ${report.evaluated}</span></div>
       <div class="kpis"><div class="kpi"><b>${percentage}</b>Aprobación sobre evaluados</div>
         <div class="kpi"><b>${report.pass}</b>Pasaron</div><div class="kpi"><b>${report.failed}</b>Fallaron</div>
-        <div class="kpi"><b>${report.notExecuted + report.inProgress + report.blocked}</b>Pendientes / bloqueados</div></div>
+        <div class="kpi"><b>${report.notExecuted + report.inProgress + report.blocked}</b>Pendientes / Not Applicable</div></div>
       <h2>Issues abiertos por severidad</h2><p>Total abiertos: <b>${report.openIssueCount}</b></p>
       <table><thead><tr><th>Severidad</th><th>Issues abiertos</th></tr></thead><tbody>${severityRows}</tbody></table>
       <h2>Criterio de salida</h2><div class="criterion ${criterionClass}">${esc(report.exitCriterion)}: ${report.exitCriterionMet ? "CUMPLE" : `NO CUMPLE (${report.criticalOpen} abiertos)`}</div>
@@ -32778,6 +32834,7 @@ var __async = (__this, __arguments, generator) => {
     const overlay = document.getElementById("qaBulkImportOverlay");
     document.getElementById("qaBulkImportText").value = "";
     document.getElementById("qaBulkImportError").textContent = "";
+    document.getElementById("qaBulkImportFileName").textContent = "Excel (.xlsx), CSV o TSV";
     openOverlay(overlay, {
       opener,
       display: "flex",
@@ -32789,6 +32846,27 @@ var __async = (__this, __arguments, generator) => {
   function closeQaBulkImportDialog() {
     const overlay = document.getElementById("qaBulkImportOverlay");
     if (overlay.style.display !== "none") closeOverlay(overlay);
+  }
+
+  async function loadQaCaseImportFile(event) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+    const fileButton = document.getElementById("qaBulkImportFileBtn");
+    const error = document.getElementById("qaBulkImportError");
+    fileButton.disabled = true;
+    error.textContent = "";
+    try {
+      const text = await readQaCaseImportFile(file);
+      if (!text.trim()) throw new Error("El archivo no contiene datos para importar.");
+      document.getElementById("qaBulkImportText").value = text;
+      document.getElementById("qaBulkImportFileName").textContent = file.name;
+    } catch (fileError) {
+      console.error("No se pudo leer el archivo de casos:", fileError);
+      error.textContent = `No se pudo leer el documento. ${fileError.message || "Verifica el archivo e inténtalo nuevamente."}`;
+    } finally {
+      fileButton.disabled = false;
+    }
   }
 
   async function importQaCasesFromText() {
@@ -33572,7 +33650,7 @@ var __async = (__this, __arguments, generator) => {
           { key: "failed", label: "Failed" },
           { key: "in-progress", label: "In Progress" },
           { key: "not-executed", label: "Not Executed" },
-          { key: "blocked", label: "Blocked" },
+          { key: "blocked", label: "Not Applicable" },
         ];
         const suiteStatusCounts = Object.fromEntries(suiteStatuses.map(({ key }) => [key, 0]));
         suiteCases.forEach((caseRecord) => {
@@ -33968,7 +34046,7 @@ var __async = (__this, __arguments, generator) => {
     const container = document.getElementById("qaMetricsPanel");
     if (!container) return;
     const colors = { pass: "#34c38f", failed: "#e7463e", blocked: "#f39c12", "in-progress": "#4b9fea", "not-executed": "#b8c2cf" };
-    const labels = { pass: "Pass", failed: "Failed", blocked: "Blocked", "in-progress": "En progreso", "not-executed": "Sin ejecutar" };
+    const labels = { pass: "Pass", failed: "Failed", blocked: "Not Applicable", "in-progress": "En progreso", "not-executed": "Sin ejecutar" };
     const activeCycle = project.qaCyclesEnabled ? getActiveExecutionCycle(project) : null;
     const scopeCases = activeCycle ? getCasesInCycleScope(activeCycle, projectCases) : projectCases;
     const suiteRows = (Array.isArray(project.suites) ? project.suites : []).map((suite) => {
@@ -35051,6 +35129,288 @@ var __async = (__this, __arguments, generator) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  function getXmlElementsByLocalName(node, name) {
+    return [...node.getElementsByTagName("*")].filter((element) => element.localName === name);
+  }
+
+  function normalizeXlsxPartPath(path) {
+    const parts = [];
+    String(path || "").replace(/^\/+/, "").split("/").forEach((part) => {
+      if (!part || part === ".") return;
+      if (part === "..") parts.pop();
+      else parts.push(part);
+    });
+    return parts.join("/");
+  }
+
+  async function readXlsxWorksheetRows(file, preferredSheetName) {
+    if (file.size > 50 * 1024 * 1024) throw new Error("El archivo supera el límite de 50 MB.");
+    if (!docx?.JSZip) throw new Error("No se pudo cargar el lector de archivos Excel.");
+    const zip = await docx.JSZip.loadAsync(file);
+    const workbookFile = zip.file("xl/workbook.xml");
+    const relationshipsFile = zip.file("xl/_rels/workbook.xml.rels");
+    if (!workbookFile || !relationshipsFile) throw new Error("El archivo no contiene un libro Excel válido.");
+    const parser = new DOMParser();
+    const parseXml = (text, description) => {
+      const xml = parser.parseFromString(text, "application/xml");
+      if (xml.getElementsByTagName("parsererror").length) throw new Error(`No se pudo leer ${description} del archivo.`);
+      return xml;
+    };
+    const workbook = parseXml(await workbookFile.async("string"), "la estructura del libro");
+    const relationships = parseXml(await relationshipsFile.async("string"), "las hojas del libro");
+    const sheets = getXmlElementsByLocalName(workbook, "sheet");
+    const preferredName = String(preferredSheetName || "").trim().toLocaleLowerCase();
+    const selectedSheet = sheets.find((sheet) => sheet.getAttribute("name")?.trim().toLocaleLowerCase() === preferredName)
+      || sheets.find((sheet) => sheet.getAttribute("name")?.trim().toLocaleLowerCase() === "bitácora")
+      || sheets[0];
+    if (!selectedSheet) throw new Error("El libro no contiene hojas para importar.");
+    const relationId = selectedSheet.getAttribute("r:id") || selectedSheet.getAttributeNS(
+      "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+      "id"
+    );
+    const relation = getXmlElementsByLocalName(relationships, "Relationship")
+      .find((item) => item.getAttribute("Id") === relationId);
+    if (!relation) throw new Error("No se encontró la hoja seleccionada en el archivo.");
+    const target = relation.getAttribute("Target");
+    const sheetPath = normalizeXlsxPartPath(target.startsWith("/") ? target : `xl/${target}`);
+    const worksheetFile = zip.file(sheetPath);
+    if (!worksheetFile) throw new Error("No se encontró el contenido de la hoja seleccionada.");
+    const worksheet = parseXml(await worksheetFile.async("string"), "las filas de la hoja");
+    const sharedStringsFile = zip.file("xl/sharedStrings.xml");
+    const sharedStrings = sharedStringsFile
+      ? getXmlElementsByLocalName(parseXml(await sharedStringsFile.async("string"), "los textos compartidos"), "si")
+        .map((item) => getXmlElementsByLocalName(item, "t").map((text) => text.textContent || "").join(""))
+      : [];
+    const rows = getXmlElementsByLocalName(worksheet, "row").map((row) => {
+      const cells = [];
+      [...row.children].filter((cell) => cell.localName === "c").forEach((cell) => {
+        const reference = cell.getAttribute("r") || "";
+        const columnLetters = reference.match(/^[A-Z]+/i)?.[0]?.toUpperCase();
+        if (!columnLetters) return;
+        let column = 0;
+        for (const letter of columnLetters) column = column * 26 + letter.charCodeAt(0) - 64;
+        column -= 1;
+        const type = cell.getAttribute("t");
+        const valueNode = getXmlElementsByLocalName(cell, "v")[0];
+        const value = type === "inlineStr"
+          ? getXmlElementsByLocalName(cell, "t").map((text) => text.textContent || "").join("")
+          : valueNode?.textContent || "";
+        cells[column] = type === "s" ? sharedStrings[Number(value)] || "" : value;
+      });
+      return cells.map((cell) => cell || "");
+    }).filter((row) => row.some((cell) => String(cell).trim()));
+    if (!rows.length) throw new Error("La hoja seleccionada no contiene filas para importar.");
+    return rows;
+  }
+
+  async function readDashboardIssueXlsx(file) {
+    const rows = await readXlsxWorksheetRows(file, "Bitácora");
+    if (rows.length < 2) throw new Error("La hoja no contiene filas de issues para importar.");
+    return { headers: rows[0], rows: rows.slice(1) };
+  }
+
+  async function readQaCaseImportFile(file) {
+    if (file.size > 50 * 1024 * 1024) throw new Error("El archivo supera el límite de 50 MB.");
+    const extension = file.name.split(".").pop()?.toLocaleLowerCase();
+    if (extension === "xlsx") {
+      const rows = await readXlsxWorksheetRows(file, "Casos");
+      return rows.map((row) => row.map((cell) => String(cell).replace(/[\t\r\n]+/g, " ").trim()).join("\t")).join("\n");
+    }
+    if (extension === "csv" || extension === "tsv") return file.text();
+    throw new Error("Selecciona un archivo .xlsx, .csv o .tsv.");
+  }
+
+  function parseDashboardIssueImportDate(value, fallback) {
+    const text = String(value || "").trim();
+    if (!text) return fallback;
+    const serial = Number(text);
+    if (Number.isFinite(serial) && serial > 0 && serial < 2958466) {
+      return Date.UTC(1899, 11, 30) + serial * 86400000;
+    }
+    const dayFirst = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+    if (dayFirst) {
+      const [, day, month, year] = dayFirst;
+      const parsed = new Date(Number(year), Number(month) - 1, Number(day)).getTime();
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+    const parsed = new Date(text).getTime();
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  async function importDashboardIssues(parsed, opener, sourceLabel) {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    const suites = Array.isArray(project.suites) ? project.suites : [];
+    const cases = getActiveProjectCases();
+    const issuesBefore = Array.isArray(project.issues) ? project.issues : [];
+    const issueSuiteCodesBefore = project.issueSuiteCodes ? { ...project.issueSuiteCodes } : null;
+    const issueSuiteSequencesBefore = project.issueSuiteSequences ? { ...project.issueSuiteSequences } : null;
+    const restoreIssueSequences = () => {
+      if (issueSuiteCodesBefore) project.issueSuiteCodes = issueSuiteCodesBefore;
+      else delete project.issueSuiteCodes;
+      if (issueSuiteSequencesBefore) project.issueSuiteSequences = issueSuiteSequencesBefore;
+      else delete project.issueSuiteSequences;
+    };
+    const reservedDisplayIds = new Set(issuesBefore.map((issue) => String(issue.displayId || "").trim().toLocaleLowerCase()).filter(Boolean));
+    const suiteByName = new Map(suites.map((suite) => [String(suite.name || "").trim().toLocaleLowerCase(), suite]));
+    const candidates = [];
+    let skippedDuplicates = 0;
+    let skippedUnknownSuites = 0;
+    parsed.rows.forEach((row) => {
+      const suite = suiteByName.get(row.module.toLocaleLowerCase());
+      if (!suite) {
+        skippedUnknownSuites++;
+        return;
+      }
+        const importedDisplayId = row.displayId.trim();
+      if (importedDisplayId && reservedDisplayIds.has(importedDisplayId.toLocaleLowerCase())) {
+        skippedDuplicates++;
+        return;
+      }
+      const timestamp = Date.now();
+      const createdAt = parseDashboardIssueImportDate(row.createdAt, timestamp);
+      const status = row.status;
+      const closedAt = status === "Closed"
+        ? parseDashboardIssueImportDate(row.closedAt, createdAt)
+        : null;
+      const relatedCase = cases.find((caseRecord) =>
+        String(caseRecord.caseId || "").trim().toLocaleLowerCase() === row.testId.toLocaleLowerCase()
+      );
+      let displayId = importedDisplayId;
+      if (!displayId) {
+        do {
+          displayId = caseUtils.nextSuiteIssueDisplayId(project, suite.id, suite.name);
+        } while (reservedDisplayIds.has(displayId.toLocaleLowerCase()));
+      }
+      reservedDisplayIds.add(displayId.toLocaleLowerCase());
+      candidates.push({
+        id: createQaIssueId(),
+        displayId,
+        source: "manual",
+        caseQaId: relatedCase?.qaId || "",
+        suiteId: suite.id,
+        testId: row.testId,
+        formName: row.formName,
+        findingTitle: row.findingTitle,
+        observation: row.observation,
+        qaResult: row.qaResult,
+        severity: row.severity,
+        priority: row.priority,
+        status,
+        attachments: [],
+        assignee: row.assignee,
+        comments: row.comments ? [{ id: `comment-${timestamp}-${candidates.length}`, text: row.comments, at: createdAt }] : [],
+        createdAt,
+        closedAt,
+        lastValidationAt: row.lastValidationAt
+          ? parseDashboardIssueImportDate(row.lastValidationAt, null)
+          : null,
+        statusHistory: [{ status, at: createdAt }],
+        observationEdited: false,
+        severityEdited: false,
+        priorityEdited: false,
+      });
+    });
+
+    if (!candidates.length) {
+      restoreIssueSequences();
+      const details = [
+        parsed.errors.length && `${parsed.errors.length} fila(s) inválida(s)`,
+        skippedDuplicates && `${skippedDuplicates} duplicado(s)`,
+        skippedUnknownSuites && `${skippedUnknownSuites} módulo(s) no encontrado(s)`,
+      ].filter(Boolean).join(", ");
+      await showAppAlert(`No hay issues válidos para importar. ${[details, ...parsed.errors.slice(0, 3)].filter(Boolean).join(" · ")}`, opener);
+      return;
+    }
+
+    const report = [
+      `${candidates.length} issue(s) nuevo(s)`,
+      skippedDuplicates && `${skippedDuplicates} duplicado(s) omitido(s)`,
+      skippedUnknownSuites && `${skippedUnknownSuites} fila(s) con módulo inexistente`,
+      parsed.errors.length && `${parsed.errors.length} fila(s) inválida(s)`,
+    ].filter(Boolean).join(", ");
+    const confirmed = await showAppConfirm(
+      `Se agregarán ${candidates.length} issue(s) al proyecto “${project.name}”. No se reemplazarán los issues existentes. ${skippedUnknownSuites ? `Se omitieron ${skippedUnknownSuites} fila(s) porque el módulo no existe en el proyecto.` : ""}${parsed.errors.length ? ` Se omitieron ${parsed.errors.length} fila(s) inválida(s).` : ""}${sourceLabel === "Excel" ? " Las imágenes/evidencias del Excel no se importan." : ""}`,
+      opener,
+      sourceLabel === "Excel" ? "Importar issues desde Excel" : "Importar issues desde texto"
+    );
+    if (!confirmed) {
+      restoreIssueSequences();
+      return;
+    }
+    project.issues = [...issuesBefore, ...candidates];
+    if (!(await saveProjectsToDB())) {
+      project.issues = issuesBefore;
+      restoreIssueSequences();
+      await showAppAlert("No se pudieron guardar los issues importados. Los datos anteriores se conservaron.", opener);
+      return;
+    }
+    dashboardIssueSelection.clear();
+    renderDashboardIssueLog();
+    if (parsed.errors.length || skippedUnknownSuites) {
+      await showAppAlert(
+        `Importación completada: ${report}.${parsed.errors.length ? `\n\nFilas inválidas:\n${parsed.errors.slice(0, 5).join("\n")}` : ""}`,
+        opener
+      );
+    } else {
+      showTransientStatus(`Importación completada: ${report}.`, 5000);
+    }
+    const overlay = document.getElementById("dashboardIssueImportOverlay");
+    if (overlay.style.display !== "none") closeOverlay(overlay);
+  }
+
+  async function importDashboardIssuesFromText(opener) {
+    const text = document.getElementById("dashboardIssueImportText").value;
+    await importDashboardIssues(caseUtils.parseDashboardIssueImportText(text), opener, "texto pegado");
+  }
+
+  function openDashboardIssueImportDialog(opener) {
+    document.getElementById("dashboardIssueImportText").value = "";
+    document.getElementById("dashboardIssueImportFileInput").value = "";
+    document.getElementById("dashboardIssueImportFileName").textContent = "Excel (.xlsx), CSV o TSV";
+    document.getElementById("dashboardIssueImportError").textContent = "";
+    openOverlay(document.getElementById("dashboardIssueImportOverlay"), {
+      opener,
+      display: "flex",
+      initialFocus: document.getElementById("dashboardIssueImportText"),
+      onEscape: () => closeOverlay(document.getElementById("dashboardIssueImportOverlay")),
+    });
+  }
+
+  async function loadDashboardIssueImportFile(event) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    const error = document.getElementById("dashboardIssueImportError");
+    const fileButton = document.getElementById("dashboardIssueImportFileBtn");
+    error.textContent = "";
+    fileButton.disabled = true;
+    try {
+      if (file.size > 50 * 1024 * 1024) throw new Error("El archivo supera el límite de 50 MB.");
+      const extension = file.name.split(".").pop()?.toLocaleLowerCase();
+      let text;
+      if (extension === "xlsx") {
+        const { headers, rows } = await readDashboardIssueXlsx(file);
+        text = [headers, ...rows]
+          .map((row) => row.map((cell) => String(cell ?? "").replace(/[\t\r\n]+/g, " ").trim()).join("\t"))
+          .join("\n");
+      } else if (extension === "csv" || extension === "tsv") {
+        text = await file.text();
+      } else {
+        throw new Error("Selecciona un archivo .xlsx, .csv o .tsv.");
+      }
+      if (!text.trim()) throw new Error("El documento no contiene datos para importar.");
+      document.getElementById("dashboardIssueImportText").value = text;
+      document.getElementById("dashboardIssueImportFileName").textContent = file.name;
+    } catch (fileError) {
+      console.error("No se pudo leer el documento de issues:", fileError);
+      error.textContent = `No se pudo leer el documento. ${fileError.message || "Verifica el archivo e inténtalo nuevamente."}`;
+    } finally {
+      fileButton.disabled = false;
+    }
+  }
+
   function buildDashboardIssueSummaryHtml(project, issues) {
     const percentLabels = ["Cerrados dentro del plazo (%)", "Tasa de reapertura (%)", "Resolución (% cerrados sobre el total)"];
     const formatValue = (value, header, label) => {
@@ -35085,7 +35445,7 @@ var __async = (__this, __arguments, generator) => {
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     const NAVY = "1F3A5F", ORANGE = "E8590C", GREY = "5B6B7F", LIGHT = "FFF1E3";
     const COLORS = { pass: "34C38F", failed: "E7463E", blocked: "F39C12", "in-progress": "4B9FEA", "not-executed": "B8C2CF" };
-    const LABELS = { pass: "Pass", failed: "Failed", blocked: "Blocked", "in-progress": "En progreso", "not-executed": "Sin ejecutar" };
+    const LABELS = { pass: "Pass", failed: "Failed", blocked: "Not Applicable", "in-progress": "En progreso", "not-executed": "Sin ejecutar" };
     const today = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric" });
 
     const newSlide = (title) => {
@@ -35251,7 +35611,7 @@ var __async = (__this, __arguments, generator) => {
         [{ name: "% aprobación", color: "E8590C", values: cycleSummaries.map(({ summary }) => summary.passRate === null ? null : Math.round(summary.passRate)) }],
         { max: 100, format: (value) => `${value}%` });
       cycleSlide.box(0.5, 6.0, 6.2, 0.3, { text: "Aprobación = Pass / (Pass + Failed) de cada ciclo", size: 10, color: GREY });
-      cycleSlide.table(7.0, 1.5, [1.8, 0.8, 0.8, 0.8, 1.0], 0.5, ["Ciclo", "Pass", "Failed", "Blocked", "Sin ejec."],
+      cycleSlide.table(7.0, 1.5, [1.8, 0.8, 0.8, 0.8, 1.0], 0.5, ["Ciclo", "Pass", "Failed", "Not Applicable", "Sin ejec."],
         cycleSummaries.slice(-8).map(({ cycle, summary }) => [cycle.name || "Ciclo", summary.pass, summary.failed, summary.blocked, summary["not-executed"]]), { size: 11 });
       slides.push(cycleSlide);
     }
@@ -35496,6 +35856,33 @@ var __async = (__this, __arguments, generator) => {
       const value = parseInt(event.target.value, 10);
       localStorage.setItem("dashboardIssueAgingLimit", String(value > 0 ? value : 7));
       renderDashboardIssueLog();
+    });
+    document.getElementById("dashboardIssueImportOpenBtn").addEventListener("click", (event) => {
+      openDashboardIssueImportDialog(event.currentTarget);
+    });
+    document.getElementById("dashboardIssueImportFileBtn").addEventListener("click", () => {
+      document.getElementById("dashboardIssueImportFileInput").click();
+    });
+    document.getElementById("dashboardIssueImportFileInput").addEventListener("change", loadDashboardIssueImportFile);
+    document.getElementById("dashboardIssueImportSubmitBtn").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const error = document.getElementById("dashboardIssueImportError");
+      button.disabled = true;
+      error.textContent = "";
+      try {
+        await importDashboardIssuesFromText(button);
+      } catch (importError) {
+        console.error("No se pudieron importar los issues:", importError);
+        error.textContent = `No se pudieron importar los issues. ${importError.message || "Inténtalo nuevamente."}`;
+      } finally {
+        button.disabled = false;
+      }
+    });
+    document.getElementById("dashboardIssueImportCancelBtn").addEventListener("click", () => {
+      closeOverlay(document.getElementById("dashboardIssueImportOverlay"));
+    });
+    document.getElementById("dashboardIssueImportOverlay").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeOverlay(event.currentTarget);
     });
     document.getElementById("dashboardIssueExportBtn").addEventListener("click", () => exportDashboardIssues("csv"));
     document.getElementById("dashboardIssueExportExcelBtn").addEventListener("click", () => exportDashboardIssues("excel"));
@@ -36602,6 +36989,10 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("qaBulkImportOpenBtn").addEventListener("click", (event) => {
       openQaBulkImportDialog(event.currentTarget);
     });
+    document.getElementById("qaBulkImportFileBtn").addEventListener("click", () => {
+      document.getElementById("qaBulkImportFile").click();
+    });
+    document.getElementById("qaBulkImportFile").addEventListener("change", loadQaCaseImportFile);
     document.getElementById("qaBulkImportCancelBtn").addEventListener("click", closeQaBulkImportDialog);
     document.getElementById("qaBulkImportSubmitBtn").addEventListener("click", importQaCasesFromText);
     document.getElementById("qaBulkImportOverlay").addEventListener("click", (event) => {
@@ -36677,7 +37068,7 @@ var __async = (__this, __arguments, generator) => {
         "not-executed": "Not Executed",
         "in-progress": "In Progress",
         failed: "Failed",
-        blocked: "Blocked",
+        blocked: "Not Applicable",
       };
       return {
         label: labels[executionStatus],

@@ -270,6 +270,142 @@
     return parts.length ? parts.join(" · ") : "Caso sin ID";
   }
 
+  function parseDashboardIssueImportRows(headers, rows) {
+    const normalizeHeader = (value) => String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+    const aliases = {
+      testId: ["test id", "id prueba", "id del caso"],
+      displayId: ["id issue", "issue id", "id del issue"],
+      findingTitle: ["titulo del hallazgo", "titulo hallazgo", "hallazgo"],
+      formName: ["caso de prueba", "caso de prueba titulo", "nombre del caso"],
+      module: ["modulo", "suite"],
+      observation: ["descripcion del hallazgo", "descripcion hallazgo", "observacion", "descripcion"],
+      qaResult: ["resultado qa", "resultado"],
+      severity: ["severidad", "severity"],
+      priority: ["prioridad", "priority"],
+      status: ["estado", "status"],
+      assignee: ["asignado a", "responsable", "assignee"],
+      createdAt: ["fecha registro", "fecha de registro"],
+      closedAt: ["fecha cierre", "fecha de cierre"],
+      lastValidationAt: ["ultima validacion", "ultima fecha de validacion"],
+      comments: ["comentarios", "comentario"],
+    };
+    const normalizedHeaders = headers.map(normalizeHeader);
+    const indexes = Object.fromEntries(Object.entries(aliases).map(([field, names]) => [
+      field,
+      normalizedHeaders.findIndex((header) => names.includes(header)),
+    ]));
+    const required = ["testId", "findingTitle", "formName", "module", "observation"];
+    const missing = required.filter((field) => indexes[field] < 0);
+    if (missing.length) {
+      const labels = { testId: "Test ID", findingTitle: "Título del hallazgo", formName: "Caso de prueba", module: "Módulo", observation: "Descripción del hallazgo" };
+      return { rows: [], errors: [`Faltan columnas obligatorias: ${missing.map((field) => labels[field]).join(", ")}.`] };
+    }
+
+    const imported = [];
+    const errors = [];
+    rows.forEach((cells, rowIndex) => {
+      if (!cells.some((cell) => String(cell ?? "").trim())) return;
+      const value = (field) => indexes[field] < 0 ? "" : String(cells[indexes[field]] ?? "").trim();
+      const issue = {
+        testId: value("testId"),
+        displayId: value("displayId"),
+        findingTitle: value("findingTitle"),
+        formName: value("formName"),
+        module: value("module"),
+        observation: value("observation"),
+        qaResult: value("qaResult"),
+        severity: value("severity") || "Medium",
+        priority: value("priority") || "Medium",
+        status: value("status") || "Open",
+        assignee: value("assignee"),
+        createdAt: value("createdAt"),
+        closedAt: value("closedAt"),
+        lastValidationAt: value("lastValidationAt"),
+        comments: value("comments"),
+      };
+      const missingValues = required.filter((field) => !issue[field]);
+      if (missingValues.length) {
+        errors.push(`Fila ${rowIndex + 2}: faltan ${missingValues.map((field) => ({ testId: "Test ID", findingTitle: "Título del hallazgo", formName: "Caso de prueba", module: "Módulo", observation: "Descripción del hallazgo" })[field]).join(", ")}.`);
+        return;
+      }
+      if (!["Critical", "High", "Medium", "Low"].includes(issue.severity) ||
+          !["Critical", "High", "Medium", "Low"].includes(issue.priority) ||
+          !["Open", "Closed", "Ready for Retest", "In progress", "Re-Open"].includes(issue.status)) {
+        errors.push(`Fila ${rowIndex + 2}: la severidad, prioridad o estado no es válido.`);
+        return;
+      }
+      imported.push(issue);
+    });
+    return { rows: imported, errors };
+  }
+
+  function parseDashboardIssueImportText(value) {
+    const lines = String(value || "").replace(/^\uFEFF/, "").split(/\r\n?|\n/);
+    const firstLineIndex = lines.findIndex((line) => line.trim());
+    if (firstLineIndex < 0) return { rows: [], errors: ["Pega al menos un issue para importar."] };
+    const firstLine = lines[firstLineIndex];
+    const delimiter = firstLine.includes("\t") ? "\t" : firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
+    const parsedRows = [];
+    const errors = [];
+    lines.forEach((line, index) => {
+      if (!line.trim()) return;
+      const cells = [];
+      let cell = "";
+      let quoted = false;
+      for (let position = 0; position < line.length; position += 1) {
+        const character = line[position];
+        if (character === '"') {
+          if (quoted && line[position + 1] === '"') {
+            cell += '"';
+            position += 1;
+          } else {
+            quoted = !quoted;
+          }
+        } else if (character === delimiter && !quoted) {
+          cells.push(cell.trim());
+          cell = "";
+        } else {
+          cell += character;
+        }
+      }
+      cells.push(cell.trim());
+      parsedRows.push({ line: index + 1, cells });
+    });
+
+    const normalizeHeader = (header) => String(header || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+    const firstCells = parsedRows[0].cells;
+    const hasHeader = ["test id", "id prueba", "id del caso"].includes(normalizeHeader(firstCells[0]));
+    if (hasHeader) {
+      const result = parseDashboardIssueImportRows(firstCells, parsedRows.slice(1).map((row) => row.cells));
+      return result;
+    }
+
+    const headers = ["Test ID", "Título del hallazgo", "Caso de prueba", "Módulo", "Descripción del hallazgo"];
+    const validRows = parsedRows.filter(({ line, cells }) => {
+      if (cells.length !== headers.length) {
+        errors.push(`Línea ${line}: se esperaban 5 columnas (Test ID, Título del hallazgo, Caso de prueba, Módulo y Descripción del hallazgo).`);
+        return false;
+      }
+      return true;
+    });
+    const result = parseDashboardIssueImportRows(headers, validRows.map((row) => row.cells));
+    const rowErrors = result.errors.map((message) => message.replace(/^Fila (\d+):/, (_, rowNumber) => {
+      const sourceRow = validRows[Number(rowNumber) - 2];
+      return `Línea ${sourceRow?.line || Number(rowNumber) - 1}:`;
+    }));
+    return { rows: result.rows, errors: [...errors, ...rowErrors] };
+  }
+
   function parseQaCaseImportRows(value, options = {}) {
     const autoId = Boolean(options.autoId);
     const lines = String(value || "").replace(/^\uFEFF/, "").split(/\r\n?|\n/);
@@ -654,6 +790,8 @@
     getClipboardFallbackMessage,
     dualCaseRecord,
     buildCaseRecordTitle,
+    parseDashboardIssueImportRows,
+    parseDashboardIssueImportText,
     parseQaCaseImportRows,
     parseQaCaseIdAndDescription,
     buildIssueLogEntries,

@@ -16,6 +16,8 @@ const {
   getClipboardFallbackMessage,
   dualCaseRecord,
   buildCaseRecordTitle,
+  parseDashboardIssueImportRows,
+  parseDashboardIssueImportText,
   parseQaCaseImportRows,
   parseQaCaseIdAndDescription,
   buildIssueLogEntries,
@@ -23,6 +25,106 @@ const {
   previewSuiteIssueDisplayId,
   nextSuiteIssueDisplayId,
 } = require('./case-utils.js');
+
+test('parseDashboardIssueImportRows maps the exported issue columns', () => {
+  const parsed = parseDashboardIssueImportRows(
+    ['Test ID', 'ID issue', 'Título del hallazgo', 'Caso de prueba', 'Módulo', 'Descripción del hallazgo', 'Resultado QA', 'Severidad', 'Prioridad', 'Estado', 'Asignado a'],
+    [['TC-101', 'ISS-001', 'Error al guardar', 'Guardar formulario', 'Pagos', 'El sistema presenta un error.', 'Failed', 'High', 'Critical', 'Open', 'Ana']],
+  );
+  assert.deepEqual(parsed, {
+    rows: [{
+      testId: 'TC-101',
+      displayId: 'ISS-001',
+      findingTitle: 'Error al guardar',
+      formName: 'Guardar formulario',
+      module: 'Pagos',
+      observation: 'El sistema presenta un error.',
+      qaResult: 'Failed',
+      severity: 'High',
+      priority: 'Critical',
+      status: 'Open',
+      assignee: 'Ana',
+      createdAt: '',
+      closedAt: '',
+      lastValidationAt: '',
+      comments: '',
+    }],
+    errors: [],
+  });
+});
+
+test('parseDashboardIssueImportRows reports missing columns and invalid rows', () => {
+  const missing = parseDashboardIssueImportRows(['Test ID'], []);
+  assert.match(missing.errors[0], /Faltan columnas obligatorias/);
+
+  const parsed = parseDashboardIssueImportRows(
+    ['Test ID', 'Título del hallazgo', 'Caso de prueba', 'Módulo', 'Descripción del hallazgo', 'Estado'],
+    [['TC-1', 'Hallazgo', 'Caso', 'Pagos', 'Detalle', 'Unknown']],
+  );
+  assert.equal(parsed.rows.length, 0);
+  assert.match(parsed.errors[0], /Fila 2:.*no es válido/);
+});
+
+test('parseDashboardIssueImportText parses headerless tab-separated issue data', () => {
+  const parsed = parseDashboardIssueImportText(
+    'TC-101\tError al guardar\tGuardar formulario\tPagos\tEl sistema presenta un error.\nTC-102\tBotón no responde\tEnviar formulario\tPagos\tNo se ejecuta la acción.',
+  );
+  assert.deepEqual(parsed, {
+    rows: [
+      {
+        testId: 'TC-101',
+        displayId: '',
+        findingTitle: 'Error al guardar',
+        formName: 'Guardar formulario',
+        module: 'Pagos',
+        observation: 'El sistema presenta un error.',
+        qaResult: '',
+        severity: 'Medium',
+        priority: 'Medium',
+        status: 'Open',
+        assignee: '',
+        createdAt: '',
+        closedAt: '',
+        lastValidationAt: '',
+        comments: '',
+      },
+      {
+        testId: 'TC-102',
+        displayId: '',
+        findingTitle: 'Botón no responde',
+        formName: 'Enviar formulario',
+        module: 'Pagos',
+        observation: 'No se ejecuta la acción.',
+        qaResult: '',
+        severity: 'Medium',
+        priority: 'Medium',
+        status: 'Open',
+        assignee: '',
+        createdAt: '',
+        closedAt: '',
+        lastValidationAt: '',
+        comments: '',
+      },
+    ],
+    errors: [],
+  });
+});
+
+test('parseDashboardIssueImportText accepts export headers and reports invalid headerless rows', () => {
+  const withHeader = parseDashboardIssueImportText(
+    'Test ID\tID issue\tTítulo del hallazgo\tCaso de prueba\tMódulo\tDescripción del hallazgo\nTC-1\t\tFalla\tLogin\tAutenticación\tDetalle',
+  );
+  assert.equal(withHeader.rows[0].findingTitle, 'Falla');
+  assert.deepEqual(withHeader.errors, []);
+
+  const invalid = parseDashboardIssueImportText('TC-1\tFalla\tLogin\tAutenticación');
+  assert.equal(invalid.rows.length, 0);
+  assert.match(invalid.errors[0], /Línea 1: se esperaban 5 columnas/);
+
+  const mixed = parseDashboardIssueImportText('TC-1\tFalla\tLogin\tAutenticación\nTC-2\t\tLogin\tAutenticación\tDetalle');
+  assert.match(mixed.errors[0], /Línea 1: se esperaban 5 columnas/);
+  assert.match(mixed.errors[1], /Línea 2: faltan Título del hallazgo/);
+});
 
 test('issue identifiers migrate existing issues once and remain sequential per project', () => {
   const project = {
