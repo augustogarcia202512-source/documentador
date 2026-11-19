@@ -345,6 +345,16 @@ test('buildAutoIssueSnapshot creates a novelty issue from a severity-tagged docu
   assert.equal(issue.severity, 'Medium');
 });
 
+test('buildAutoIssueSnapshot omits the empty-observation fallback when the step has an image', () => {
+  const issue = buildAutoIssueSnapshot({
+    caseId: 'TC-16',
+    steps: [{ id: 'step-1', stepStatus: 'pendiente', severity: 'alta', dataUrl: 'data:image/png;base64,abc' }],
+  });
+
+  assert.doesNotMatch(issue.observation, /Novedad sin observación registrada/);
+  assert.match(issue.observation, /Paso 1 \(Pendiente · Severidad Alta\)$/);
+});
+
 test('buildAutoIssueSnapshot supports a failed execution without failed steps', () => {
   const issue = buildAutoIssueSnapshot({
     caseId: 'TC-13',
@@ -384,6 +394,19 @@ test('buildAutoIssueSnapshots creates one snapshot per novelty and groups images
   assert.deepEqual(snaps[0].evidenceStepIds, ['1', '2']);
   assert.equal(snaps[0].baseTestId, 'TC-9');
   assert.equal(snaps[1].severity, 'Low');
+});
+
+test('buildAutoIssueSnapshots omits the fallback for novelties with grouped image evidence', () => {
+  const [snapshot] = buildAutoIssueSnapshots({
+    caseId: 'TC-10',
+    steps: [
+      { id: 1, stepStatus: 'pendiente', severity: 'alta' },
+      { id: 2, sameAsPrevious: true, thumbnailDataUrl: 'data:image/png;base64,def' },
+    ],
+  });
+
+  assert.doesNotMatch(snapshot.observation, /Novedad sin observación registrada/);
+  assert.deepEqual(snapshot.evidenceStepIds, ['1', '2']);
 });
 
 test('buildAutoIssueSnapshots falls back to a case-level snapshot only when failed', () => {

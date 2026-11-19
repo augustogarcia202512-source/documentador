@@ -379,6 +379,18 @@
     return size > 1 ? `${group}.${index - first + 1}` : String(group);
   }
 
+  function hasGroupedStepImage(steps, index) {
+    const list = Array.isArray(steps) ? steps : [];
+    if (index < 0 || index >= list.length) return false;
+    let first = index;
+    while (first > 0 && list[first].sameAsPrevious) first--;
+    for (let i = first; i < list.length && (i === first || list[i].sameAsPrevious); i++) {
+      const step = list[i];
+      if (step?.renderedDataUrl || step?.dataUrl || step?.thumbnailDataUrl) return true;
+    }
+    return false;
+  }
+
   function nextIssueDisplayId(project) {
     const issues = Array.isArray(project.issues) ? project.issues : [];
     const highest = issues.reduce((max, issue) => {
@@ -520,7 +532,9 @@
         const metadata = [statusLabels[status], stepSeverity ? `Severidad ${severityLabels[stepSeverity]}` : ""]
           .filter(Boolean).join(" · ");
         const fallback = status === "fallo" ? "Falló sin observación registrada." : "Novedad sin observación registrada.";
-        return `Paso ${getGroupedStepLabel(steps, index)} (${metadata}): ${String(step.comment || "").trim() || fallback}`;
+        const comment = String(step.comment || "").trim();
+        const detail = comment || (hasGroupedStepImage(steps, index) ? "" : fallback);
+        return `Paso ${getGroupedStepLabel(steps, index)} (${metadata})${detail ? `: ${detail}` : ""}`;
       }).join("\n");
       const hasFailure = issueItems.some(({ step }) => normalizeStepStatus(step.stepStatus || step.status) === "fallo");
       const firstId = group[0].step.id;
@@ -589,7 +603,9 @@
         stepSeverity ? `Severidad ${severityLabels[stepSeverity]}` : "",
       ].filter(Boolean).join(" · ");
       const fallback = status === "fallo" ? "Falló sin observación registrada." : "Novedad sin observación registrada.";
-      return `Paso ${getGroupedStepLabel(steps, index)} (${metadata}): ${String(step.comment || "").trim() || fallback}`;
+      const comment = String(step.comment || "").trim();
+      const detail = comment || (hasGroupedStepImage(steps, index) ? "" : fallback);
+      return `Paso ${getGroupedStepLabel(steps, index)} (${metadata})${detail ? `: ${detail}` : ""}`;
     });
     if (!observations.length) {
       observations.push(String(fallbackNote || "").trim() || "El caso fue marcado como Failed durante la ejecución QA.");

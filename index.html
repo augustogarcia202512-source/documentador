@@ -39,7 +39,7 @@
       radial-gradient(900px 420px at 100% 0%, rgba(232, 163, 61, 0.12), transparent 62%),
       linear-gradient(180deg, var(--bg-soft), var(--bg));
     color: var(--text);
-    max-width: 760px;
+    max-width: 1280px;
     margin: 0 auto;
     -webkit-font-smoothing: antialiased;
     line-height: 1.45;
@@ -184,6 +184,51 @@
   .btn-danger:hover { background: var(--red-dim); }
   .btn-full { width: 100%; }
   .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .capture-menu-wrap { position: fixed; right: 18px; bottom: 140px; z-index: 1080; }
+  .capture-menu-trigger {
+    border-radius: 999px;
+    padding: 10px 14px;
+    border-color: rgba(255, 224, 178, 0.45);
+    background: linear-gradient(180deg, #f2b34f, #de9526);
+    color: #1a1406;
+    font-weight: 700;
+    box-shadow: 0 12px 24px rgba(9, 12, 18, 0.42);
+  }
+  .capture-menu-trigger[aria-expanded="true"] { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(79,181,168,.14), 0 12px 24px rgba(9,12,18,.42); }
+  .capture-menu-panel {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 10px);
+    z-index: 1090;
+    display: grid;
+    gap: 8px;
+    width: min(340px, calc(100vw - 48px));
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: 0 14px 36px rgba(0,0,0,.3);
+  }
+  .capture-menu-panel[hidden] { display: none; }
+  .capture-menu-panel > button { width: 100%; text-align: left; }
+  .capture-menu-panel .capture-target-label { display: grid !important; gap: 6px !important; color: var(--text-muted); font-size: 11px !important; font-weight: 700; }
+  .capture-menu-panel .capture-target-label select {
+    width: 100%;
+    min-height: 36px;
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--panel-2);
+    color: var(--text);
+    font: 12px var(--sans);
+  }
+  .capture-menu-heading { margin: 0 0 2px; color: var(--text-faint); font: 700 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+  body.theme-light .capture-menu-panel { background: rgba(255,255,255,.97); border-color: var(--line); box-shadow: 0 14px 30px rgba(38,54,70,.2); }
+  @media (max-width: 720px) {
+    .capture-menu-wrap { right: 10px; bottom: 132px; }
+    .capture-menu-panel { width: min(320px, calc(100vw - 20px)); max-height: min(62vh, 440px); }
+  }
+  body.presentation-mode.presentation-compact .capture-menu-wrap { bottom: 126px; }
   .history-chip {
     margin-left: auto;
     align-self: center;
@@ -1009,8 +1054,21 @@
   }
   .dashboard-edit-project-form button { padding: 7px 9px; font-size: 10px; }
   .dashboard-topbar .dashboard-open-btn { margin-left: auto; white-space: nowrap; }
-  .dashboard-content { width: min(1160px, 100%); margin: 0 auto; padding: 30px clamp(18px, 4vw, 46px) 50px; }
-  .dashboard-issue-management .dashboard-content > :not(#dashboardIssueLog):not(#dashboardIssueEditorOverlay):not(#dashboardIssueEvidenceOverlay) { display: none !important; }
+  .dashboard-topbar #manageProjectAssigneesBtn { white-space: nowrap; }
+  .dashboard-assignees-panel { width: min(620px, 100%); max-height: 90vh; overflow: auto; }
+  .dashboard-assignees-add { display: flex; gap: 8px; margin: 14px 0; }
+  .dashboard-assignees-add input { flex: 1; min-width: 0; }
+  .dashboard-assignee-list { display: grid; gap: 8px; }
+  .dashboard-assignee-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 7px; align-items: center; }
+  .dashboard-assignee-row input { min-width: 0; }
+  .dashboard-assignee-empty { padding: 14px; border: 1px dashed var(--line); border-radius: 7px; color: var(--text-faint); font-size: 11px; text-align: center; }
+  @media (max-width: 480px) {
+    .dashboard-assignee-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .dashboard-assignee-row [data-assignee-save] { grid-column: 2; }
+    .dashboard-assignees-add { flex-direction: column; }
+  }
+  .dashboard-content { width: min(1500px, 100%); margin: 0 auto; padding: 30px clamp(18px, 4vw, 46px) 50px; }
+  .dashboard-issue-management .dashboard-content > :not(#dashboardIssueLog):not(#dashboardIssueEditorOverlay):not(#dashboardIssueEvidenceOverlay):not(#dashboardIssueFullTextOverlay):not(#dashboardAssigneesOverlay) { display: none !important; }
   .dashboard-issue-management .dashboard-content { width: min(1500px, 100%); }
   .dashboard-qa-management .dashboard-content > :not(#qaPanel) { display: none !important; }
   .dashboard-notes-management .dashboard-content > :not(#dashboardNotes) { display: none !important; }
@@ -1699,6 +1757,9 @@
   .dashboard-novelty-card.sev-media .dashboard-novelty-badge { background: rgba(217,149,47,.14); color: #f4cb7d; }
   .dashboard-novelty-card.sev-baja .dashboard-novelty-badge { background: rgba(57,168,142,.14); color: #83d9c2; }
   .dashboard-novelty-status { padding: 3px 6px; border-radius: 999px; background: var(--panel-3); color: var(--text-muted); font-size: 9px; }
+  .dashboard-novelty-issue-link { color: #b7c8dc; font-size: 9px; overflow-wrap: anywhere; }
+  .dashboard-novelty-issue-link strong { color: #8fcfff; }
+  .dashboard-novelty-issue-link.is-unlinked { color: #f4cb7d; }
   .dashboard-novelty-case { overflow: hidden; color: var(--text); font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
   .dashboard-novelty-comment { display: -webkit-box; overflow: hidden; color: var(--text-muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
   .dashboard-novelty-open { justify-self: start; padding: 4px 7px; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--panel-2); color: var(--text); font-size: 9px; }
@@ -2269,7 +2330,25 @@
   .dashboard-issue-table th:last-child, .dashboard-issue-table td:last-child { width: 1%; white-space: nowrap; overflow-wrap: normal; }
   .dashboard-issue-table tr:last-child td { border-bottom: 0; }
   .dashboard-issue-test-id { color: #e0524a; font-weight: 800; white-space: nowrap; }
-  .dashboard-issue-observation { max-width: 200px; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .dashboard-issue-title-cell { width: 20%; min-width: 180px; }
+  .dashboard-issue-description-cell { width: 32%; min-width: 260px; }
+  .dashboard-issue-cell-text { overflow: hidden; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .dashboard-issue-title-text,
+  .dashboard-issue-description-text { display: -webkit-box; -webkit-box-orient: vertical; }
+  .dashboard-issue-title-text { -webkit-line-clamp: 2; }
+  .dashboard-issue-description-text { -webkit-line-clamp: 4; }
+  .dashboard-issue-expand {
+    margin-top: 4px; padding: 0; border: 0; background: none; color: #8fcfff;
+    font: inherit; font-size: 9px; font-weight: 700; text-decoration: underline;
+  }
+  .dashboard-issue-expand:hover { background: none; color: #c3e6ff; filter: none; transform: none; }
+  .dashboard-issue-fulltext-panel { width: min(820px, 100%); max-height: 90vh; overflow: auto; }
+  .dashboard-issue-fulltext-meta { margin: 0 0 12px; color: #e8a33d; font: 11px var(--mono); overflow-wrap: anywhere; }
+  .dashboard-issue-fulltext-content {
+    margin: 0; padding: 16px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg-soft); color: var(--text); font: 600 14px/1.6 var(--sans);
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
   .dashboard-issue-status-pill { display: inline-flex; padding: 3px 6px; border: 1px solid currentColor; border-radius: 5px; font-size: 8px; font-weight: 800; white-space: nowrap; }
   .dashboard-issue-status-pill.status-open { color: #e7463e; }
   .dashboard-issue-status-pill.status-blocked { color: #8b4bc4; }
@@ -2589,6 +2668,7 @@
           <strong id="dashboardProjectName">Mis proyectos</strong>
         </div>
         <button class="btn-secondary" id="editProjectBtn" type="button" title="Editar nombre del proyecto">✏️ Editar</button>
+        <button class="btn-secondary" id="manageProjectAssigneesBtn" type="button">👥 Responsables</button>
         <form id="editProjectForm" class="dashboard-edit-project-form" aria-label="Cambiar nombre del proyecto">
           <input id="editProjectName" type="text" maxlength="60" aria-label="Nuevo nombre del proyecto" />
           <button class="btn-primary" type="submit">Guardar</button>
@@ -2603,6 +2683,22 @@
         <button class="btn-primary dashboard-open-btn" id="openDocumenterBtn" type="button">📂 Abrir documentador</button>
       </header>
       <main class="dashboard-content">
+        <div id="dashboardAssigneesOverlay" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="dashboardAssigneesTitle">
+          <div class="app-dialog-panel dashboard-assignees-panel">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+              <div>
+                <h2 id="dashboardAssigneesTitle" class="app-dialog-title">Personas responsables</h2>
+                <p class="app-dialog-message">Este catálogo pertenece al proyecto actual. Quitar una persona no cambia las asignaciones guardadas en los issues.</p>
+              </div>
+              <button id="dashboardAssigneesCloseBtn" class="btn-secondary" type="button">Cerrar</button>
+            </div>
+            <form class="dashboard-assignees-add" id="dashboardAssigneeAddForm">
+              <input id="dashboardAssigneeNewName" type="text" maxlength="80" placeholder="Nombre de la persona" aria-label="Nombre de la nueva persona responsable" required />
+              <button class="btn-primary" type="submit">Agregar</button>
+            </form>
+            <div id="dashboardAssigneeList" class="dashboard-assignee-list" aria-live="polite"></div>
+          </div>
+        </div>
         <section class="dashboard-card" id="dashboardNotes" aria-labelledby="dashboardNotesTitle" tabindex="-1" hidden>
           <div class="dashboard-card-heading">
             <strong id="dashboardNotesTitle">Notas de reuniones y pruebas</strong>
@@ -2832,14 +2928,11 @@
                   <th id="dashboardIssueSelectColumn" hidden><input type="checkbox" id="dashboardIssueSelectAll" aria-label="Seleccionar todos los issues visibles" /></th>
                   <th>Test ID</th>
                   <th>ID issue</th>
-                  <th>Hallazgo / caso de prueba</th>
-                  <th>Observación</th>
+                  <th>Título del hallazgo</th>
+                  <th>Descripción del hallazgo</th>
                   <th>Evidencia</th>
                   <th>Resultado QA</th>
-                  <th>Severidad</th>
-                  <th>Prioridad</th>
                   <th>Estado</th>
-                  <th>Asignado a</th>
                   <th>Fecha registro</th>
                   <th>Antigüedad</th>
                   <th>Fecha cierre</th>
@@ -2849,6 +2942,16 @@
               </thead>
               <tbody id="dashboardIssueTableBody"></tbody>
             </table>
+          </div>
+          <div id="dashboardIssueFullTextOverlay" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="dashboardIssueFullTextTitle" aria-describedby="dashboardIssueFullTextContent">
+            <div class="app-dialog-panel dashboard-issue-fulltext-panel">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                <h2 id="dashboardIssueFullTextTitle" class="app-dialog-title"></h2>
+                <button id="dashboardIssueFullTextCloseBtn" class="btn-secondary" type="button">Cerrar</button>
+              </div>
+              <p id="dashboardIssueFullTextMeta" class="dashboard-issue-fulltext-meta"></p>
+              <div id="dashboardIssueFullTextContent" class="dashboard-issue-fulltext-content"></div>
+            </div>
           </div>
           <div class="dashboard-issue-kanban" id="dashboardIssueKanbanView" hidden></div>
         </section>
@@ -2922,7 +3025,10 @@
                   </select>
                 </label>
                 <label for="dashboardIssueAssignee">Asignado a
-                  <input id="dashboardIssueAssignee" type="text" maxlength="80" placeholder="Nombre del responsable" />
+                  <select id="dashboardIssueAssignee" aria-describedby="dashboardIssueAssigneeHint">
+                    <option value="">Sin asignar</option>
+                  </select>
+                  <small id="dashboardIssueAssigneeHint" class="dashboard-issue-meta">Selecciona una persona de la lista o deja “Sin asignar”.</small>
                 </label>
               </div>
               <div class="dashboard-issue-editor-fields">
@@ -3144,6 +3250,22 @@ Password: Clave#2026" aria-describedby="qaNewCaseTestDataHelp"></textarea>
     <button class="quick-btn quick-exit" id="quickExitCompactBtn" type="button">Salir</button>
   </div>
   <button class="quick-comment-fab" id="quickCommentFab" type="button" title="Comentario rápido (F1 o Alt+M)">💬 Comentar</button>
+  <div class="capture-menu-wrap" id="captureMenuWrap">
+    <button class="btn-primary capture-menu-trigger" id="captureMenuToggle" type="button" aria-expanded="false" aria-controls="captureMenuPanel">🛠️ Herramientas de captura</button>
+    <div class="capture-menu-panel" id="captureMenuPanel" role="group" aria-label="Herramientas de captura" hidden>
+      <p class="capture-menu-heading">Captura y destino</p>
+      <button class="btn-primary" id="shareBtn" type="button">🖥️ Compartir pantalla o pestaña</button>
+      <button class="btn-secondary" id="pipBtn" type="button">📌 Activar botón flotante</button>
+      <button class="btn-secondary" id="captureBtn" type="button">📸 Capturar ahora (Ctrl+Shift+Y)</button>
+      <button class="btn-secondary" id="selectCaptureBtn" type="button">✂️ Seleccionar área</button>
+      <label class="capture-target-label" for="captureTargetSelect">Destino
+        <select id="captureTargetSelect" title="Define si la próxima captura crea un paso nuevo o se agrega como otra imagen del paso actual (Ctrl+Shift+U alterna)">
+          <option value="new">Nuevo paso</option>
+          <option value="current">Paso actual (otra imagen)</option>
+        </select>
+      </label>
+    </div>
+  </div>
   <div class="quick-comment-panel" id="quickCommentPanel" role="dialog" aria-modal="false" aria-label="Comentario rápido">
     <div class="quick-comment-head">
       <span class="quick-comment-title">Comentario rápido</span>
@@ -3192,7 +3314,9 @@ Password: Clave#2026" aria-describedby="qaNewCaseTestDataHelp"></textarea>
       </div>
       <div>
         <label for="tester">Documentado por</label>
-        <input type="text" id="tester" name="tester" autocomplete="name" placeholder="Tu nombre" />
+        <select id="tester" name="tester" style="width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:7px; font-size:13px; background:var(--panel-2); color:var(--text); font-family:var(--sans);">
+          <option value="">Selecciona una persona...</option>
+        </select>
       </div>
     </div>
   </div>
@@ -3202,16 +3326,6 @@ Password: Clave#2026" aria-describedby="qaNewCaseTestDataHelp"></textarea>
     <div id="previewPlaceholder">La vista previa está activa en la ventana flotante</div>
     <div id="shareStatus" role="status" aria-live="polite"></div>
     <div class="btn-row">
-      <button class="btn-primary" id="shareBtn" type="button">🖥️ Compartir pantalla o pestaña</button>
-      <button class="btn-secondary" id="pipBtn">📌 Activar botón flotante</button>
-      <button class="btn-secondary" id="captureBtn">📸 Capturar ahora (Ctrl+Shift+Y)</button>
-      <button class="btn-secondary" id="selectCaptureBtn" type="button">✂️ Seleccionar área</button>
-      <label class="capture-target-label" for="captureTargetSelect" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;">Destino
-        <select id="captureTargetSelect" title="Define si la próxima captura crea un paso nuevo o se agrega como otra imagen del paso actual (Ctrl+Shift+U alterna)">
-          <option value="new">Nuevo paso</option>
-          <option value="current">Paso actual (otra imagen)</option>
-        </select>
-      </label>
       <button class="btn-secondary" id="downloadCapturesBtn" type="button" title="Descarga todas las capturas del caso en un ZIP">⬇️ Descargar capturas</button>
       <button class="btn-secondary" id="undoBtn" title="Deshacer (Ctrl+Z)" disabled>↶ Deshacer</button>
       <button class="btn-secondary" id="redoBtn" title="Rehacer (Ctrl+Y)" disabled>↷ Rehacer</button>
@@ -26905,6 +27019,7 @@ var __async = (__this, __arguments, generator) => {
       document.getElementById("caseDetails").value = snapshot.details || "";
       document.getElementById("team").value = snapshot.team || "";
       document.getElementById("tester").value = snapshot.tester || "";
+      renderDocumenterTesterOptions(projects.find((item) => item.id === activeProjectId), snapshot.tester || "");
       setQaContext(snapshot.qaContext);
       savedDocumentPreviewHtml = snapshot.previewEditedHtml || "";
       const selectedTemplate = snapshot.templateKey || DEFAULT_TEMPLATE_KEY;
@@ -26945,7 +27060,7 @@ var __async = (__this, __arguments, generator) => {
   document.addEventListener("beforeinput", (e) => {
     if (historySuspended) return;
     const target = e.target;
-    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) return;
     const isCaseField = ["caseId", "description", "caseDetails", "team", "tester", ...QA_CONTEXT_FIELDS].includes(target.id);
     const isStepComment = !!target.closest(".comment-block");
     if (!isCaseField && !isStepComment) return;
@@ -28515,6 +28630,29 @@ var __async = (__this, __arguments, generator) => {
   document.getElementById("cancelScreenSelectionBtn").addEventListener("click", closeScreenSelection);
   document.getElementById("selectionSaveBtn").addEventListener("click", () => confirmScreenSelection(false));
   document.getElementById("selectionMarkBtn").addEventListener("click", () => confirmScreenSelection(true));
+  const captureMenuWrap = document.getElementById("captureMenuWrap");
+  const captureMenuToggle = document.getElementById("captureMenuToggle");
+  const captureMenuPanel = document.getElementById("captureMenuPanel");
+  function setCaptureMenuOpen(isOpen) {
+    captureMenuPanel.hidden = !isOpen;
+    captureMenuToggle.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen) closeQuickCommentPanel();
+  }
+  captureMenuToggle.addEventListener("click", () => {
+    setCaptureMenuOpen(captureMenuPanel.hidden);
+  });
+  captureMenuPanel.addEventListener("click", (event) => {
+    if (event.target.closest("button")) setCaptureMenuOpen(false);
+  });
+  document.getElementById("captureTargetSelect").addEventListener("change", () => setCaptureMenuOpen(false));
+  document.addEventListener("click", (event) => {
+    if (!captureMenuWrap.contains(event.target)) setCaptureMenuOpen(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || captureMenuPanel.hidden) return;
+    setCaptureMenuOpen(false);
+    captureMenuToggle.focus();
+  });
   document.getElementById("selectionCloseBtn").addEventListener("click", closeScreenSelection);
   document.getElementById("selectionDeleteBtn").addEventListener("click", () => {
     removeSelectedAnnotation();
@@ -29101,6 +29239,7 @@ var __async = (__this, __arguments, generator) => {
     const panel = document.getElementById("quickCommentPanel");
     const quickInput = document.getElementById("quickCommentInput");
     if (!panel) return;
+    setCaptureMenuOpen(false);
     refreshQuickCommentTargets();
     loadQuickCommentFromStep();
     panel.classList.add("open");
@@ -31152,7 +31291,9 @@ var __async = (__this, __arguments, generator) => {
     if (testerInput) {
       const testerText = [...preview.querySelectorAll("p")].find((el) => /Documentado por:/i.test(el.textContent || ""));
       const nextTester = testerText ? (testerText.textContent || "").replace(/^Documentado por:\s*/i, "").trim() : "";
-      if (nextTester || parsedFromPreview.tester) testerInput.value = parsedFromPreview.tester || nextTester;
+      const selectedTester = parsedFromPreview.tester || nextTester || testerInput.value;
+      if (nextTester || parsedFromPreview.tester) testerInput.value = selectedTester;
+      renderDocumenterTesterOptions(projects.find((item) => item.id === getSelectedProjectId()), selectedTester);
     }
 
     if (requirementInput) {
@@ -31566,6 +31707,7 @@ var __async = (__this, __arguments, generator) => {
     localStorage.setItem("activeDashboardProject", project.id);
     const selector = document.getElementById("caseProjectSelect");
     if (selector) selector.value = project.id;
+    renderDocumenterTesterOptions(project, document.getElementById("tester")?.value || "");
   }
 
   async function saveProjectsToDB() {
@@ -33550,7 +33692,7 @@ var __async = (__this, __arguments, generator) => {
       selector.append(group);
     }
 
-    selector.append(new Option("➕ Caso manual / imprevisto", MANUAL_CASE_PICKER_VALUE));
+    selector.append(new Option("➕ Caso manual imprevisto", MANUAL_CASE_PICKER_VALUE));
     selector.value = [...selector.options].some((option) => option.value === previousValue)
       ? previousValue
       : "";
@@ -33677,14 +33819,24 @@ var __async = (__this, __arguments, generator) => {
     const description = document.getElementById("description").value.trim();
     if (getSelectedProjectId() === activeProjectId && (steps.length || caseId || description)) {
       const draftCase = currentCaseData();
-      if (editingCaseIndex !== null && savedCases[editingCaseIndex]) {
-        const savedCase = savedCases[editingCaseIndex];
-        const displayIndex = casesToDisplay.indexOf(savedCase);
-        if (displayIndex >= 0) {
-          casesToDisplay[displayIndex] = { ...savedCase, ...draftCase };
-        } else {
-          casesToDisplay.push(draftCase);
-        }
+      const stepIds = new Set((draftCase.steps || [])
+        .map((step) => step?.id)
+        .filter((id) => id !== undefined && id !== null)
+        .map(String));
+      const sameDraftCase = (caseRecord) => {
+        if ((caseRecord.projectId || projects[0]?.id) !== activeProjectId) return false;
+        if (draftCase.qaId && caseRecord.qaId === draftCase.qaId) return true;
+        return (Array.isArray(caseRecord.steps) ? caseRecord.steps : [])
+          .some((step) => step?.id !== undefined && step?.id !== null && stepIds.has(String(step.id)));
+      };
+      const savedIndex = editingCaseIndex !== null && savedCases[editingCaseIndex]
+        ? casesToDisplay.indexOf(savedCases[editingCaseIndex])
+        : -1;
+      const matchingIndex = savedIndex >= 0
+        ? savedIndex
+        : casesToDisplay.findIndex(sameDraftCase);
+      if (matchingIndex >= 0) {
+        casesToDisplay[matchingIndex] = { ...casesToDisplay[matchingIndex], ...draftCase };
       } else {
         casesToDisplay.push(draftCase);
       }
@@ -34058,8 +34210,7 @@ var __async = (__this, __arguments, generator) => {
     tableBody.innerHTML = visibleIssues.map((issue) => {
       const evidence = getDashboardIssueEvidence(issue, project);
       const evidenceCount = evidence.length;
-      const relatedCase = getDashboardIssueCase(issue, project);
-      const suiteName = suiteNames.get(issue.suiteId || relatedCase?.suiteId) || "—";
+      const findingTitle = String(issue.findingTitle || "").trim();
       const observation = cleanDashboardIssueObservation(issue.observation);
       const evidencePreview = evidence.map((item, evidenceIndex) => {
         const { step } = item;
@@ -34073,18 +34224,15 @@ var __async = (__this, __arguments, generator) => {
         ${canManageIssues ? `<td><input type="checkbox" data-issue-select="${escapeHtml(issue.id)}" aria-label="Seleccionar issue ${escapeHtml(issue.displayId || "")}" ${dashboardIssueSelection.has(issue.id) ? "checked" : ""} /></td>` : ""}
         <td><span class="dashboard-issue-test-id">${escapeHtml(issue.testId || "—")}</span></td>
         <td>${escapeHtml(issue.displayId || "—")}</td>
-        <td><strong>${escapeHtml(issue.findingTitle || issue.formName || "Hallazgo sin título")}</strong><br><small>${escapeHtml(issue.formName || "Sin caso de prueba")} · ${escapeHtml(suiteName)}</small></td>
-        <td><div class="dashboard-issue-observation">${escapeHtml(observation)}</div>${Array.isArray(issue.comments) && issue.comments.length ? `<span class="dashboard-issue-meta">💬 ${issue.comments.length} ${issue.comments.length === 1 ? "comentario" : "comentarios"}</span>` : ""}</td>
+        <td class="dashboard-issue-title-cell"><div class="dashboard-issue-cell-text dashboard-issue-title-text">${escapeHtml(findingTitle || "—")}</div>${findingTitle.length > 80 ? `<button class="dashboard-issue-expand" type="button" data-issue-full-text="${escapeHtml(issue.id)}" data-issue-full-text-type="title">Ver título completo</button>` : ""}</td>
+        <td class="dashboard-issue-description-cell"><div class="dashboard-issue-cell-text dashboard-issue-description-text">${escapeHtml(observation || "—")}</div>${observation.length > 120 ? `<button class="dashboard-issue-expand" type="button" data-issue-full-text="${escapeHtml(issue.id)}" data-issue-full-text-type="description">Ver descripción completa</button>` : ""}${Array.isArray(issue.comments) && issue.comments.length ? `<span class="dashboard-issue-meta">💬 ${issue.comments.length} ${issue.comments.length === 1 ? "comentario" : "comentarios"}</span>` : ""}</td>
         <td>${evidenceCount
           ? `<div class="dashboard-issue-evidence-previews">${evidencePreview}</div>`
           : "—"}</td>
         <td>${issue.qaResult
           ? `<span class="dashboard-issue-status-pill ${getDashboardIssueStatusClass(issue.qaResult)}">${escapeHtml(issue.qaResult)}</span>`
           : "—"}</td>
-        <td>${escapeHtml(issue.severity || "Medium")}</td>
-        <td>${escapeHtml(issue.priority || "Medium")}</td>
         <td>${canManageIssues ? renderDashboardIssueStatusSelect(issue) : renderDashboardIssueStatusLabel(issue)}</td>
-        <td>${escapeHtml(issue.assignee || "—")}</td>
         <td>${formatDashboardIssueDate(issue.createdAt)}</td>
         <td>${renderDashboardIssueAge(issue)}</td>
         <td>${formatDashboardIssueDate(issue.closedAt)}</td>
@@ -34094,7 +34242,15 @@ var __async = (__this, __arguments, generator) => {
           ${canManageIssues ? `<button type="button" data-issue-edit="${escapeHtml(issue.id)}">Editar</button>` : ""}
         </div></td>
       </tr>`;
-    }).join("") || `<tr><td colspan="${canManageIssues ? 16 : 15}"><div class="dashboard-issue-empty">${issues.length ? "No hay issues que coincidan con los filtros." : "Aún no hay issues. Se crearán automáticamente cuando se registre un fallo o una novedad con severidad, o puedes registrar uno manualmente."}</div></td></tr>`;
+    }).join("") || `<tr><td colspan="${canManageIssues ? 13 : 12}"><div class="dashboard-issue-empty">${issues.length ? "No hay issues que coincidan con los filtros." : "Aún no hay issues. Se crearán automáticamente cuando se registre un fallo o una novedad con severidad, o puedes registrar uno manualmente."}</div></td></tr>`;
+
+    tableBody.querySelectorAll("[data-issue-full-text]").forEach((button) => {
+      button.addEventListener("click", () => openDashboardIssueFullText(
+        button.dataset.issueFullText,
+        button.dataset.issueFullTextType,
+        button
+      ));
+    });
 
     renderDashboardIssueBulkBar(visibleIssues);
     renderDashboardIssueTrend(issues);
@@ -34252,7 +34408,7 @@ var __async = (__this, __arguments, generator) => {
     form.reset();
     dashboardIssueDraftImages = Array.isArray(issue?.attachments) ? issue.attachments.map((item) => ({ ...item })) : [];
     dashboardIssueDraftComments = Array.isArray(issue?.comments) ? issue.comments.map((item) => ({ ...item })) : [];
-    document.getElementById("dashboardIssueAssignee").value = issue?.assignee || "";
+    renderDashboardAssigneeOptions(project, issue?.assignee || "");
     document.getElementById("dashboardIssueCommentInput").value = "";
     renderDashboardIssueComments();
     renderDashboardIssueAttachments();
@@ -35290,6 +35446,28 @@ var __async = (__this, __arguments, generator) => {
     }
     showTransientStatus(`Bitácora exportada (${countLabel}).`, 3000);
   }
+  function openDashboardIssueFullText(issueId, type, opener) {
+    const project = projects.find((item) => item.id === activeProjectId);
+    const issue = project?.issues?.find((item) => item.id === issueId);
+    if (!issue || !["title", "description"].includes(type)) return;
+
+    const title = type === "title" ? "Título del hallazgo" : "Descripción del hallazgo";
+    const content = type === "title"
+      ? String(issue.findingTitle || "").trim()
+      : cleanDashboardIssueObservation(issue.observation);
+    const overlay = document.getElementById("dashboardIssueFullTextOverlay");
+    document.getElementById("dashboardIssueFullTextTitle").textContent = title;
+    document.getElementById("dashboardIssueFullTextMeta").textContent =
+      [issue.testId, issue.displayId].filter(Boolean).join(" · ");
+    document.getElementById("dashboardIssueFullTextContent").textContent = content;
+    openOverlay(overlay, {
+      opener,
+      display: "flex",
+      initialFocus: document.getElementById("dashboardIssueFullTextCloseBtn"),
+      onEscape: () => closeOverlay(overlay),
+    });
+  }
+
   function bindDashboardIssueLogControls() {
     document.getElementById("dashboardIssueSearch").addEventListener("input", (event) => {
       dashboardIssueFilters.query = event.currentTarget.value;
@@ -35353,6 +35531,12 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("dashboardIssueEvidenceOverlay").addEventListener("click", (event) => {
       if (event.target === event.currentTarget) closeOverlay(event.currentTarget);
     });
+    document.getElementById("dashboardIssueFullTextCloseBtn").addEventListener("click", () =>
+      closeOverlay(document.getElementById("dashboardIssueFullTextOverlay"))
+    );
+    document.getElementById("dashboardIssueFullTextOverlay").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeOverlay(event.currentTarget);
+    });
     document.getElementById("dashboardIssueCase").addEventListener("change", (event) => {
       const caseRecord = getActiveProjectCases().find((item) => item.qaId === event.currentTarget.value);
       if (caseRecord) updateDashboardIssueSuite(caseRecord.suiteId);
@@ -35384,6 +35568,21 @@ var __async = (__this, __arguments, generator) => {
       event.preventDefault();
       addDashboardIssueImages(files);
     });
+  }
+
+  function getDashboardNoveltyIssue(caseRecord, step, project) {
+    const caseQaId = String(caseRecord?.qaId || "");
+    const stepId = step?.id === undefined || step?.id === null ? "" : String(step.id);
+    if (!caseQaId || !stepId) return null;
+    const issues = Array.isArray(project?.issues) ? project.issues : [];
+    return issues.find((issue) =>
+      issue.source === "auto" &&
+      String(issue.caseQaId || "") === caseQaId &&
+      (
+        String(issue.stepKey || "") === stepId ||
+        (Array.isArray(issue.evidenceStepIds) && issue.evidenceStepIds.some((id) => String(id) === stepId))
+      )
+    ) || null;
   }
 
   function renderDashboardNovedades(projectCases) {
@@ -35494,6 +35693,13 @@ var __async = (__this, __arguments, generator) => {
       observado: "Observado",
       pendiente: "Pendiente",
     };
+    const issueStatusLabels = {
+      Open: "Abierto",
+      Closed: "Cerrado",
+      "Ready for Retest": "Listo para validar",
+      "In progress": "En curso",
+      "Re-Open": "Reabierto",
+    };
     const groups = new Map();
     novelties.forEach((novelty, index) => {
       const key = novelty.caseRecord.qaId || novelty.caseRecord.caseId || novelty.caseRecord;
@@ -35520,15 +35726,20 @@ var __async = (__this, __arguments, generator) => {
       const stepRows = caseNovelties.map(({ step, index, severity, noveltyIndex }) => {
         const status = normalizeStepStatus(step.stepStatus || step.status);
         const image = step.thumbnailDataUrl || step.renderedDataUrl || step.dataUrl;
+        const linkedIssue = getDashboardNoveltyIssue(caseRecord, step, project);
         const comment = String(step.comment || step.actualResult || step.result || step.resultado || "").trim() ||
           "Sin comentario registrado.";
+        const issueTracking = linkedIssue
+          ? `<div class="dashboard-novelty-issue-link"><strong>${escapeHtml(linkedIssue.displayId || "Issue")}</strong> · ${escapeHtml(issueStatusLabels[linkedIssue.status] || linkedIssue.status || "Abierto")} · ${escapeHtml(linkedIssue.assignee || "Sin responsable")}</div>`
+          : '<div class="dashboard-novelty-issue-link is-unlinked">Sin issue asociado</div>';
         return `<div class="dashboard-novelty-step-row">
           <div class="dashboard-novelty-content">
             <div class="dashboard-novelty-meta"><span class="dashboard-novelty-badge">${severity.charAt(0).toUpperCase()}${severity.slice(1)}</span>
               <span class="dashboard-novelty-status">${stepStatusLabels[status] || "Pendiente"}</span></div>
             <div class="dashboard-novelty-case">Paso ${noveltyStepLabel(caseRecord, index)}</div>
             <div class="dashboard-novelty-comment">${escapeHtml(comment)}</div>
-            <button class="dashboard-novelty-open" type="button" data-novelty-open="${noveltyIndex}">Abrir paso</button>
+            ${issueTracking}
+            <button class="dashboard-novelty-open" type="button" data-novelty-open="${noveltyIndex}">Abrir evidencia</button>
           </div>
           ${image ? `<button class="dashboard-novelty-image" type="button" data-novelty-image="${noveltyIndex}" aria-label="Ampliar evidencia del paso ${noveltyStepLabel(caseRecord, index)}">
             <img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" /></button>` : ""}
@@ -35883,6 +36094,140 @@ var __async = (__this, __arguments, generator) => {
     renderDashboardNotes();
   }
 
+  function getDashboardProjectAssignees(project) {
+    return Array.isArray(project?.issueAssignees)
+      ? project.issueAssignees.filter((name) => typeof name === "string" && name.trim()).map((name) => name.trim())
+      : [];
+  }
+
+  function renderDashboardProjectAssignees(project) {
+    const list = document.getElementById("dashboardAssigneeList");
+    if (!list) return;
+    const names = getDashboardProjectAssignees(project);
+    if (!names.length) {
+      list.innerHTML = '<div class="dashboard-assignee-empty">Aún no hay personas. Agrega nombres para sugerirlos al asignar issues.</div>';
+      return;
+    }
+
+    list.innerHTML = names.map((name, index) => `
+      <div class="dashboard-assignee-row">
+        <input type="text" maxlength="80" value="${escapeHtml(name)}" aria-label="Nombre de la persona ${index + 1}" data-assignee-name="${index}" />
+        <button class="btn-secondary" type="button" data-assignee-save="${index}">Guardar nombre</button>
+        <button class="btn-danger" type="button" data-assignee-remove="${index}" aria-label="Quitar ${escapeHtml(name)}">Quitar</button>
+      </div>
+    `).join("");
+
+    list.querySelectorAll("[data-assignee-save]").forEach((button) => {
+      button.addEventListener("click", () => updateDashboardProjectAssignee(project, Number(button.dataset.assigneeSave)));
+    });
+    list.querySelectorAll("[data-assignee-remove]").forEach((button) => {
+      button.addEventListener("click", () => removeDashboardProjectAssignee(project, Number(button.dataset.assigneeRemove)));
+    });
+  }
+
+  async function persistDashboardProjectAssignees(project, nextNames, opener) {
+    const previous = project.issueAssignees;
+    project.issueAssignees = nextNames;
+    if (!(await saveProjectsToDB())) {
+      if (previous === undefined) delete project.issueAssignees;
+      else project.issueAssignees = previous;
+      await showAppAlert("No se pudieron guardar las personas responsables. Inténtalo nuevamente.", opener);
+      return false;
+    }
+    renderDashboardProjectAssignees(project);
+    renderDashboardAssigneeOptions(project);
+    return true;
+  }
+
+  async function addDashboardProjectAssignee(event) {
+    event.preventDefault();
+    const project = projects.find((item) => item.id === activeProjectId);
+    const input = document.getElementById("dashboardAssigneeNewName");
+    const name = input.value.trim();
+    if (!project || !name) return;
+    const current = getDashboardProjectAssignees(project);
+    if (current.some((item) => item.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+      await showAppAlert("Esa persona ya está en el catálogo.", input);
+      input.focus();
+      return;
+    }
+    if (await persistDashboardProjectAssignees(project, [...current, name], input)) {
+      input.value = "";
+      input.focus();
+    }
+  }
+
+  async function updateDashboardProjectAssignee(project, index) {
+    const list = document.getElementById("dashboardAssigneeList");
+    const input = list.querySelector(`[data-assignee-name="${index}"]`);
+    const name = input.value.trim();
+    const current = getDashboardProjectAssignees(project);
+    if (!name) {
+      await showAppAlert("Escribe un nombre antes de guardarlo.", input);
+      input.focus();
+      return;
+    }
+    if (current.some((item, itemIndex) => itemIndex !== index && item.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+      await showAppAlert("Ya existe otra persona con ese nombre en el catálogo.", input);
+      input.focus();
+      return;
+    }
+    if (current[index] === name) return;
+    current[index] = name;
+    await persistDashboardProjectAssignees(project, current, input);
+  }
+
+  async function removeDashboardProjectAssignee(project, index) {
+    const current = getDashboardProjectAssignees(project);
+    if (index < 0 || index >= current.length) return;
+    const next = current.filter((_, itemIndex) => itemIndex !== index);
+    await persistDashboardProjectAssignees(project, next, document.getElementById("manageProjectAssigneesBtn"));
+  }
+
+  function populateProjectPersonSelect(select, project, selectedName, emptyLabel) {
+    if (!select) return;
+    const names = getDashboardProjectAssignees(project);
+    const selected = String(selectedName || "").trim();
+    const hasSelectedName = names.some((name) => name.toLocaleLowerCase() === selected.toLocaleLowerCase());
+    select.replaceChildren(
+      new Option(emptyLabel, ""),
+      ...names.map((name) => new Option(name, name)),
+      ...(selected && !hasSelectedName ? [new Option(`${selected} (actual)`, selected)] : [])
+    );
+    select.value = selected;
+  }
+
+  function renderDashboardAssigneeOptions(project, selectedAssignee = "") {
+    populateProjectPersonSelect(
+      document.getElementById("dashboardIssueAssignee"),
+      project,
+      selectedAssignee,
+      "Sin asignar"
+    );
+  }
+
+  function renderDocumenterTesterOptions(project, selectedTester = "") {
+    populateProjectPersonSelect(
+      document.getElementById("tester"),
+      project,
+      selectedTester,
+      "Selecciona una persona..."
+    );
+  }
+
+  function openDashboardProjectAssignees(opener) {
+    const project = projects.find((item) => item.id === activeProjectId);
+    if (!project) return;
+    renderDashboardProjectAssignees(project);
+    const overlay = document.getElementById("dashboardAssigneesOverlay");
+    openOverlay(overlay, {
+      opener,
+      display: "flex",
+      initialFocus: document.getElementById("dashboardAssigneeNewName"),
+      onEscape: () => closeOverlay(overlay),
+    });
+  }
+
   async function selectDashboardProject(projectId) {
     if (!projects.some((project) => project.id === projectId)) return;
     closeDashboardNoteForm();
@@ -36083,6 +36428,7 @@ var __async = (__this, __arguments, generator) => {
         setSelectedProjectId(activeProjectId);
         currentSuiteId = suiteId;
         await recoverSavedCaseIfNeeded();
+        renderDocumenterCasePicker();
         const suite = projects.find((item) => item.id === activeProjectId)?.suites?.find((item) => item.id === currentSuiteId);
         const suiteContext = document.getElementById("qaCaseSuiteContext");
         if (suiteContext) {
@@ -36167,6 +36513,16 @@ var __async = (__this, __arguments, generator) => {
       editForm.classList.add("open");
       editInput.focus();
       editInput.select();
+    });
+    document.getElementById("manageProjectAssigneesBtn").addEventListener("click", (event) =>
+      openDashboardProjectAssignees(event.currentTarget)
+    );
+    document.getElementById("dashboardAssigneeAddForm").addEventListener("submit", addDashboardProjectAssignee);
+    document.getElementById("dashboardAssigneesCloseBtn").addEventListener("click", () =>
+      closeOverlay(document.getElementById("dashboardAssigneesOverlay"))
+    );
+    document.getElementById("dashboardAssigneesOverlay").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeOverlay(event.currentTarget);
     });
     document.getElementById("cancelEditProjectBtn").addEventListener("click", () => {
       editForm.classList.remove("open");
@@ -36577,6 +36933,7 @@ var __async = (__this, __arguments, generator) => {
       (legacySuiteCase ? selectedCase.description || "" : "");
     document.getElementById("team").value = selectedCase.team || "";
     document.getElementById("tester").value = selectedCase.tester || "";
+    renderDocumenterTesterOptions(projects.find((item) => item.id === activeProjectId), selectedCase.tester || "");
     savedDefectContext = selectedCase.qaContext || {};
     setQaContext(savedDefectContext);
     savedDocumentPreviewHtml = selectedCase.previewEditedHtml || "";
@@ -36871,6 +37228,7 @@ var __async = (__this, __arguments, generator) => {
       document.getElementById("caseDetails").value = saved.details || "";
       document.getElementById("team").value = saved.team || "";
       document.getElementById("tester").value = saved.tester || "";
+      renderDocumenterTesterOptions(projects.find((item) => item.id === activeProjectId), saved.tester || "");
       savedDefectContext = saved.qaContext || {};
       setQaContext(savedDefectContext);
       savedDocumentPreviewHtml = saved.previewEditedHtml || "";

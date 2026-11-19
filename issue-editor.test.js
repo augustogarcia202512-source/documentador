@@ -9,7 +9,7 @@ const end = html.indexOf('  function openDashboardIssueEvidence(', start);
 assert.ok(start !== -1 && end !== -1, 'issue editor save handler must exist');
 const saveHandler = html.slice(start, end);
 
-function createEditor({ caseSuiteId, selectedSuiteId = '', existingSuiteId = '', isNew = false } = {}) {
+function createEditor({ caseSuiteId, selectedSuiteId = '', existingSuiteId = '', isNew = false, assignee = '' } = {}) {
   const relatedCase = { qaId: 'case-1' };
   if (caseSuiteId !== undefined) relatedCase.suiteId = caseSuiteId;
   const existing = {
@@ -34,7 +34,7 @@ function createEditor({ caseSuiteId, selectedSuiteId = '', existingSuiteId = '',
     dashboardIssueStatus: 'Open',
     dashboardIssueCreatedAt: '',
     dashboardIssueClosedAt: '',
-    dashboardIssueAssignee: '',
+    dashboardIssueAssignee: assignee,
   };
   const elements = Object.fromEntries(Object.entries(values).map(([id, value]) => [id, { value, focus() {} }]));
   for (const id of ['dashboardIssueFormError', 'dashboardIssueSaveBtn', 'dashboardIssueCancelBtn']) {
@@ -95,4 +95,16 @@ test('a new manual issue still requires a suite', async () => {
   await editor.save();
   assert.equal(editor.getPersisted(), undefined);
   assert.equal(editor.elements.dashboardIssueFormError.textContent, 'Selecciona una suite para generar el ID automático del issue.');
+});
+
+test('saving an issue preserves a selected or manually entered assignee', async () => {
+  const editor = createEditor({ caseSuiteId: 'suite-a', selectedSuiteId: 'suite-a', existingSuiteId: 'suite-a', assignee: 'Ana Pérez' });
+  await editor.save();
+  assert.equal(editor.getPersisted().issues[0].assignee, 'Ana Pérez');
+});
+
+test('selecting the empty Sin asignar option clears the issue assignee', async () => {
+  const editor = createEditor({ caseSuiteId: 'suite-a', selectedSuiteId: 'suite-a', existingSuiteId: 'suite-a', assignee: '' });
+  await editor.save();
+  assert.equal(editor.getPersisted().issues[0].assignee, '');
 });
