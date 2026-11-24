@@ -1,5 +1,29 @@
 # Documentador de casos
 
+## Resumen y recomendación de cierre de ciclos
+
+En QA Casos, al activar un ciclo se muestra una recomendación de cierre. Requiere
+atención si el ciclo no tiene casos, contiene casos sin ejecutar, en progreso o
+fallidos, o si hay issues Critical o High sin cerrar en el proyecto. Los casos
+Not Applicable no impiden el cierre. Los issues se consideran a nivel de
+proyecto, ya que no están vinculados a un ciclo específico. La recomendación es
+orientativa: el informe PDF conserva su criterio independiente de no tener
+issues Critical abiertos.
+
+Para un ciclo de reejecución se muestra el estado actual de los casos
+seleccionados originalmente por fallar, junto con los casos que ahora figuren
+como fallidos en el ciclo de origen. Se distinguen Pass, Failed, sin ejecutar,
+en progreso y Not Applicable. Los casos nuevos ajenos a esos fallos no se
+incluyen en este resumen. Si faltan casos seleccionados o el ciclo de origen, se
+advierte y la recomendación de cierre requiere atención.
+
+Las razones con casos pendientes o fallidos y las cifras de reejecución con
+resultados permiten abrir la lista correspondiente y acceder al detalle de cada
+caso. Las razones de issues Critical o High abren la bitácora con filtros de
+severidad y estado «Sin cerrar»; estos filtros se pueden cambiar manualmente.
+Los issues incluyen todos los estados distintos de Closed y pertenecen al
+proyecto completo.
+
 ## Exportación de la bitácora a Excel
 
 La exportación aplica los filtros activos y genera un archivo `.xlsx` localmente.
