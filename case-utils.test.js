@@ -498,6 +498,21 @@ test('buildAutoIssueSnapshots creates one snapshot per novelty and groups images
   assert.equal(snaps[1].severity, 'Low');
 });
 
+test('automatic issue title uses the first nonempty title in its logical step', () => {
+  const [snapshot] = buildAutoIssueSnapshots({
+    caseId: 'TC-9',
+    steps: [
+      { id: 1, title: '  ', comment: 'Primera imagen' },
+      { id: 2, sameAsPrevious: true, title: ' Error al imprimir ', severity: 'media', comment: 'No imprime' },
+      { id: 3, sameAsPrevious: true, title: 'Otro título' },
+    ],
+  });
+  assert.equal(snapshot.findingTitle, 'Error al imprimir');
+  assert.match(snapshot.observation, /No imprime/);
+  assert.deepEqual(snapshot.evidenceStepIds, ['1', '2', '3']);
+  assert.equal(buildAutoIssueSnapshots({ steps: [{ severity: 'alta' }] })[0].findingTitle, '');
+});
+
 test('buildAutoIssueSnapshots omits the fallback for novelties with grouped image evidence', () => {
   const [snapshot] = buildAutoIssueSnapshots({
     caseId: 'TC-10',

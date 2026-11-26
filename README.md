@@ -1,5 +1,18 @@
 # Documentador de casos
 
+## Título de hallazgos automáticos
+
+En cada evidencia del documentador puedes escribir un **Título del paso**
+opcional. Al marcarla con novedad o fallo, ese título se muestra como título
+del hallazgo en la bitácora; el comentario sigue siendo la descripción.
+Si varias imágenes están unidas en un paso, se usa el primer título no vacío
+del grupo. El título puede añadirse al editar evidencias existentes.
+
+Los cambios del título se sincronizan con el issue automático, salvo que su
+título se haya editado manualmente en la bitácora: en ese caso se conserva.
+Los títulos ya existentes en issues antiguos también se consideran manuales.
+Sin título, el hallazgo seguirá mostrándose sin título.
+
 ## Resumen y recomendación de cierre de ciclos
 
 En QA Casos, al activar un ciclo se muestra una recomendación de cierre. Requiere

@@ -674,12 +674,14 @@
       }).join("\n");
       const hasFailure = issueItems.some(({ step }) => normalizeStepStatus(step.stepStatus || step.status) === "fallo");
       const firstId = group[0].step.id;
+      const findingTitle = group.map(({ step }) => String(step.title || "").trim()).find(Boolean) || "";
       return [{
         kind: "step",
         stepKey: firstId === undefined || firstId === null ? `idx-${group[0].index}` : String(firstId),
         baseTestId,
         testId: baseTestId,
         formName,
+        findingTitle,
         observation,
         qaResult: forceFailed || hasFailure ? "Failed" : "Novedad",
         evidenceStepIds: group

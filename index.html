@@ -354,6 +354,8 @@
     display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11.5px;
     color: var(--text-faint); margin-bottom: 8px; letter-spacing: 0.02em;
   }
+  .step-title-field { display: grid; gap: 5px; margin: 8px 0; color: var(--text-muted); font-size: 11px; }
+  .step-title-field input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 13px; }
   .step-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
   .reorder-btn {
     border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
@@ -26728,7 +26730,7 @@ var __async = (__this, __arguments, generator) => {
   return exports;
 })({});
 </script>
-<script src="case-utils.js?v=20261112-suite-issue-ids"></script>
+<script src="case-utils.js?v=20261126-step-title"></script>
 <script src="spellcheck.bundle.js?v=20261105-correcciones"></script>
 <script src="excel-ole.bundle.js"></script>
   <script>
@@ -26937,6 +26939,7 @@ var __async = (__this, __arguments, generator) => {
         dataUrl: s.dataUrl,
         renderedDataUrl: s.renderedDataUrl,
         thumbnailDataUrl: s.thumbnailDataUrl,
+        title: s.title || "",
         comment: s.comment,
         commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "top",
         stepStatus: normalizeStepStatus(s.stepStatus || s.status),
@@ -27025,6 +27028,7 @@ var __async = (__this, __arguments, generator) => {
       dataUrl: s.dataUrl,
       renderedDataUrl: s.renderedDataUrl,
       thumbnailDataUrl: s.thumbnailDataUrl || "",
+      title: s.title || "",
       comment: s.comment || "",
       commentPosition: ["top", "middle", "bottom"].includes(s.commentPosition) ? s.commentPosition : "top",
       stepStatus: normalizeStepStatus(s.stepStatus || s.status),
@@ -27159,8 +27163,8 @@ var __async = (__this, __arguments, generator) => {
     const target = e.target;
     if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) return;
     const isCaseField = ["caseId", "description", "caseDetails", "team", "tester", ...QA_CONTEXT_FIELDS].includes(target.id);
-    const isStepComment = !!target.closest(".comment-block");
-    if (!isCaseField && !isStepComment) return;
+    const isStepText = !!target.closest(".comment-block, .step-title-field");
+    if (!isCaseField && !isStepText) return;
     const now = Date.now();
     if (now - lastTextCheckpointAt < 700) return;
     lastTextCheckpointAt = now;
@@ -29763,6 +29767,9 @@ var __async = (__this, __arguments, generator) => {
           <button class="delete-link">Eliminar</button>
         </div>
       </div>
+      <label class="step-title-field">Título del paso (opcional)
+        <input class="step-title-input" type="text" placeholder="Ej.: Error al imprimir" />
+      </label>
       <div class="comment-anchor comment-top-anchor" data-comment-anchor="top">Soltar comentario arriba</div>
       <div class="color-row edit-only" style="display:none;">
         <div class="mode-toggle">
@@ -29842,6 +29849,13 @@ var __async = (__this, __arguments, generator) => {
         <button class="sev-btn sev-btn-baja${step.severity === "baja" ? " selected" : ""}" data-sev="baja" aria-pressed="${step.severity === "baja" ? "true" : "false"}">🟡 Baja</button>
       </div>`;
     stepsContainer.appendChild(card);
+    const stepTitleInput = card.querySelector(".step-title-input");
+    stepTitleInput.value = step.title || "";
+    stepTitleInput.addEventListener("input", () => {
+      step.title = stepTitleInput.value;
+      autosave();
+      scheduleLiveIssueSync();
+    });
     displayStepImage(step, card.querySelector(".step-img"));
     applyStepsFilter();
     renderStepPins(step, card);
@@ -29952,6 +29966,7 @@ var __async = (__this, __arguments, generator) => {
       if (nextStep && nextStep.sameAsPrevious && !step.sameAsPrevious) nextStep.sameAsPrevious = false;
       steps = steps.filter((s) => s.id !== step.id);
       card.remove();
+      invalidateSavedPreview();
       renumberSteps();
       saveStateToDB();
       scheduleLiveIssueSync();
@@ -30620,6 +30635,8 @@ var __async = (__this, __arguments, generator) => {
       const step = steps.find((candidate) => String(candidate.id) === stepId);
       const textarea = card.querySelector("textarea");
       if (step && textarea) step.comment = textarea.value;
+      const titleInput = card.querySelector(".step-title-input");
+      if (step && titleInput) step.title = titleInput.value;
     });
   }
 
@@ -31894,6 +31911,7 @@ var __async = (__this, __arguments, generator) => {
           dataUrl: step.dataUrl,
           renderedDataUrl: step.renderedDataUrl,
           thumbnailDataUrl: step.thumbnailDataUrl,
+          title: step.title || "",
           comment: step.comment,
           commentPosition: ["top", "middle", "bottom"].includes(step.commentPosition) ? step.commentPosition : "top",
           stepStatus: normalizeStepStatus(step.stepStatus || step.status),
@@ -32083,6 +32101,7 @@ var __async = (__this, __arguments, generator) => {
           ...(noveltyNo ? { noveltyNo } : {}),
           suiteId: caseRecord.suiteId || "",
           ...snapshot,
+          findingTitleEdited: false,
           status: "Open",
           createdAt: timestamp,
           closedAt: null,
@@ -32103,9 +32122,13 @@ var __async = (__this, __arguments, generator) => {
         evidenceStepIds: snapshot.evidenceStepIds,
       };
       if (!previous.observationEdited) next.observation = snapshot.observation;
+      if (previous.findingTitleEdited === false || (!previous.findingTitleEdited && !previous.findingTitle)) {
+        next.findingTitle = snapshot.findingTitle || "";
+        next.findingTitleEdited = false;
+      }
       if (!previous.severityEdited) next.severity = snapshot.severity;
       if (!previous.priorityEdited) next.priority = snapshot.priority;
-      const changed = ["suiteId", "testId", "formName", "qaResult", "observation", "severity", "priority"]
+      const changed = ["suiteId", "testId", "formName", "qaResult", "findingTitle", "findingTitleEdited", "observation", "severity", "priority"]
         .some((key) => JSON.stringify(previous[key]) !== JSON.stringify(next[key])) ||
         JSON.stringify(previous.evidenceStepIds || []) !== JSON.stringify(next.evidenceStepIds);
       if (!changed) return;
@@ -34784,6 +34807,10 @@ var __async = (__this, __arguments, generator) => {
         ? timestamp
         : existing?.lastValidationAt || null,
       statusHistory: Array.isArray(existing?.statusHistory) ? existing.statusHistory.slice() : [],
+      findingTitleEdited: existing?.source === "auto"
+        ? findingTitle !== (existing.findingTitle || "") || existing.findingTitleEdited === true ||
+          (existing.findingTitleEdited === undefined && !!existing.findingTitle)
+        : false,
       observationEdited: existing?.source === "auto" ? observation !== existing.observation || !!existing.observationEdited : false,
       severityEdited: existing?.source === "auto" ? severity !== existing.severity || !!existing.severityEdited : false,
       priorityEdited: existing?.source === "auto" ? priority !== existing.priority || !!existing.priorityEdited : false,
@@ -37045,6 +37072,7 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("openDocumenterBtn").addEventListener("click", openDocumenter);
     document.getElementById("startDocumenterBtn").addEventListener("click", openDocumenter);
     document.getElementById("backToDashboardBtn").addEventListener("click", async () => {
+      if (!(await flushLiveIssueSync())) return;
       await saveStateToDB();
       clearQaDocumenterExecutionContext();
       document.body.classList.remove("documenter-view");
@@ -37457,7 +37485,7 @@ var __async = (__this, __arguments, generator) => {
   }
 
   async function startManualDocumenterCase() {
-    await flushLiveIssueSync();
+    if (!(await flushLiveIssueSync())) return;
     clearQaDocumenterExecutionContext();
     const current = currentCaseData();
     const hasCurrentData = current.steps.length > 0 ||
@@ -37490,7 +37518,7 @@ var __async = (__this, __arguments, generator) => {
   async function openCaseFromBatch(idx, focusStepId) {
     const selectedCase = savedCases[idx];
     if (!selectedCase) return;
-    await flushLiveIssueSync();
+    if (!(await flushLiveIssueSync())) return;
     clearQaDocumenterExecutionContext();
 
     const current = currentCaseData();
@@ -37595,8 +37623,10 @@ var __async = (__this, __arguments, generator) => {
   // guardando el caso en el lote si todavía no existe.
   let liveIssueTimer = null;
   let liveIssueRunning = false;
+  let liveIssueDirty = false;
   let liveIssuePromise = Promise.resolve();
   function scheduleLiveIssueSync() {
+    liveIssueDirty = true;
     clearTimeout(liveIssueTimer);
     liveIssueTimer = setTimeout(() => {
       liveIssueTimer = null;
@@ -37609,25 +37639,33 @@ var __async = (__this, __arguments, generator) => {
   }
 
   async function flushLiveIssueSync() {
+    let pending = liveIssueDirty;
     clearTimeout(liveIssueTimer);
     liveIssueTimer = null;
-    if (liveIssueRunning) await liveIssuePromise;
+    if (liveIssueRunning && !(await liveIssuePromise)) return false;
+    pending = pending || liveIssueDirty;
     clearTimeout(liveIssueTimer);
     liveIssueTimer = null;
+    return pending ? await syncLiveIssueForCurrentCase() : true;
   }
 
   async function syncLiveIssueForCurrentCase() {
-    if (!document.body.classList.contains("documenter-view")) return;
+    liveIssueDirty = false;
+    if (!document.body.classList.contains("documenter-view")) return true;
     const hasIssueStep = steps.some((step) =>
       normalizeStepStatus(step.stepStatus || step.status) === "fallo" || getStepSeverity(step));
     const currentQaId = editingCaseIndex !== null ? savedCases[editingCaseIndex]?.qaId : null;
     const hasAutoIssues = !!currentQaId && projects.some((project) =>
       (Array.isArray(project.issues) ? project.issues : []).some((issue) =>
         issue.source === "auto" && issue.caseQaId === currentQaId));
-    if (!hasIssueStep && !hasAutoIssues) return;
+    if (!hasIssueStep && !hasAutoIssues) return true;
     const idInput = document.getElementById("caseId");
     const descriptionInput = document.getElementById("description");
-    if (!idInput) return;
+    if (!idInput) {
+      liveIssueDirty = true;
+      showTransientStatus("No se pudo sincronizar el caso con la bitácora: falta el campo de ID.", 5000);
+      return false;
+    }
     liveIssueRunning = true;
     try {
       const normalizedCase = normalizeCaseIdInputValue(idInput.value, descriptionInput ? descriptionInput.value : "");
@@ -37653,12 +37691,19 @@ var __async = (__this, __arguments, generator) => {
       }
       const failed = getCaseExecutionStatus(savedCase) === "failed";
       syncAutoIssueForCase(savedCase, failed, failed ? getLatestQaExecutionNote(savedCase) : "");
-      if (await saveCasesAndProjectsToDB()) {
-        renderCasesList();
-        renderDashboard();
+      if (!(await saveCasesAndProjectsToDB())) {
+        liveIssueDirty = true;
+        showTransientStatus("No se pudo guardar la sincronización con la bitácora. Inténtalo nuevamente.", 5000);
+        return false;
       }
+      renderCasesList();
+      renderDashboard();
+      return true;
     } catch (error) {
+      liveIssueDirty = true;
       console.error("No se pudo sincronizar el issue en línea:", error);
+      showTransientStatus("No se pudo sincronizar el caso con la bitácora. Inténtalo nuevamente.", 5000);
+      return false;
     } finally {
       liveIssueRunning = false;
     }
@@ -37668,7 +37713,7 @@ var __async = (__this, __arguments, generator) => {
   document.getElementById("description").addEventListener("input", scheduleLiveIssueSync);
 
   document.getElementById("addToBatchBtn").addEventListener("click", async () => {
-    await flushLiveIssueSync();
+    if (!(await flushLiveIssueSync())) return;
     syncStepInputsToData();
     if (document.getElementById("exportPreview")) {
       syncEditedPreviewToCaseFields();
