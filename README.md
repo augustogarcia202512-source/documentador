@@ -1,5 +1,13 @@
 # Documentador de casos
 
+## Creación de suites
+
+Los proyectos nuevos comienzan sin suites predeterminadas. En **QA Casos**,
+pulsa **+ Nueva suite**, escribe su nombre y selecciona **Crear**. Para agregar
+casos dentro de una suite, primero crea y abre esa suite. Los proyectos
+existentes conservan sus suites y casos; las suites creadas durante una
+importación de casos también se mantienen.
+
 ## Título de hallazgos automáticos
 
 En cada evidencia del documentador puedes escribir un **Título del paso**

@@ -31797,14 +31797,6 @@ var __async = (__this, __arguments, generator) => {
     return `ISS-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
   }
 
-  function createDefaultSuites() {
-    return ["Login", "Pagos", "Carrito", "Reportes"].map((name) => ({
-      id: createSuiteId(),
-      name,
-      createdAt: Date.now(),
-    }));
-  }
-
   function createProjectId() {
     return `project-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
@@ -31985,7 +31977,7 @@ var __async = (__this, __arguments, generator) => {
       id: createProjectId(),
       name: "Mi proyecto",
       createdAt: Date.now(),
-      suites: createDefaultSuites(),
+      suites: [],
       executionCycles: [],
       qaCyclesEnabled: false,
     };
@@ -33849,7 +33841,11 @@ var __async = (__this, __arguments, generator) => {
           </span>
           <span class="qa-suite-status-list" aria-hidden="true">${statusBreakdown}</span>
         </button>`;
-      }).join("") || (project.qaCyclesEnabled && Array.isArray(activeCycle?.retryCaseIds) && !cycleCases.length
+      }).join("") || (!suites.length
+        ? `<div class="qa-suite-empty">${document.body.classList.contains("dashboard-qa-management")
+          ? 'Este proyecto aún no tiene suites. Pulsa “+ Nueva suite” para crear la primera.'
+          : 'Este proyecto aún no tiene suites. Abre “QA Casos” para crear la primera.'}</div>`
+        : project.qaCyclesEnabled && Array.isArray(activeCycle?.retryCaseIds) && !cycleCases.length
         ? '<div class="qa-suite-empty">No hay casos fallidos del ciclo anterior para reejecutar.</div>'
         : '<div class="qa-suite-empty">No hay suites que coincidan con la búsqueda.</div>');
       grid.querySelectorAll("[data-suite-id]").forEach((button) => {
@@ -36813,13 +36809,13 @@ var __async = (__this, __arguments, generator) => {
     projects = await loadProjectsFromDB();
     savedCases = await loadCasesFromDB();
     if (!projects.length) {
-      projects = [{ id: createProjectId(), name: "Mi proyecto", createdAt: Date.now(), suites: createDefaultSuites() }];
-      await saveProjectsToDB();
+      projects = [{ id: createProjectId(), name: "Mi proyecto", createdAt: Date.now(), suites: [] }];
+      if (!(await saveProjectsToDB())) throw new Error("No se pudo guardar el proyecto inicial.");
     }
     let migratedSuites = false;
     projects.forEach((project) => {
-      if (!Array.isArray(project.suites) || !project.suites.length) {
-        project.suites = createDefaultSuites();
+      if (!Array.isArray(project.suites)) {
+        project.suites = [];
         migratedSuites = true;
       }
       if (!Array.isArray(project.executionCycles)) {
@@ -36886,7 +36882,7 @@ var __async = (__this, __arguments, generator) => {
       return false;
     }
     const previousProjectId = activeProjectId;
-    const project = { id: createProjectId(), name: cleanName, createdAt: Date.now(), suites: createDefaultSuites() };
+    const project = { id: createProjectId(), name: cleanName, createdAt: Date.now(), suites: [] };
     projects.push(project);
     if (!(await saveProjectsToDB())) {
       projects = projects.filter((item) => item.id !== project.id);
@@ -37184,8 +37180,18 @@ var __async = (__this, __arguments, generator) => {
       const project = projects.find((item) => item.id === activeProjectId);
       if (!name || !project) return;
       if (!Array.isArray(project.suites)) project.suites = [];
-      project.suites.push({ id: createSuiteId(), name, createdAt: Date.now() });
-      await saveProjectsToDB();
+      const suite = { id: createSuiteId(), name, createdAt: Date.now() };
+      const submit = createSuiteForm.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      project.suites.push(suite);
+      if (!(await saveProjectsToDB())) {
+        project.suites = project.suites.filter((item) => item.id !== suite.id);
+        submit.disabled = false;
+        showTransientStatus("No se pudo guardar la suite. Inténtalo nuevamente.", 5000);
+        createSuiteInput.focus();
+        return;
+      }
+      submit.disabled = false;
       createSuiteForm.reset();
       createSuiteForm.dataset.open = "";
       createSuiteForm.hidden = true;
