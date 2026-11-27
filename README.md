@@ -8,6 +8,11 @@ casos dentro de una suite, primero crea y abre esa suite. Los proyectos
 existentes conservan sus suites y casos; las suites creadas durante una
 importación de casos también se mantienen.
 
+Al registrar o editar un issue, el selector de caso relacionado muestra los
+casos de la suite elegida. Si la suite no tiene casos, el issue puede
+registrarse sin asociar uno. Al cambiar de suite se desasocia el caso anterior;
+los datos escritos manualmente en el formulario se conservan.
+
 ## Título de hallazgos automáticos
 
 En cada evidencia del documentador puedes escribir un **Título del paso**

@@ -108,3 +108,73 @@ test('selecting the empty Sin asignar option clears the issue assignee', async (
   await editor.save();
   assert.equal(editor.getPersisted().issues[0].assignee, '');
 });
+
+function createCaseFilter() {
+  const cases = [
+    { qaId: 'a', caseId: 'A-01', description: 'Caso A', suiteId: 'suite-a' },
+    { qaId: 'b', caseId: 'B-01', description: 'Caso B', suiteId: 'suite-b' },
+    { qaId: 'legacy', caseId: 'L-01', description: 'Sin suite' },
+  ];
+  const select = {
+    options: [],
+    _value: '',
+    replaceChildren(option) { this.options = [option]; this._value = ''; },
+    append(option) { this.options.push(option); },
+    set value(value) { this._value = this.options.some((option) => option.value === value) ? value : ''; },
+    get value() { return this._value; },
+  };
+  const elements = {
+    dashboardIssueSuite: { value: '' },
+    dashboardIssueCase: select,
+    dashboardIssueCaseHint: { textContent: '' },
+    dashboardIssueTestId: { value: '' },
+    dashboardIssueFormName: { value: '' },
+  };
+  const begin = html.indexOf('  function updateDashboardIssueCases(');
+  const finish = html.indexOf('  function updateDashboardIssueSuite(', begin);
+  assert.ok(begin >= 0 && finish > begin);
+  const helpers = vm.runInNewContext(`(function () { ${html.slice(begin, finish)} return { updateDashboardIssueCases, updateDashboardIssueCaseFields }; })()`, {
+    document: { getElementById: (id) => elements[id] },
+    getActiveProjectCases: () => cases,
+    Option: function (text, value) { this.text = text; this.value = value; },
+  });
+  return { ...helpers, cases, elements, select };
+}
+
+test('case options follow the selected suite and handle empty suites', () => {
+  const { updateDashboardIssueCases, elements, select } = createCaseFilter();
+  updateDashboardIssueCases();
+  assert.deepEqual(select.options.map((option) => option.value), ['']);
+  elements.dashboardIssueSuite.value = 'suite-a';
+  updateDashboardIssueCases('a');
+  assert.deepEqual(select.options.map((option) => option.value), ['', 'a']);
+  assert.equal(select.value, 'a');
+  elements.dashboardIssueSuite.value = 'suite-b';
+  updateDashboardIssueCases('a');
+  assert.deepEqual(select.options.map((option) => option.value), ['', 'b']);
+  assert.equal(select.value, '');
+  elements.dashboardIssueSuite.value = 'empty';
+  updateDashboardIssueCases();
+  assert.match(elements.dashboardIssueCaseHint.textContent, /no tiene casos/);
+});
+
+test('editing retains a legacy associated case even when its suite is missing', () => {
+  const { updateDashboardIssueCases, elements, select } = createCaseFilter();
+  elements.dashboardIssueSuite.value = '';
+  updateDashboardIssueCases('legacy', true);
+  assert.equal(select.value, 'legacy');
+  assert.match(select.options[1].text, /sin suite/);
+});
+
+test('changing case replaces derived fields but preserves manual values', () => {
+  const { updateDashboardIssueCaseFields, cases, elements } = createCaseFilter();
+  updateDashboardIssueCaseFields(null, cases[0]);
+  assert.equal(elements.dashboardIssueTestId.value, 'A-01');
+  elements.dashboardIssueFormName.value = 'Nombre personalizado';
+  updateDashboardIssueCaseFields(cases[0], cases[1]);
+  assert.equal(elements.dashboardIssueTestId.value, 'B-01');
+  assert.equal(elements.dashboardIssueFormName.value, 'Nombre personalizado');
+  updateDashboardIssueCaseFields(cases[1], null);
+  assert.equal(elements.dashboardIssueTestId.value, '');
+  assert.equal(elements.dashboardIssueFormName.value, 'Nombre personalizado');
+});

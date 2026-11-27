@@ -3069,6 +3069,7 @@
                 <select id="dashboardIssueCase">
                   <option value="">Sin caso relacionado</option>
                 </select>
+                <small id="dashboardIssueCaseHint" aria-live="polite">Selecciona una suite para ver sus casos.</small>
               </label>
               <label for="dashboardIssueTestId">Test ID *
                 <input id="dashboardIssueTestId" type="text" maxlength="100" required />
@@ -34604,8 +34605,38 @@ var __async = (__this, __arguments, generator) => {
     showTransientStatus(`${issue.displayId || issue.testId || "Issue"}: ${status}.`, 2500);
   }
 
+  function updateDashboardIssueCases(selectedCaseId = "", preserveExisting = false) {
+    const suiteId = document.getElementById("dashboardIssueSuite").value;
+    const caseSelect = document.getElementById("dashboardIssueCase");
+    const cases = getActiveProjectCases();
+    const matching = suiteId ? cases.filter((item) => item.suiteId === suiteId) : [];
+    caseSelect.replaceChildren(new Option("Sin caso relacionado", ""));
+    matching.forEach((caseRecord) => {
+      const label = [caseRecord.caseId, caseRecord.description].filter(Boolean).join(" · ") || "Caso sin ID";
+      caseSelect.append(new Option(label, caseRecord.qaId));
+    });
+    const existing = preserveExisting && cases.find((item) => item.qaId === selectedCaseId);
+    if (existing && !matching.includes(existing)) {
+      const label = [existing.caseId, existing.description].filter(Boolean).join(" · ") || "Caso sin ID";
+      caseSelect.append(new Option(`${label} (suite diferente o sin suite)`, existing.qaId));
+    }
+    caseSelect.value = selectedCaseId || "";
+    document.getElementById("dashboardIssueCaseHint").textContent = !suiteId
+      ? "Selecciona una suite para ver sus casos."
+      : matching.length ? "Solo se muestran los casos de la suite seleccionada."
+      : "Esta suite no tiene casos; puedes registrar el issue sin caso relacionado.";
+  }
+
+  function updateDashboardIssueCaseFields(previousCase, nextCase) {
+    for (const [id, field] of [["dashboardIssueTestId", "caseId"], ["dashboardIssueFormName", "description"]]) {
+      const input = document.getElementById(id);
+      if (!input.value.trim() || (previousCase && input.value.trim() === String(previousCase[field] || "").trim())) {
+        input.value = nextCase?.[field] || "";
+      }
+    }
+  }
+
   function updateDashboardIssueSuite(suiteId) {
-    const project = projects.find((item) => item.id === activeProjectId);
     const suiteSelect = document.getElementById("dashboardIssueSuite");
     suiteSelect.value = suiteId || "";
     updateDashboardIssueDisplayIdPreview();
@@ -34643,11 +34674,6 @@ var __async = (__this, __arguments, generator) => {
     dashboardIssuePendingImages = 0;
     const form = document.getElementById("dashboardIssueForm");
     const caseSelect = document.getElementById("dashboardIssueCase");
-    caseSelect.replaceChildren(new Option("Sin caso relacionado", ""));
-    getActiveProjectCases().forEach((caseRecord) => {
-      const label = [caseRecord.caseId, caseRecord.description].filter(Boolean).join(" · ") || "Caso sin ID";
-      caseSelect.append(new Option(label, caseRecord.qaId));
-    });
     const suiteSelect = document.getElementById("dashboardIssueSuite");
     suiteSelect.replaceChildren(new Option("Selecciona una suite", ""));
     (Array.isArray(project.suites) ? project.suites : []).forEach((suite) => {
@@ -34677,7 +34703,8 @@ var __async = (__this, __arguments, generator) => {
     document.getElementById("dashboardIssueFormError").hidden = true;
     document.getElementById("dashboardIssueFormError").textContent = "";
     updateDashboardIssueDisplayIdPreview();
-    caseSelect.value = issue?.caseQaId || "";
+    updateDashboardIssueCases(issue?.caseQaId || "", true);
+    caseSelect.dataset.previousCaseId = caseSelect.value;
     document.getElementById("dashboardIssueTestId").value = issue?.testId || "";
     document.getElementById("dashboardIssueFormName").value = issue?.formName || "";
     document.getElementById("dashboardIssueFindingTitle").value = issue?.findingTitle || (issue?.source === "auto" ? issue.formName || "" : "");
@@ -36104,22 +36131,20 @@ var __async = (__this, __arguments, generator) => {
       if (event.target === event.currentTarget) closeOverlay(event.currentTarget);
     });
     document.getElementById("dashboardIssueCase").addEventListener("change", (event) => {
-      const caseRecord = getActiveProjectCases().find((item) => item.qaId === event.currentTarget.value);
-      if (caseRecord) updateDashboardIssueSuite(caseRecord.suiteId);
-      else updateDashboardIssueDisplayIdPreview();
-      if (!caseRecord) return;
-      if (!document.getElementById("dashboardIssueTestId").value.trim()) {
-        document.getElementById("dashboardIssueTestId").value = caseRecord.caseId || "";
-      }
-      if (!document.getElementById("dashboardIssueFormName").value.trim()) {
-        document.getElementById("dashboardIssueFormName").value = caseRecord.description || "";
-      }
+      const cases = getActiveProjectCases();
+      const previous = cases.find((item) => item.qaId === event.currentTarget.dataset.previousCaseId);
+      const selected = cases.find((item) => item.qaId === event.currentTarget.value);
+      updateDashboardIssueCaseFields(previous, selected);
+      event.currentTarget.dataset.previousCaseId = event.currentTarget.value;
     });
     document.getElementById("dashboardIssueSuite").addEventListener("change", (event) => {
       const selectedSuiteId = event.currentTarget.value;
       const caseSelect = document.getElementById("dashboardIssueCase");
       const relatedCase = getActiveProjectCases().find((item) => item.qaId === caseSelect.value);
-      if (relatedCase && (relatedCase.suiteId || "") !== selectedSuiteId) caseSelect.value = "";
+      const keepCase = relatedCase && (relatedCase.suiteId || "") === selectedSuiteId;
+      if (relatedCase && !keepCase) updateDashboardIssueCaseFields(relatedCase, null);
+      updateDashboardIssueCases(keepCase ? relatedCase.qaId : "");
+      caseSelect.dataset.previousCaseId = caseSelect.value;
       updateDashboardIssueDisplayIdPreview();
       document.getElementById("dashboardIssueFormError").hidden = true;
     });
